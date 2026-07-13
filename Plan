@@ -1,0 +1,71 @@
+Với tư cách là một kỹ sư phần mềm, bạn chắc chắn đã quen thuộc với việc chia nhỏ một hệ thống. Để xây dựng app "Heo ăn rác" này một cách bài bản, trơn tru và dễ mở rộng sau này, chúng ta sẽ chia dự án thành 5 giai đoạn chính.
+
+Với phần frontend (giao diện con heo), kiến trúc React sẽ rất phù hợp để quản lý các state (trạng thái đói, no, ngủ, chạy) một cách gọn gàng, kết hợp với Node.js ở backend (Main Process của Electron) để xử lý các tác vụ hệ thống cấp thấp.
+
+Dưới đây là bản kế hoạch (Project Plan) chi tiết:
+
+### Phase 1: Khởi tạo Project & Kiến trúc cơ sở (Tuần 1)
+
+Mục tiêu: Dựng thành công một cửa sổ tàng hình trên desktop và thiết lập luồng giao tiếp giữa UI và OS.
+
+* **Tech Stack:** Electron.js, React, Node.js.
+* **Tasks:**
+1. Khởi tạo dự án bằng boilerplate (ví dụ: `electron-forge` kết hợp template React).
+2. Cấu hình `BrowserWindow` trong Electron: Bật chế độ `transparent: true`, `frame: false`, `alwaysOnTop: true`, và ẩn khỏi thanh Dock.
+3. Thiết lập IPC (Inter-Process Communication): Tạo các kênh giao tiếp an toàn qua `contextBridge` để React (Renderer) có thể gửi yêu cầu dọn rác xuống Node.js (Main) và ngược lại (Node.js báo cáo dung lượng rác lên React).
+4. Cấu hình cơ chế xuyên thấu chuột (`setIgnoreMouseEvents`) để người dùng có thể click xuyên qua các phần viền trong suốt của cửa sổ.
+
+
+
+### Phase 2: Xây dựng "Thể xác" & Animation (Tuần 2)
+
+Mục tiêu: Đưa con heo lên màn hình và cho nó khả năng tự động di chuyển.
+
+* **Tasks:**
+1. **Thiết kế Asset:** Chuẩn bị bộ Sprite sheet hoặc ảnh GIF cho các trạng thái: Đứng yên, đi bộ, ngửi, nhai, ngủ.
+2. **Quản lý State (React):** Tạo một component `PigPet` với các state cơ bản: `mode` (idle, walking, eating), `position` (x, y).
+3. **Logic Di chuyển:** Viết một hook hoặc hàm `setInterval` để ngẫu nhiên thay đổi tọa độ `x, y` của con heo trên màn hình. Sử dụng API `screen` của Electron để lấy kích thước độ phân giải, đảm bảo con heo không chạy ra khỏi viền màn hình.
+4. **Tương tác vật lý:** Cấu hình để khi hover chuột vào con heo, tắt tính năng xuyên thấu chuột để có thể click hoặc kéo thả (drag & drop) nó đi chỗ khác.
+
+
+
+### Phase 3: Logic Hệ thống - "Ngửi và Ăn" (Tuần 3)
+
+Mục tiêu: Tích hợp kịch bản đọc và xóa file thực tế trên macOS.
+
+* **Tasks:**
+1. **Module Thùng rác (Trash):** Sử dụng `fs.watch` giám sát thư mục `~/.Trash`. Khi có event thay đổi, gửi tín hiệu IPC lên React để đổi state con heo sang "Đánh hơi".
+2. **Module File Tạm (Temp/Cache):** Viết script Node.js quét dung lượng các thư mục `os.tmpdir()` và `~/Library/Caches`. Lọc ra các file cũ (ví dụ > 7 ngày) để đưa vào danh sách có thể xóa.
+3. **Hành động Ăn (Xóa):** * Tạo IPC Handler ở Main Process nhận lệnh `clean-trash` và `clean-temp`.
+* Sử dụng `fs.rmSync` để xóa file tạm.
+* Sử dụng `child_process.exec` gọi lệnh AppleScript (`osascript`) để dọn Thùng rác hệ thống phát ra âm thanh chuẩn của Mac.
+
+
+
+
+
+### Phase 4: Hoàn thiện Trải nghiệm (UX/UI) (Tuần 4)
+
+Mục tiêu: Làm cho con heo thông minh và giống "thú cưng" hơn.
+
+* **Tasks:**
+1. **Tiến hóa kích thước:** Cập nhật logic React để mỗi khi nhận tín hiệu xóa thành công (từ IPC), tăng kích thước (scale) của con heo lên một chút.
+2. **Hệ thống Menu (Tray/Context Menu):** Thêm một biểu tượng nhỏ trên thanh Menu Bar của macOS (dùng `Tray` module của Electron) để người dùng có thể chủ động cấu hình: "Gọi heo về góc màn hình", "Kiểm tra rác", hoặc "Thoát ứng dụng".
+3. **Hội thoại (Tooltip):** Thêm các bong bóng thoại nhỏ (Speech Bubbles) thỉnh thoảng hiện lên: *"Căng da bụng quá!"*, *"Có 2GB rác trong máy kìa!"*.
+
+
+
+### Phase 5: Cấp quyền, Đóng gói & Tối ưu (Tuần 5)
+
+Mục tiêu: Build thành file `.app` hoàn chỉnh và xử lý các rào cản của hệ điều hành.
+
+* **Tasks:**
+1. **Xử lý Permissions:** Cấu hình file `Info.plist` để yêu cầu quyền Full Disk Access (bắt buộc để xóa file trong Library/Caches). Viết logic kiểm tra xem app đã có quyền chưa, nếu chưa thì hiện hướng dẫn người dùng mở System Settings.
+2. **Tối ưu hiệu năng:** Đảm bảo hàm quét thư mục `fs.readdir` chạy bất đồng bộ (async) để không làm block Main Thread, tránh tình trạng con heo bị giật lag khi đang đi dạo.
+3. **Đóng gói (Build):** Cấu hình `electron-builder` hoặc `electron-forge`. Cần lưu ý thiết lập build target chuẩn cho kiến trúc Apple Silicon (`arm64`) để app chạy Native, không phải qua Rosetta, giúp tối ưu RAM và CPU.
+
+
+
+---
+
+Bạn muốn bắt đầu với việc thiết lập luồng giao tiếp (IPC) giữa UI và hệ điều hành trước, hay muốn giải quyết phần hiển thị cửa sổ tàng hình của Electron trước? 
