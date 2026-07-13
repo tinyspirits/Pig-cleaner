@@ -11,6 +11,7 @@ export function usePigMovement(mode) {
   
   // New state to manage drag stages: 'held', 'falling', 'landed', null
   const [dragState, setDragState] = useState(null)
+  const landedTimeoutRef = useRef(null)
   
   const stateRef = useRef({
     x: 0,
@@ -51,8 +52,6 @@ export function usePigMovement(mode) {
     const FPS = 30
     const intervalMs = 1000 / FPS
     
-    let landedTimeout = null
-    
     const interval = setInterval(() => {
       const state = stateRef.current
       
@@ -74,8 +73,8 @@ export function usePigMovement(mode) {
           state.vy = 0
           setDragState('landed')
           // Xóa trạng thái landed sau 500ms
-          clearTimeout(landedTimeout)
-          landedTimeout = setTimeout(() => {
+          clearTimeout(landedTimeoutRef.current)
+          landedTimeoutRef.current = setTimeout(() => {
             setDragState(null)
           }, 600)
         }
@@ -115,7 +114,7 @@ export function usePigMovement(mode) {
 
     return () => {
       clearInterval(interval)
-      clearTimeout(landedTimeout)
+      clearTimeout(landedTimeoutRef.current)
     }
   }, [mode, screenSize])
 
@@ -168,6 +167,19 @@ export function usePigMovement(mode) {
     stateRef.current.vy = 0 // Reset vận tốc rơi khi thả ra
     
     if (isElectron) window.pigAPI.setIgnoreMouse(true)
+
+    // Nếu thả heo ngay trên mặt đất (y >= 0), vòng lặp vật lý sẽ không bao giờ
+    // đi qua bước "falling" nên "landed" sẽ không tự kích hoạt -> heo nhảy thẳng
+    // sang di chuyển. Ép trạng thái "landed" ngay lập tức trong trường hợp này.
+    // Nếu vẫn đang ở trên không (y < 0), để vòng lặp vật lý tự xử lý rơi -> landed.
+    if (stateRef.current.y >= 0) {
+      stateRef.current.y = 0
+      setDragState('landed')
+      clearTimeout(landedTimeoutRef.current)
+      landedTimeoutRef.current = setTimeout(() => {
+        setDragState(null)
+      }, 600)
+    }
   }, [])
 
   return {
