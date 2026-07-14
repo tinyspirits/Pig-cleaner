@@ -68,12 +68,6 @@ body,
   100% { transform: rotate(-8deg); }
 }
 
-.pig-sprite.dragging {
-  animation: dangle 0.6s infinite ease-in-out;
-  transform-origin: top center;
-  filter: drop-shadow(0 15px 15px rgba(0, 0, 0, 0.4));
-}
-
 /* State-specific body animations (CSS layer on top of JS frame animation) */
 .pig-idle .pig-sprite {
   animation: pigIdleBob 3s ease-in-out infinite;
@@ -98,6 +92,16 @@ body,
 
 .pig-full .pig-sprite {
   animation: pigFullJiggle 0.9s ease-in-out infinite;
+}
+
+/* Đặt SAU các animation theo mode ở trên để luôn thắng khi đang kéo (drag),
+   bất kể heo đang ở mode nào (walking/eating/...). Nếu đặt trước, các rule
+   theo mode phía trên sẽ đè mất hiệu ứng "dangle" do specificity bằng nhau
+   và CSS ăn theo thứ tự khai báo sau cùng. */
+.pig-sprite.dragging {
+  animation: dangle 0.6s infinite ease-in-out;
+  transform-origin: top center;
+  filter: drop-shadow(0 15px 15px rgba(0, 0, 0, 0.4));
 }
 
 @keyframes pigIdleBob {
