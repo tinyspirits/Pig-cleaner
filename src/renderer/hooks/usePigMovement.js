@@ -139,7 +139,7 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
       }
       
       if (!state.isDragging) {
-        setDragVelocity({ x: 0, y: 0 })
+        setDragVelocity({ x: state.vx, y: state.vy })
       }
 
       // Phát sự kiện bay để hiệu ứng thời tiết bắt tốc độ

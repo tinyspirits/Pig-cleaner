@@ -768,3 +768,47 @@ body,
   50%  { opacity: 0.2; }
   100% { opacity: 0; }
 }
+
+/* ─── Meteorite Sparks ────────────────────────────────────────────────────── */
+.meteorite-sparks {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 100;
+}
+
+.spark {
+  position: absolute;
+  width: 4px;
+  height: 20px;
+  background: linear-gradient(to top, #ffeb3b, #ff5722, transparent);
+  border-radius: 50%;
+  filter: drop-shadow(0 0 8px #ff5722) blur(1px);
+  animation: sparkFly 0.4s linear infinite;
+  opacity: 0;
+}
+
+.spark.s1 { left: 20%; animation-delay: 0.1s; }
+.spark.s2 { left: 40%; animation-delay: 0.25s; }
+.spark.s3 { left: 60%; animation-delay: 0.05s; }
+.spark.s4 { left: 80%; animation-delay: 0.3s; }
+.spark.s5 { left: 30%; animation-delay: 0.15s; }
+.spark.s6 { left: 70%; animation-delay: 0.2s; }
+
+@keyframes sparkFly {
+  0% { transform: translateY(0) scaleY(1); opacity: 1; }
+  100% { transform: translateY(-120px) scaleY(0.3); opacity: 0; }
+}
+
+.pig-meteorite .pig-sprite {
+  animation: meteoriteShake 0.1s infinite alternate;
+}
+
+@keyframes meteoriteShake {
+  0% { transform: translateX(-2px) translateY(-1px); }
+  100% { transform: translateX(2px) translateY(1px); }
+}

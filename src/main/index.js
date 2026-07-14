@@ -293,6 +293,14 @@ app.whenReady().then(async () => {
   createTray()
   setupAutoClean()
 
+  // Tự động thay đổi kích thước cửa sổ khi thanh Dock thay đổi trạng thái (hiện/ẩn)
+  screen.on('display-metrics-changed', (event, display, changedMetrics) => {
+    if (mainWindow && !mainWindow.isDestroyed() && changedMetrics.includes('workArea')) {
+      const { width, height, x, y } = display.workArea
+      mainWindow.setBounds({ width, height, x, y })
+    }
+  })
+
   // Áp dụng vị trí thời tiết đã lưu (nếu có) trước khi bắt đầu weather service
   const savedSettings = settingsStore.load()
   if (savedSettings.weatherLocation) {

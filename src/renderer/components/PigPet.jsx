@@ -116,6 +116,10 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
   const visualY = cameraFollowsPig ? Math.max(-screenHeight * 0.7, position.y) : position.y
   const altitude = cameraFollowsPig ? Math.max(0, -position.y - screenHeight * 0.7) : 0
 
+  // Hiệu ứng thiên thạch: rơi quá nhanh sinh nhiệt (ma sát)
+  const isFallingFast = !isDragging && dragVelocity.y > 15
+  const meteoriteRedness = isFallingFast ? Math.min(1, (dragVelocity.y - 15) / 25) : 0
+
   // Hiệu ứng thiếu oxy: chuyển sang màu đỏ khi bay lên quá mây (altitude > 1500)
   const redness = Math.min(1, Math.max(0, (altitude - 1500) / 2000))
 
@@ -149,8 +153,8 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
     return () => clearInterval(interval)
   }, [isWetWeather, conditionStr])
 
-  // Kết hợp: đỏ từ altitude + đỏ từ nắng nóng
-  const totalRed = Math.min(1, redness + heatLevel)
+  // Kết hợp: đỏ từ altitude + đỏ từ nắng nóng + đỏ từ thiên thạch
+  const totalRed = Math.min(1, redness + heatLevel + meteoriteRedness)
   const totalCold = Math.min(1, coldLevel + wetness * 0.6) // Mưa càng lâu càng lạnh (tối đa +60%)
 
   let baseFilter = ''
@@ -196,7 +200,7 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
       <SkyClouds altitude={altitude} />
       <GrassTrail x={position.x} y={position.y} isWalking={mode === 'walking'} />
       <div
-      className={`pig-container pig-${displayMode} ${isWallHit ? 'pig-hit-wall' : ''}`}
+      className={`pig-container pig-${displayMode} ${isWallHit ? 'pig-hit-wall' : ''} ${isFallingFast ? 'pig-meteorite' : ''}`}
       style={containerStyle}
       onMouseUp={handleDragEnd}
     >
@@ -206,6 +210,16 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
           <div className="wind-line" style={{ right: '-30px', animationDelay: '0.15s' }} />
           <div className="wind-line" style={{ right: '-15px', animationDelay: '0.05s', height: '60px' }} />
         </div>
+        {isFallingFast && (
+          <div className="meteorite-sparks" style={{ opacity: meteoriteRedness }}>
+            <div className="spark s1"></div>
+            <div className="spark s2"></div>
+            <div className="spark s3"></div>
+            <div className="spark s4"></div>
+            <div className="spark s5"></div>
+            <div className="spark s6"></div>
+          </div>
+        )}
       {/* Speech Bubble */}
       {bubble && (
         <div className="speech-bubble">
