@@ -1,8 +1,7 @@
 # Pig Cleaner 🐷
 
 Pig Cleaner là một ứng dụng dọn dẹp hệ thống (System Cleaner) kết hợp thú cưng ảo (Desktop Pet) siêu dễ thương dành riêng cho macOS. Chú heo con sẽ đi dạo dưới đáy màn hình của bạn và giúp bạn dọn dẹp rác, cache để giải phóng dung lượng ổ cứng. Bạn càng dọn nhiều rác, heo sẽ càng ăn no và lớn nhanh!
-
-<img width="1510" height="910" alt="Screenshot 2026-07-14 at 11 18 21" src="https://github.com/user-attachments/assets/bebfc3d2-fc6c-4c3d-98f0-e60b2fbcbf0f" />
+<img width="1507" height="950" alt="Screenshot 2026-07-14 at 14 30 35" src="https://github.com/user-attachments/assets/09bd8b30-793a-4d49-9265-be8cd6ae2bb1" />
 
 ## ✨ Tính năng chính
 
