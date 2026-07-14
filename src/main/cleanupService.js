@@ -46,14 +46,20 @@ async function getTrashInfo() {
   
   try {
     // Ưu tiên dùng AppleScript để lấy size của Trash vì nó không bị lỗi EPERM (Full Disk Access)
-    // Có timeout để tránh treo vô hạn (macOS gần đây có bug Finder/AppleScript đôi khi hang)
-    const { stdout } = await execAsync(`osascript -e 'tell application "Finder" to return size of trash'`, { timeout: 8000 })
-    const size = Number(stdout.trim())
-    if (!isNaN(size)) {
-      sizeBytes = size
-    } else {
-      // Fallback: Nếu Finder trả về "missing value" (nghĩa là trống rỗng)
+    // CẦN KIỂM TRA SỐ LƯỢNG TRƯỚC: Do macOS có bug thỉnh thoảng `size of trash` báo số ảo (ví dụ 8GB) dù thùng rác trống rỗng.
+    const { stdout: countOut } = await execAsync(`osascript -e 'tell application "Finder" to count items of trash'`, { timeout: 8000 })
+    const count = Number(countOut.trim())
+    
+    if (count === 0) {
       sizeBytes = 0
+      fileCount = 0
+    } else {
+      const { stdout } = await execAsync(`osascript -e 'tell application "Finder" to return size of trash'`, { timeout: 8000 })
+      const size = Number(stdout.trim())
+      if (!isNaN(size)) {
+        sizeBytes = size
+      }
+      fileCount = count
     }
   } catch (err) {
     console.error('[cleanupService] AppleScript failed:', err.message)

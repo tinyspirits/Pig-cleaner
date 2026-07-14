@@ -105,6 +105,29 @@ function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weather.condition, weather.upcomingCondition, weatherSettings.weatherAlerts])
 
+  // Lắng nghe sự kiện sét đánh từ WeatherEffects
+  useEffect(() => {
+    if (!weatherSettings.weatherAlerts) return
+    const handleLightning = () => {
+      setMode('scared')
+      forceBubble('Sợ quá! 😭')
+      setTimeout(() => setMode('idle'), 2000)
+    }
+    window.addEventListener('lightning-strike', handleLightning)
+    return () => window.removeEventListener('lightning-strike', handleLightning)
+  }, [weatherSettings.weatherAlerts, setMode, forceBubble])
+
+  // Lắng nghe động đất khi heo khổng lồ rơi xuống
+  const [isEarthquake, setIsEarthquake] = useState(false)
+  useEffect(() => {
+    const handleEarthquake = () => {
+      setIsEarthquake(true)
+      setTimeout(() => setIsEarthquake(false), 500)
+    }
+    window.addEventListener('earthquake', handleEarthquake)
+    return () => window.removeEventListener('earthquake', handleEarthquake)
+  }, [])
+
   // Setup IPC listeners
   useEffect(() => {
     if (!isElectron) {
@@ -304,7 +327,7 @@ function App() {
   }
 
   return (
-    <div className="pig-wrapper">
+    <div className={`pig-wrapper ${isEarthquake ? 'earthquake' : ''}`}>
       {/* Weather visual effects (respects settings toggle) */}
       {weatherSettings.weatherEffects && <WeatherEffects weather={weather} />}
       {/* Stats Panel */}

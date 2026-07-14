@@ -34,6 +34,7 @@ const ANIMATIONS = {
   eating: { frames: [happy1, happy2, happy1, happy2], fps: 6, loop: true },
   full: { frames: [happy2, happy1], fps: 2, loop: true },
   sleeping: { frames: [sleep1, sleep2, sleep3, sleep4], fps: 1.5, loop: true },
+  scared: { frames: [drag3], fps: 1, loop: true },
   drag_held: { frames: [drag1], fps: 1, loop: false },
   drag_falling: { frames: [drag2], fps: 1, loop: false },
   drag_landed: { frames: [drag3], fps: 1, loop: false },
@@ -96,7 +97,7 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
     }
   }
 
-  const isBusyMode = mode === 'eating' || mode === 'sniffing' || mode === 'full'
+  const isBusyMode = mode === 'eating' || mode === 'sniffing' || mode === 'full' || mode === 'scared'
   const displayMode = isBusyMode ? mode : (dragState ? `drag_${dragState}` : mode)
   const currentSprite = useSprite(displayMode)
 
@@ -109,16 +110,32 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
 
   // Hiệu ứng nhiệt độ thời tiết
   const temp = weatherData?.temperature ?? null
-  const heatLevel = temp !== null && temp > 30 ? Math.min(1, (temp - 30) / 15) : 0  // 30°C→0, 45°C→1
-  const coldLevel = temp !== null && temp < 10 ? Math.min(1, (10 - temp) / 15) : 0  // 10°C→0, -5°C→1
+  // Giảm mức ngưỡng để dễ thấy đổi màu hơn: Nóng khi > 26°C, Lạnh khi < 22°C
+  const heatLevel = temp !== null && temp > 26 ? Math.min(1, (temp - 26) / 14) : 0  // 26°C→0, 40°C→1
+  const coldLevel = temp !== null && temp < 22 ? Math.min(1, (22 - temp) / 14) : 0  // 22°C→0, 8°C→1
 
-  // Kết hợp: đỏ từ altitude + đỏ từ nắng nóng, xanh lạnh từ nhiệt độ thấp
-  const totalRed = Math.min(1, redness + heatLevel * 0.7)
-  const imageFilter = totalRed > 0
-    ? `drop-shadow(0 4px 10px rgba(0, 0, 0, 0.25)) sepia(${totalRed}) hue-rotate(${-50 * totalRed}deg) saturate(${1 + 4 * totalRed}) contrast(${1 + 0.5 * totalRed})`
-    : coldLevel > 0
-    ? `drop-shadow(0 4px 10px rgba(100, 150, 255, 0.3)) saturate(${1 - coldLevel * 0.4}) hue-rotate(${20 * coldLevel}deg) brightness(${1 - coldLevel * 0.1})`
-    : `drop-shadow(0 4px 10px rgba(0, 0, 0, 0.25))`
+  // Cảm giác ướt do mưa/bão
+  const conditionStr = weatherData?.condition?.toLowerCase() || ''
+  const isWet = conditionStr.includes('mưa') || conditionStr.includes('bão') || conditionStr.includes('rain') || conditionStr.includes('drizzle') || conditionStr.includes('thunderstorm')
+
+  // Kết hợp: đỏ từ altitude + đỏ từ nắng nóng
+  const totalRed = Math.min(1, redness + heatLevel)
+  const totalCold = Math.min(1, coldLevel + (isWet ? 0.6 : 0)) // Mưa thì auto lạnh 60%
+
+  let baseFilter = ''
+  if (totalCold > totalRed) {
+    // Lạnh / Ướt lấn át
+    baseFilter = `drop-shadow(0 4px 10px rgba(100, 150, 255, 0.4)) saturate(${1 - totalCold * 0.4}) hue-rotate(${30 * totalCold}deg) brightness(${1 - totalCold * 0.15})`
+  } else if (totalRed > 0) {
+    // Nóng lấn át
+    baseFilter = `drop-shadow(0 4px 10px rgba(255, 100, 50, 0.3)) sepia(${totalRed * 0.6}) hue-rotate(${-40 * totalRed}deg) saturate(${1 + 2 * totalRed}) contrast(${1 + 0.2 * totalRed})`
+  } else {
+    // Bình thường
+    baseFilter = `drop-shadow(0 4px 10px rgba(0, 0, 0, 0.25))`
+  }
+
+  // Nếu ướt thì thêm độ bóng (contrast) và tối màu lại do dính nước
+  const imageFilter = baseFilter + (isWet ? ' contrast(1.15) brightness(0.9) sepia(0.2) hue-rotate(190deg)' : '')
 
   const safeX = isNaN(position.x) ? 0 : position.x
   const safeY = isNaN(visualY) ? 0 : visualY

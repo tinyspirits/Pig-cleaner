@@ -140,6 +140,10 @@ function LightningFlash() {
         scale: randomBetween(0.7, 1.3),
         flip: Math.random() > 0.5 ? 1 : -1,
       })
+      
+      // Báo cho heo biết có sét đánh
+      window.dispatchEvent(new CustomEvent('lightning-strike'))
+      
       setTimeout(() => setFlashData(null), 150)
       // Flash lại ngẫu nhiên sau 4-15 giây
       setTimeout(flash, randomBetween(4000, 15000))

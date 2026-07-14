@@ -120,6 +120,11 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
           state.y = 0
           state.vy = 0
           updateDragState('landed')
+          
+          if (pigScaleRef.current >= 2.0) {
+            window.dispatchEvent(new CustomEvent('earthquake'))
+          }
+
           // Xóa trạng thái landed sau 500ms
           clearTimeout(landedTimeoutRef.current)
           landedTimeoutRef.current = setTimeout(() => {
@@ -213,12 +218,15 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
           }
         }
 
-        // Bão (windSpeed > 60) → thỉnh thoảng thổi heo lên trời
-        if (wx.isStorm && state.y === 0 && !state.isDragging) {
-          if (Math.random() < 0.008) { // ~0.8% mỗi frame = khoảng 15 giây trung bình
+        // Bão gió giật (windSpeed > 50) → thỉnh thoảng thổi bay heo lên trời
+        if (wx.isStorm && windSpeed > 50 && state.y === 0 && !state.isDragging) {
+          if (Math.random() < 0.008) { // ~0.8% mỗi frame
             const liftForce = -(windSpeed / mass) * (0.3 + Math.random() * 0.4)
-            state.vy = Math.max(liftForce, -25) // giới hạn tối đa
-            state.y = -1 // thoát khỏi đất để vật lý rơi kích hoạt
+            // Chỉ kích hoạt nếu lực đẩy đủ mạnh (tránh trường hợp heo chỉ nhích nhẹ rồi rơi tạo ra hiệu ứng thud liên tục)
+            if (liftForce < -15) {
+              state.vy = Math.max(liftForce, -35) // giới hạn tối đa
+              state.y = -1 // thoát khỏi đất để vật lý rơi kích hoạt
+            }
           }
         }
       }
@@ -348,6 +356,11 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
     if (stateRef.current.y >= 0 && stateRef.current.hasMoved) {
       stateRef.current.y = 0
       updateDragState('landed')
+      
+      if (pigScaleRef.current >= 2.0) {
+        window.dispatchEvent(new CustomEvent('earthquake'))
+      }
+
       clearTimeout(landedTimeoutRef.current)
       landedTimeoutRef.current = setTimeout(() => {
         updateDragState(null)
