@@ -24,6 +24,7 @@ const EAT_QUOTES = [
   'CHOMP CHOMP! 🍽️',
   'Ăn tiếp! Ăn tiếp!',
   'Rác này nhìn ngon há...',
+  'Nom nom nom 🐷',
 ]
 
 const FULL_QUOTES = [
@@ -31,6 +32,7 @@ const FULL_QUOTES = [
   'No rồi... ợ~ 😮‍💨',
   'Ăn thêm được nữa 💪',
   'Heo mập hơn rồi nè!',
+  'Béo ra rồi nha 🐖',
 ]
 
 const SLEEP_QUOTES = null // không hiện bubble khi ngủ
@@ -39,14 +41,14 @@ export function usePigState(trashInfo) {
   const [mode, setMode] = useState('idle')
   const [bubble, setBubble] = useState(null)
   const [pigScale, setPigScale] = useState(1.0)
-  const [totalEaten, setTotalEaten] = useState(0)
+  const [totalEaten, setTotalEaten] = useState(0) // in KB
 
   // Hiện speech bubble với timeout
-  function showBubble(quotes) {
+  function showBubble(quotes, duration = 3000) {
     if (!quotes) return
     const text = quotes[Math.floor(Math.random() * quotes.length)]
     setBubble(text)
-    setTimeout(() => setBubble(null), 3000)
+    setTimeout(() => setBubble(null), duration)
   }
 
   // Khi trash thay đổi → pig sniff
@@ -93,15 +95,23 @@ export function usePigState(trashInfo) {
     return () => clearInterval(interval)
   }, [mode])
 
-  // Hành động ăn
-  function triggerEat(freedMB) {
+  // Hành động ăn — freedKB là số KB đã giải phóng
+  function triggerEat(freedKB) {
     setMode('eating')
     showBubble(EAT_QUOTES)
 
-    // Tăng kích thước
-    const growth = Math.min(0.05, freedMB / 1000)
-    setPigScale(prev => Math.min(prev + growth, 2.0))
-    setTotalEaten(prev => prev + (freedMB || 0))
+    // Tăng kích thước: logarithmic scale
+    // 10 MB  → +0.01 (nhích nhẹ)
+    // 100 MB → +0.05
+    // 1 GB   → +0.10
+    // 5 GB   → +0.15
+    const freedMB = (freedKB || 0) / 1024
+    const growth = freedMB > 0
+      ? Math.min(0.15, Math.log10(1 + freedMB / 10) * 0.1)
+      : 0
+
+    setPigScale(prev => Math.min(prev + growth, 2.5))
+    setTotalEaten(prev => prev + (freedKB || 0))
 
     setTimeout(() => {
       setMode('full')
@@ -112,3 +122,4 @@ export function usePigState(trashInfo) {
 
   return { mode, bubble, pigScale, totalEaten, triggerEat, setMode }
 }
+

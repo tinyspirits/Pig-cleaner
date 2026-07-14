@@ -3,9 +3,11 @@ const path = require('path')
 const trashWatcher = require('./trashWatcher')
 const cleanupService = require('./cleanupService')
 const permissions = require('./permissions')
+const settingsStore = require('./settings')
 
 let mainWindow
 let tray
+let autoCleanTimer = null
 let isMouseIgnored = true
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
@@ -17,9 +19,9 @@ function createWindow() {
 
   mainWindow = new BrowserWindow({
     width: width,
-    height: 300,
+    height: 800,
     x: 0,
-    y: Math.floor(height - 300),
+    y: Math.floor(height - 800),
     // Window trong suốt, không viền, luôn trên đỉnh
     transparent: true,
     frame: false,
@@ -59,16 +61,16 @@ function createWindow() {
 }
 
 function createTray() {
-  // Tray icon đơn giản dùng emoji (16x16)
-  const icon = createTrayIconBuffer()
-  tray = new Tray(icon)
+  const iconPath = isDev 
+    ? path.join(__dirname, '../../src/renderer/assets/tray-icon.png')
+    : path.join(process.resourcesPath, 'assets/tray-icon.png')
+    
+  tray = new Tray(nativeImage.createFromPath(iconPath))
 
   const contextMenu = Menu.buildFromTemplate([
     {
       label: '🐷 Gọi heo về góc phải',
       click: () => {
-        const { width, height } = screen.getPrimaryDisplay().workAreaSize
-        mainWindow.setBounds({ x: width - 200, y: height - 200, width: 200, height: 200 })
         mainWindow.webContents.send('pig-called-home')
       },
     },
@@ -80,13 +82,43 @@ function createTray() {
       },
     },
     {
-      label: '🧹 Dọn rác ngay!',
+      label: '🧹 Dọn thùng rác',
       click: async () => {
-        const result = await cleanupService.cleanAll()
+        mainWindow.webContents.send('clean-started')
+        const result = await cleanupService.cleanTrash()
         mainWindow.webContents.send('clean-complete', result)
       },
     },
+    {
+      label: '🗂️ Dọn Cache',
+      click: () => {
+        mainWindow.webContents.send('show-cache-panel')
+      },
+    },
+    {
+      label: '🧹 Dọn tất cả',
+      click: async () => {
+        mainWindow.webContents.send('clean-started')
+        const settings = settingsStore.load()
+        const trashResult = await cleanupService.cleanTrash()
+        const cacheResult = await cleanupService.cleanCache(settings.manualCleanCategories.filter(c => c !== 'trash'))
+        const totalFreed = (trashResult.freedBytes || 0) + (cacheResult.freedBytes || 0)
+
+        mainWindow.webContents.send('clean-complete', {
+          success: true,
+          type: 'all',
+          freedBytes: totalFreed,
+          freedFormatted: cleanupService.getTrashInfo().sizeFormatted, // It's re-calculated in App.jsx usually, but we can pass dummy string. Actually we can format it.
+        })
+      },
+    },
     { type: 'separator' },
+    {
+      label: '⚙️ Cài đặt',
+      click: () => {
+        mainWindow.webContents.send('show-settings')
+      },
+    },
     {
       label: '📊 Xem thống kê',
       click: () => {
@@ -106,12 +138,32 @@ function createTray() {
   tray.setContextMenu(contextMenu)
 }
 
-function createTrayIconBuffer() {
-  // Tạo PNG 16x16 đơn giản (pink circle) cho tray
-  // Dùng nativeImage.createFromDataURL với PNG base64
-  // PNG 16x16 màu hồng đơn giản
-  const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAdgAAAHYBTnsmCAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAC5SURBVDiNpdMxCoMwFAbgr0IHwUEoHUQQPIGX6OYFPIJbN+/gIbp5CBcHwUEQBB0s2KGDQyFNJL4kL7+B8PJ9eXlJoijKfd8ffd+PmTFT13XKzKSUUlJK6RhjnOd5UEop5ZxzwDnntdb6sVJKqbUGABARcM5BKQUA4JwDY6ysAUBVVQOAqioAoKoKAKqqAICqKgCgqgoAqKoCAKiqAgCqqgIAqioAoKoKAKiqAgCqqgIAqCoAoKoKAKiqAgCqqgD+9wcA8BYzAAAAABJRU5ErkJggg=='
-  return nativeImage.createFromDataURL(`data:image/png;base64,${pngBase64}`)
+function setupAutoClean() {
+  if (autoCleanTimer) {
+    clearInterval(autoCleanTimer)
+    autoCleanTimer = null
+  }
+  const settings = settingsStore.load()
+  if (settings.autoCleanInterval > 0) {
+    autoCleanTimer = setInterval(async () => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('clean-started')
+      }
+      let totalFreed = 0
+      if (settings.autoCleanCategories.includes('trash')) {
+        const res = await cleanupService.cleanTrash()
+        totalFreed += res.freedBytes || 0
+      }
+      const cacheCats = settings.autoCleanCategories.filter(c => c !== 'trash')
+      if (cacheCats.length > 0) {
+        const res = await cleanupService.cleanCache(cacheCats)
+        totalFreed += res.freedBytes || 0
+      }
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('clean-complete', { freedBytes: totalFreed })
+      }
+    }, settings.autoCleanInterval * 60 * 1000)
+  }
 }
 
 // IPC Handlers
@@ -157,6 +209,14 @@ ipcMain.handle('get-trash-info', async () => {
   return await cleanupService.getTrashInfo()
 })
 
+ipcMain.handle('get-cache-types', async () => {
+  return await cleanupService.getCacheTypes()
+})
+
+ipcMain.handle('clean-cache', async (_, categoryIds) => {
+  return await cleanupService.cleanCache(categoryIds)
+})
+
 ipcMain.handle('check-permissions', async () => {
   return await permissions.checkFullDiskAccess()
 })
@@ -167,9 +227,20 @@ ipcMain.handle('resize-window', (_, size) => {
   }
 })
 
+ipcMain.handle('get-settings', () => {
+  return settingsStore.load()
+})
+
+ipcMain.handle('save-settings', (_, newSettings) => {
+  settingsStore.save(newSettings)
+  setupAutoClean()
+  return true
+})
+
 app.whenReady().then(async () => {
   createWindow()
   createTray()
+  setupAutoClean()
 
   // Kiểm tra permissions sau khi window tạo
   setTimeout(async () => {

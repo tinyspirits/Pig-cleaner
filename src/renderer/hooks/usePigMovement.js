@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 
 const isElectron = typeof window !== 'undefined' && window.pigAPI
 
-export function usePigMovement(mode) {
+export function usePigMovement(mode, isPanelOpen = false) {
   // position.y = 0 means on the floor (bottom of screen). Negative y means in the air.
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [screenSize, setScreenSize] = useState({ width: 800, height: 600 })
@@ -44,6 +44,20 @@ export function usePigMovement(mode) {
       setPosition({ x: startX, y: 0 })
     }
     init()
+
+    if (isElectron) {
+      const unsub = window.pigAPI.onPigCalledHome(() => {
+        setScreenSize(prev => {
+          const newX = prev.width - 150 - 20 // 20px padding
+          stateRef.current.x = newX
+          stateRef.current.y = 0
+          stateRef.current.vy = 0
+          setPosition({ x: newX, y: 0 })
+          return prev
+        })
+      })
+      return () => unsub()
+    }
   }, [])
 
   // Vòng lặp vật lý và di chuyển (Physics loop)
@@ -124,10 +138,10 @@ export function usePigMovement(mode) {
   }, [])
 
   const handleMouseLeave = useCallback(() => {
-    if (!stateRef.current.isDragging && isElectron) {
+    if (!stateRef.current.isDragging && !isPanelOpen && isElectron) {
       window.pigAPI.setIgnoreMouse(true)
     }
-  }, [])
+  }, [isPanelOpen])
 
   const handleDragStart = useCallback((e) => {
     stateRef.current.isDragging = true
@@ -166,7 +180,7 @@ export function usePigMovement(mode) {
     setIsDragging(false)
     stateRef.current.vy = 0 // Reset vận tốc rơi khi thả ra
     
-    if (isElectron) window.pigAPI.setIgnoreMouse(true)
+    if (isElectron && !isPanelOpen) window.pigAPI.setIgnoreMouse(true)
 
     // Nếu thả heo ngay trên mặt đất (y >= 0), vòng lặp vật lý sẽ không bao giờ
     // đi qua bước "falling" nên "landed" sẽ không tự kích hoạt -> heo nhảy thẳng

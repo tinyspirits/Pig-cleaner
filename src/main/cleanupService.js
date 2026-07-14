@@ -49,6 +49,175 @@ async function getTrashInfo() {
   }
 }
 
+// ─── Cache categories ─────────────────────────────────────────────────────────
+const home = os.homedir()
+
+const CACHE_CATEGORIES = [
+  {
+    id: 'system',
+    label: '🖥️ System Cache',
+    paths: [
+      path.join(home, 'Library', 'Caches'),
+    ],
+  },
+  {
+    id: 'npm',
+    label: '📦 npm Cache',
+    paths: [
+      path.join(home, '.npm', '_cacache'),
+      path.join(home, 'Library', 'Caches', 'npm'),
+    ],
+  },
+  {
+    id: 'yarn',
+    label: '🧶 Yarn Cache',
+    paths: [
+      path.join(home, 'Library', 'Caches', 'yarn'),
+      path.join(home, '.yarn', 'cache'),
+    ],
+  },
+  {
+    id: 'pip',
+    label: '🐍 pip / Python Cache',
+    paths: [
+      path.join(home, 'Library', 'Caches', 'pip'),
+      path.join(home, '.cache', 'pip'),
+    ],
+  },
+  {
+    id: 'brew',
+    label: '🍺 Homebrew Cache',
+    paths: [
+      path.join(home, 'Library', 'Caches', 'Homebrew'),
+      '/Library/Caches/Homebrew',
+    ],
+  },
+  {
+    id: 'xcode',
+    label: '🔨 Xcode DerivedData',
+    paths: [
+      path.join(home, 'Library', 'Developer', 'Xcode', 'DerivedData'),
+      path.join(home, 'Library', 'Caches', 'com.apple.dt.Xcode'),
+    ],
+  },
+  {
+    id: 'vscode',
+    label: '💻 VS Code Cache',
+    paths: [
+      path.join(home, 'Library', 'Application Support', 'Code', 'Cache'),
+      path.join(home, 'Library', 'Application Support', 'Code', 'CachedData'),
+      path.join(home, 'Library', 'Application Support', 'Code', 'CachedExtensions'),
+    ],
+  },
+  {
+    id: 'gradle',
+    label: '🐘 Gradle Cache',
+    paths: [
+      path.join(home, '.gradle', 'caches'),
+    ],
+  },
+  {
+    id: 'docker',
+    label: '🐳 Docker Cache',
+    paths: [
+      path.join(home, 'Library', 'Containers', 'com.docker.docker', 'Data', 'vms'),
+    ],
+  },
+  {
+    id: 'browser',
+    label: '🌐 Browser Cache',
+    paths: [
+      path.join(home, 'Library', 'Caches', 'Google', 'Chrome'),
+      path.join(home, 'Library', 'Containers', 'com.apple.Safari', 'Data', 'Library', 'Caches', 'com.apple.Safari'),
+      path.join(home, 'Library', 'Caches', 'Firefox'),
+    ],
+  },
+  {
+    id: 'temp',
+    label: '🗂️ Temp Files',
+    paths: [
+      os.tmpdir(),
+    ],
+  },
+]
+
+async function getCacheTypes() {
+  const result = []
+  for (const cat of CACHE_CATEGORIES) {
+    let totalSize = 0
+    let totalCount = 0
+    for (const p of cat.paths) {
+      try {
+        if (fs.existsSync(p)) {
+          const info = getFolderSize(p)
+          totalSize += info.size
+          totalCount += info.count
+        }
+      } catch { /* skip */ }
+    }
+    result.push({
+      id: cat.id,
+      label: cat.label,
+      sizeBytes: totalSize,
+      sizeFormatted: formatBytes(totalSize),
+      fileCount: totalCount,
+      exists: totalSize > 0,
+    })
+  }
+  return result
+}
+
+async function cleanCache(categoryIds) {
+  const ids = categoryIds || CACHE_CATEGORIES.map(c => c.id)
+  let totalFreed = 0
+  const details = []
+
+  for (const id of ids) {
+    const cat = CACHE_CATEGORIES.find(c => c.id === id)
+    if (!cat) continue
+
+    let freed = 0
+    for (const p of cat.paths) {
+      try {
+        if (!fs.existsSync(p)) continue
+        if (id === 'temp') {
+          // Temp: chỉ xoá file cũ hơn 7 ngày
+          const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000
+          const items = fs.readdirSync(p, { withFileTypes: true })
+          for (const item of items) {
+            if (item.name.startsWith('.')) continue
+            const itemPath = path.join(p, item.name)
+            try {
+              const stat = fs.statSync(itemPath)
+              if (stat.mtimeMs < cutoff) {
+                const size = item.isDirectory() ? getFolderSize(itemPath).size : stat.size
+                fs.rmSync(itemPath, { recursive: true, force: true })
+                freed += size
+              }
+            } catch { /* skip */ }
+          }
+        } else {
+          const size = getFolderSize(p).size
+          fs.rmSync(p, { recursive: true, force: true })
+          freed += size
+        }
+      } catch { /* skip */ }
+    }
+
+    totalFreed += freed
+    details.push({ id: cat.id, label: cat.label, freedBytes: freed, freedFormatted: formatBytes(freed) })
+  }
+
+  return {
+    success: true,
+    type: 'cache',
+    freedBytes: totalFreed,
+    freedFormatted: formatBytes(totalFreed),
+    details,
+    message: `Đã dọn ${formatBytes(totalFreed)} cache!`,
+  }
+}
+
 async function cleanTrash() {
   const beforeInfo = await getTrashInfo()
   const before = beforeInfo.sizeBytes
@@ -92,49 +261,13 @@ async function cleanTrash() {
 }
 
 async function cleanTemp() {
-  const tempDirs = [
-    os.tmpdir(),
-    path.join(os.homedir(), 'Library', 'Caches'),
-  ]
-
-  const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000
-  const cutoff = Date.now() - SEVEN_DAYS
-  let totalFreed = 0
-  let errorCount = 0
-
-  for (const dir of tempDirs) {
-    try {
-      const items = fs.readdirSync(dir, { withFileTypes: true })
-      for (const item of items) {
-        if (item.name.startsWith('.')) continue
-        const itemPath = path.join(dir, item.name)
-        try {
-          const stat = fs.statSync(itemPath)
-          if (stat.mtimeMs < cutoff) {
-            const size = item.isDirectory() ? getFolderSize(itemPath).size : stat.size
-            fs.rmSync(itemPath, { recursive: true, force: true })
-            totalFreed += size
-          }
-        } catch {
-          errorCount++
-        }
-      }
-    } catch { /* skip */ }
-  }
-
-  return {
-    success: true,
-    type: 'temp',
-    freedBytes: totalFreed,
-    freedFormatted: formatBytes(totalFreed),
-    message: `Đã dọn ${formatBytes(totalFreed)} file tạm!`,
-  }
+  return await cleanCache(['temp'])
 }
 
 async function cleanAll() {
   const trashResult = await cleanTrash()
-  const tempResult = await cleanTemp()
-  const totalFreed = (trashResult.freedBytes || 0) + (tempResult.freedBytes || 0)
+  const cacheResult = await cleanCache()
+  const totalFreed = (trashResult.freedBytes || 0) + (cacheResult.freedBytes || 0)
 
   return {
     success: true,
@@ -142,9 +275,9 @@ async function cleanAll() {
     freedBytes: totalFreed,
     freedFormatted: formatBytes(totalFreed),
     trash: trashResult,
-    temp: tempResult,
+    cache: cacheResult,
     message: `Căng da bụng! Đã ăn ${formatBytes(totalFreed)} rác!`,
   }
 }
 
-module.exports = { getTrashInfo, cleanTrash, cleanTemp, cleanAll }
+module.exports = { getTrashInfo, cleanTrash, cleanTemp, cleanAll, getCacheTypes, cleanCache }

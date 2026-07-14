@@ -64,7 +64,7 @@ function useSprite(mode) {
 }
 
 // ─── PigPet ───────────────────────────────────────────────────────────────────
-export default function PigPet({ mode, bubble, pigScale, onDoubleClick }) {
+export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = false, onDoubleClick }) {
   const {
     position,
     facing,
@@ -75,7 +75,7 @@ export default function PigPet({ mode, bubble, pigScale, onDoubleClick }) {
     handleDragStart,
     handleDrag,
     handleDragEnd,
-  } = usePigMovement(mode)
+  } = usePigMovement(mode, isPanelOpen)
 
   const displayMode = dragState ? `drag_${dragState}` : mode
   const currentSprite = useSprite(displayMode)
