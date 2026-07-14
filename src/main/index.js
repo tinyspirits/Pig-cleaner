@@ -154,7 +154,11 @@ function createTray() {
     ? path.join(__dirname, '../../src/renderer/assets/tray-icon.png')
     : path.join(process.resourcesPath, 'assets/tray-icon.png')
 
-  tray = new Tray(nativeImage.createFromPath(iconPath))
+  let image = nativeImage.createFromPath(iconPath)
+  // Resize to standard macOS tray height (18px) and preserve aspect ratio
+  image = image.resize({ height: 18 })
+  
+  tray = new Tray(image)
   buildTrayMenu()
 }
 
