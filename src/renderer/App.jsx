@@ -129,15 +129,10 @@ function App() {
       }
     })
 
-    const unsubClean = window.pigAPI.onCleanComplete((result) => {
-      setIsCleaning(false)
-      if (result.freedBytes > 0) {
-        triggerEat(result.freedBytes / 1024) // convert to KB
-      } else {
-        forceBubble('Ủa, không có rác à? 🐷')
-        setTimeout(() => setMode('idle'), 1500)
-      }
-    })
+    // Lưu ý: onCleanComplete chỉ được đăng ký MỘT lần, ở dưới (gần
+    // onCleanStarted) — trước đây bị đăng ký 2 lần ở đây và ở dưới, khiến
+    // mỗi lần dọn rác xong, triggerEat() và các bubble message chạy 2 lần
+    // liên tiếp (vd: "Đã ăn tổng" bị cộng dồn gấp đôi số byte thật đã dọn).
 
     // Lắng nghe lệnh gọi heo về
     const unsubHome = window.pigAPI.onPigCalledHome(() => {
@@ -181,11 +176,18 @@ function App() {
       setIsCleaning(false)
       if (data.freedBytes > 0) {
         triggerEat(data.freedBytes / 1024)
-        // Lạc quan set trash về 0 vì Finder có thể xóa chậm ngầm
-        setTrashInfo({ sizeBytes: 0, sizeFormatted: '0 B', fileCount: 0 })
-      } else {
-        forceBubble('Đã dọn xong!')
+      }
+      // cleanTrash() giờ đã tự chờ + xác minh thật trước khi trả kết quả,
+      // nên gọi lại getTrashInfo() ở đây là lấy số liệu chính xác, không
+      // còn cần "lạc quan" set cứng về 0 nữa (cách cũ khiến Thống Kê hiện
+      // sai 0 rồi lại nhảy về số cũ khi mở lại panel).
+      const newInfo = await window.pigAPI.getTrashInfo()
+      setTrashInfo(newInfo)
+      if (data.freedBytes <= 0) {
+        forceBubble('Ủa, không có rác à? 🐷')
         setTimeout(() => setMode('idle'), 1500)
+      } else if (data.remainingBytes > 0) {
+        forceBubble(`Còn ${newInfo.sizeFormatted} chưa dọn được, có file đang mở à? 🤔`)
       }
     })
 
@@ -195,7 +197,6 @@ function App() {
     return () => {
       unsubTrash?.()
       unsubTrashManual?.()
-      unsubClean?.()
       unsubHome?.()
       unsubPerm?.()
       unsubStats?.()
@@ -259,8 +260,14 @@ function App() {
         setIsCleaning(false)
         if (result.freedBytes > 0) {
           triggerEat(result.freedBytes / 1024) // convert to KB
-          // Lạc quan set trash về 0
-          setTrashInfo({ sizeBytes: 0, sizeFormatted: '0 B', fileCount: 0 })
+          // cleanTrash() (bên trong cleanAll) giờ đã tự chờ + xác minh thật,
+          // nên lấy số liệu thật thay vì set cứng về 0.
+          const newInfo = await window.pigAPI.getTrashInfo()
+          setTrashInfo(newInfo)
+          const remaining = result.trash?.remainingBytes || 0
+          if (remaining > 0) {
+            forceBubble(`Còn ${newInfo.sizeFormatted} chưa dọn được, có file đang mở à? 🤔`)
+          }
         } else {
           forceBubble('Đã dọn xong!')
           setTimeout(() => setMode('idle'), 1500)
