@@ -125,13 +125,33 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
   const heatLevel = temp !== null && temp > 26 ? Math.min(1, (temp - 26) / 14) : 0  // 26°C→0, 40°C→1
   const coldLevel = temp !== null && temp < 22 ? Math.min(1, (22 - temp) / 14) : 0  // 22°C→0, 8°C→1
 
-  // Cảm giác ướt do mưa/bão
+  // Cảm giác ướt do mưa/bão tăng dần/giảm dần
+  const [wetness, setWetness] = useState(0)
   const conditionStr = weatherData?.condition?.toLowerCase() || ''
-  const isWet = conditionStr.includes('mưa') || conditionStr.includes('bão') || conditionStr.includes('rain') || conditionStr.includes('drizzle') || conditionStr.includes('thunderstorm')
+  const isWetWeather = conditionStr.includes('mưa') || conditionStr.includes('bão') || conditionStr.includes('rain') || conditionStr.includes('drizzle') || conditionStr.includes('thunderstorm')
+
+  useEffect(() => {
+    const isSunny = conditionStr.includes('nắng') || conditionStr.includes('quang đãng') || conditionStr.includes('clear') || conditionStr.includes('sun')
+    const isCloudy = conditionStr.includes('mây') || conditionStr.includes('âm u') || conditionStr.includes('cloud') || conditionStr.includes('overcast')
+    
+    // Nắng: 20s khô, Bình thường: 40s khô, Mây/Âm u: 80s khô
+    const dryRate = isSunny ? 0.05 : (isCloudy ? 0.0125 : 0.025)
+
+    const interval = setInterval(() => {
+      setWetness(prev => {
+        if (isWetWeather) {
+          return Math.min(1, prev + 0.05) // Ướt dần: 20 giây để đạt 100%
+        } else {
+          return Math.max(0, prev - dryRate)
+        }
+      })
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [isWetWeather, conditionStr])
 
   // Kết hợp: đỏ từ altitude + đỏ từ nắng nóng
   const totalRed = Math.min(1, redness + heatLevel)
-  const totalCold = Math.min(1, coldLevel + (isWet ? 0.6 : 0)) // Mưa thì auto lạnh 60%
+  const totalCold = Math.min(1, coldLevel + wetness * 0.6) // Mưa càng lâu càng lạnh (tối đa +60%)
 
   let baseFilter = ''
   if (totalCold > totalRed) {
@@ -146,7 +166,7 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
   }
 
   // Nếu ướt thì thêm độ bóng (contrast) và tối màu lại do dính nước
-  const imageFilter = baseFilter + (isWet ? ' contrast(1.15) brightness(0.9) sepia(0.2) hue-rotate(190deg)' : '')
+  const imageFilter = baseFilter + (wetness > 0 ? ` contrast(${1 + 0.15 * wetness}) brightness(${1 - 0.1 * wetness}) sepia(${0.2 * wetness}) hue-rotate(${190 * wetness}deg)` : '')
 
   const safeX = isNaN(position.x) ? 0 : position.x
   const safeY = isNaN(visualY) ? 0 : visualY
@@ -217,7 +237,11 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
 
       {/* ZZZ khi ngủ */}
       {mode === 'sleeping' && !isDragging && !dragState && (
-        <div className="zzz">z z z</div>
+        <div className="zzz-container">
+          <div className="zzz z1">z</div>
+          <div className="zzz z2">Z</div>
+          <div className="zzz z3">Z</div>
+        </div>
       )}
 
       {/* Sprite image */}

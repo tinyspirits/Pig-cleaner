@@ -255,31 +255,44 @@ async function cleanCache(categoryIds) {
 }
 
 async function emptyTrashViaFS() {
-  // Xoá trực tiếp từng item trong ~/.Trash bằng Node fs — nhanh, kết quả
-  // biết ngay lập tức, không phụ thuộc vào Finder/AppleScript. AppleScript
-  // 'empty trash' trên các bản macOS gần đây (vd Tahoe/26) có bug đã biết:
-  // đôi khi "báo xong" nhưng Finder vẫn chưa xoá thật (chạy ngầm, bất đồng
-  // bộ), hoặc thậm chí bị treo (hang) trong 1 số trường hợp. Xoá trực tiếp
-  // qua fs tránh hoàn toàn 2 vấn đề đó.
-  // Cần Full Disk Access; nếu không có, readdir sẽ throw EPERM và
-  // cleanTrash() sẽ tự chuyển sang phương án AppleScript bên dưới.
-  const items = await fs.promises.readdir(TRASH_PATH, { withFileTypes: true })
   let freed = 0
   let remaining = 0
-  for (const item of items) {
-    if (item.name.startsWith('.')) continue
-    const itemPath = path.join(TRASH_PATH, item.name)
-    let itemSize = 0
+  const uid = os.userInfo().uid.toString()
+  
+  const trashPaths = [
+    path.join(os.homedir(), '.Trash'),
+    path.join(os.homedir(), 'Library/Mobile Documents/com~apple~CloudDocs/.Trash')
+  ]
+  
+  try {
+    const volumes = await fs.promises.readdir('/Volumes')
+    for (const vol of volumes) {
+      if (vol === 'Macintosh HD' || vol.startsWith('.')) continue
+      trashPaths.push(path.join('/Volumes', vol, '.Trashes', uid))
+    }
+  } catch (err) { }
+
+  for (const tPath of trashPaths) {
     try {
-      const stat = await fs.promises.stat(itemPath)
-      itemSize = stat.isDirectory() ? (await getFolderSize(itemPath)).size : stat.size
-    } catch { /* không đọc được size, coi như 0 */ }
-    try {
-      await fs.promises.rm(itemPath, { recursive: true, force: true })
-      freed += itemSize
+      const items = await fs.promises.readdir(tPath, { withFileTypes: true })
+      for (const item of items) {
+        if (item.name === '.DS_Store') continue
+        const itemPath = path.join(tPath, item.name)
+        let itemSize = 0
+        try {
+          const stat = await fs.promises.stat(itemPath)
+          itemSize = stat.isDirectory() ? (await getFolderSize(itemPath)).size : stat.size
+        } catch { /* ignore */ }
+        
+        try {
+          await fs.promises.rm(itemPath, { recursive: true, force: true })
+          freed += itemSize
+        } catch {
+          remaining += itemSize
+        }
+      }
     } catch {
-      // File có thể đang mở/bị khoá — bỏ qua, tính vào phần "còn lại"
-      remaining += itemSize
+      // Ignore if trash folder doesn't exist or no permission
     }
   }
   return { freed, remaining }
@@ -326,17 +339,29 @@ async function cleanTrash() {
 
   // Cách 2 (dự phòng): AppleScript — dọn sạch toàn bộ Trash trên mọi ổ đĩa.
   try {
-    await execAsync(`osascript -e 'tell application "Finder" to empty trash'`, { timeout: 8000 })
+    await execAsync(`osascript -e 'tell application "Finder" to empty trash'`, { timeout: 60000 })
 
     let finalRemaining = globalRemaining
-    for (let i = 0; i < 8; i++) {
-      await new Promise(resolve => setTimeout(resolve, 400))
-      finalRemaining = (await getTrashInfo()).sizeBytes
-      if (finalRemaining === 0 || finalRemaining < globalRemaining) break
+    let unchangedCount = 0
+    for (let i = 0; i < 60; i++) { // Wait up to 30 seconds
+      await new Promise(resolve => setTimeout(resolve, 500))
+      const currentRemaining = (await getTrashInfo()).sizeBytes
+      
+      if (currentRemaining === 0) {
+        finalRemaining = 0
+        break
+      }
+      
+      if (currentRemaining === finalRemaining) {
+        unchangedCount++
+        // If it hasn't changed for 10 iterations (5 seconds) and is less than before, we assume it's done.
+        // Or if it hasn't changed for 20 iterations (10 seconds) overall.
+        if (unchangedCount > 20) break
+      } else {
+        unchangedCount = 0
+        finalRemaining = currentRemaining
+      }
     }
-    
-    // Kiểm tra lại chắc chắn
-    finalRemaining = (await getTrashInfo()).sizeBytes
 
     const appleScriptFreed = Math.max(0, globalRemaining - finalRemaining)
     const totalFreed = fsFreed + appleScriptFreed

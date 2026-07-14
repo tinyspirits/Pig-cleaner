@@ -289,6 +289,7 @@ function App() {
 
         // B2: Đổi sang mode eating và tiến hành dọn
         setMode('eating')
+        forceBubble(null)
         
         // Ensure eating animation shows for at least 3 seconds
         const startTime = Date.now()
