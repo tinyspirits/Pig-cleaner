@@ -64,7 +64,7 @@ function useSprite(mode) {
 }
 
 // ─── PigPet ───────────────────────────────────────────────────────────────────
-export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = false, onDoubleClick }) {
+export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = false, isCleaning = false, onDoubleClick }) {
   const {
     position,
     facing,
@@ -75,7 +75,14 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
     handleDragStart,
     handleDrag,
     handleDragEnd,
+    wasDragged
   } = usePigMovement(mode, isPanelOpen)
+
+  const handleClick = (e) => {
+    if (!wasDragged()) {
+      onDoubleClick?.(e) // Call the same handler, but it's now a single click
+    }
+  }
 
   const displayMode = dragState ? `drag_${dragState}` : mode
   const currentSprite = useSprite(displayMode)
@@ -95,13 +102,35 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
       onMouseDown={handleDragStart}
       onMouseMove={handleDrag}
       onMouseUp={handleDragEnd}
-      onDoubleClick={onDoubleClick}
-      title="Nhấp đôi để dọn rác!"
+      onClick={handleClick}
+      title="Nhấn vào heo để dọn rác!"
     >
       {/* Speech Bubble */}
       {bubble && (
         <div className="speech-bubble" style={{ transform: `scaleX(${facing})` }}>
           {bubble}
+        </div>
+      )}
+
+      {/* Cleaning indicator */}
+      {isCleaning && (
+        <div style={{
+          position: 'absolute',
+          top: -30,
+          left: '50%',
+          transform: `translateX(-50%) scaleX(${facing})`,
+          background: 'rgba(255,107,157,0.9)',
+          color: 'white',
+          padding: '6px 16px',
+          borderRadius: 20,
+          fontSize: 13,
+          fontFamily: '-apple-system, sans-serif',
+          fontWeight: 600,
+          pointerEvents: 'none',
+          backdropFilter: 'blur(10px)',
+          whiteSpace: 'nowrap'
+        }}>
+          Đang ăn rác... 🐽
         </div>
       )}
 

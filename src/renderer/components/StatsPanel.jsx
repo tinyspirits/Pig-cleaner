@@ -10,8 +10,13 @@ function formatBytes(bytes) {
 
 export default function StatsPanel({ trashInfo, totalEaten, pigScale, onClose }) {
   return (
-    <div className="stats-panel">
-      <button className="close-btn" onClick={onClose}>✕</button>
+    <>
+      <div 
+        style={{ position: 'fixed', inset: 0, zIndex: 199, pointerEvents: 'all' }} 
+        onClick={onClose}
+      />
+      <div className="stats-panel" style={{ zIndex: 200 }}>
+        <button className="close-btn" onClick={onClose}>✕</button>
       <h3>🐷 Heo Thống Kê</h3>
       <div className="stats-row">
         <span>🗑️ Rác hiện tại</span>
@@ -30,8 +35,9 @@ export default function StatsPanel({ trashInfo, totalEaten, pigScale, onClose })
         <strong>{Math.round((pigScale - 1) * 100 + 100)}%</strong>
       </div>
       <div style={{ marginTop: 10, fontSize: 11, color: '#999', textAlign: 'center' }}>
-        Nhấp đôi vào heo để ăn rác! 🐽
+        Nhấp vào heo để ăn rác! 🐽
       </div>
-    </div>
+      </div>
+    </>
   )
 }

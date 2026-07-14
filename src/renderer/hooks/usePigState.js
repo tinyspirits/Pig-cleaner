@@ -117,9 +117,14 @@ export function usePigState(trashInfo) {
       setMode('full')
       showBubble(FULL_QUOTES)
       setTimeout(() => setMode('idle'), 4000)
-    }, 2000)
+    }, 5000)
   }
 
-  return { mode, bubble, pigScale, totalEaten, triggerEat, setMode }
+  function forceBubble(text) {
+    setBubble(text)
+    setTimeout(() => setBubble(null), 4000)
+  }
+
+  return { mode, bubble, pigScale, totalEaten, triggerEat, setMode, forceBubble }
 }
 

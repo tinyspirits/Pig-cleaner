@@ -31,6 +31,10 @@ contextBridge.exposeInMainWorld('pigAPI', {
     ipcRenderer.on('trash-changed', (_, data) => callback(data))
     return () => ipcRenderer.removeAllListeners('trash-changed')
   },
+  onTrashCheckedManually: (callback) => {
+    ipcRenderer.on('trash-checked-manually', (_, data) => callback(data))
+    return () => ipcRenderer.removeAllListeners('trash-checked-manually')
+  },
   onCleanComplete: (callback) => {
     ipcRenderer.on('clean-complete', (_, data) => callback(data))
     return () => ipcRenderer.removeAllListeners('clean-complete')

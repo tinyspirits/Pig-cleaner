@@ -78,7 +78,7 @@ function createTray() {
       label: '🗑️ Kiểm tra rác ngay',
       click: async () => {
         const info = await cleanupService.getTrashInfo()
-        mainWindow.webContents.send('trash-changed', info)
+        mainWindow.webContents.send('trash-checked-manually', info)
       },
     },
     {

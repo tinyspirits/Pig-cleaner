@@ -15,7 +15,7 @@ export default function App() {
   const [permissionWarning, setPermissionWarning] = useState(false)
   const [isCleaning, setIsCleaning] = useState(false)
 
-  const { mode, bubble, pigScale, totalEaten, triggerEat, setMode } = usePigState(trashInfo)
+  const { mode, bubble, pigScale, totalEaten, triggerEat, setMode, forceBubble } = usePigState(trashInfo)
   const isPanelOpen = showStats || showCache || showSettings || permissionWarning
 
   // Setup IPC listeners
@@ -26,16 +26,29 @@ export default function App() {
       return
     }
 
-    // Lắng nghe trash changes
+    // Lắng nghe trash changes (auto)
     const unsubTrash = window.pigAPI.onTrashChanged((info) => {
       setTrashInfo(info)
     })
 
-    // Lắng nghe clean complete
+    // Lắng nghe trash check (manual)
+    const unsubTrashManual = window.pigAPI.onTrashCheckedManually((info) => {
+      setTrashInfo(info)
+      if (info.sizeBytes > 0) {
+        setMode('sniffing')
+        forceBubble(`Thùng rác đang có ${info.sizeFormatted} rác! 🗑️`)
+      } else {
+        forceBubble(`Thùng rác sạch bóng! ✨`)
+      }
+    })
+
     const unsubClean = window.pigAPI.onCleanComplete((result) => {
       setIsCleaning(false)
       if (result.freedBytes > 0) {
         triggerEat(result.freedBytes / 1024) // convert to KB
+      } else {
+        forceBubble('Ủa, không có rác à? 🐷')
+        setTimeout(() => setMode('idle'), 1500)
       }
     })
 
@@ -75,6 +88,7 @@ export default function App() {
 
     return () => {
       unsubTrash?.()
+      unsubTrashManual?.()
       unsubClean?.()
       unsubHome?.()
       unsubPerm?.()
@@ -111,6 +125,9 @@ export default function App() {
           // Cập nhật trash info sau khi dọn
           const newInfo = await window.pigAPI.getTrashInfo()
           setTrashInfo(newInfo)
+        } else {
+          forceBubble('Trắng bóc rồi! Không có gì để dọn ✨')
+          setTimeout(() => setMode('idle'), 1500)
         }
       } catch (err) {
         console.error('Clean failed:', err)
@@ -169,29 +186,9 @@ export default function App() {
         bubble={bubble}
         pigScale={pigScale}
         isPanelOpen={isPanelOpen}
+        isCleaning={isCleaning}
         onDoubleClick={handlePigDoubleClick}
       />
-
-      {/* Cleaning indicator */}
-      {isCleaning && (
-        <div style={{
-          position: 'fixed',
-          bottom: 110,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: 'rgba(255,107,157,0.9)',
-          color: 'white',
-          padding: '6px 16px',
-          borderRadius: 20,
-          fontSize: 13,
-          fontFamily: '-apple-system, sans-serif',
-          fontWeight: 600,
-          pointerEvents: 'none',
-          backdropFilter: 'blur(10px)',
-        }}>
-          Đang ăn rác... 🐽
-        </div>
-      )}
     </div>
   )
 }
