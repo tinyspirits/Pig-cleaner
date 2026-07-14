@@ -11,6 +11,7 @@ import walk2 from '../assets/sprites/walk2.png'
 import walk3 from '../assets/sprites/walk3.png'
 import walk4 from '../assets/sprites/walk4.png'
 import walk5 from '../assets/sprites/walk5.png'
+import walk6 from '../assets/sprites/walk6.png'
 import sniff from '../assets/sprites/sniff.png'
 import happy1 from '../assets/sprites/happy.png'
 import happy2 from '../assets/sprites/happy2.png'
@@ -26,7 +27,7 @@ import drag3 from '../assets/sprites/drag3.png'
 // fps: frames per second, frames: array of images, loop: boolean
 const ANIMATIONS = {
   idle: { frames: [idle1, idle1, idle1, wink, idle2, idle1, idle3], fps: 3, loop: true },
-  walking: { frames: [walk1, walk2, walk3], fps: 8, loop: true },
+  walking: { frames: [walk3, walk4, walk5, walk1, walk6, walk2], fps: 10, loop: true },
   sniffing: { frames: [sniff, idle1], fps: 2, loop: true },
   eating: { frames: [happy1, happy2, happy1, happy2], fps: 6, loop: true },
   full: { frames: [happy2, happy1], fps: 2, loop: true },
