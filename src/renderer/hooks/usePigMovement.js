@@ -2,16 +2,17 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 
 const isElectron = typeof window !== 'undefined' && window.pigAPI
 
-export function usePigMovement(mode, isPanelOpen = false) {
+export function usePigMovement(mode, isPanelOpen = false, windRef = null) {
   // position.y = 0 means on the floor (bottom of screen). Negative y means in the air.
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [screenSize, setScreenSize] = useState({ width: 800, height: 600 })
   const [isDragging, setIsDragging] = useState(false)
   const [facing, setFacing] = useState(1) // 1 = right, -1 = left
   
-  // New state to manage drag stages: 'held', 'falling', 'landed', null
   const [dragState, setDragState] = useState(null)
+  const [isWallHit, setIsWallHit] = useState(false)
   const dragStateRef = useRef(null)
+  const wallHitTimeoutRef = useRef(null)
   const landedTimeoutRef = useRef(null)
 
   const updateDragState = useCallback((newState) => {
@@ -118,11 +119,21 @@ export function usePigMovement(mode, isPanelOpen = false) {
         // Chạm biên màn hình -> dội lại hoặc dừng
         if (state.x <= 0) {
           state.x = 0
+          if (Math.abs(state.vx) > 5 && !isWallHit) {
+            setIsWallHit(true)
+            clearTimeout(wallHitTimeoutRef.current)
+            wallHitTimeoutRef.current = setTimeout(() => setIsWallHit(false), 400)
+          }
           state.vx *= -0.5
           state.facing = 1
           setFacing(1)
         } else if (state.x >= screenSize.width - PIG_WIDTH) {
           state.x = screenSize.width - PIG_WIDTH
+          if (Math.abs(state.vx) > 5 && !isWallHit) {
+            setIsWallHit(true)
+            clearTimeout(wallHitTimeoutRef.current)
+            wallHitTimeoutRef.current = setTimeout(() => setIsWallHit(false), 400)
+          }
           state.vx *= -0.5
           state.facing = -1
           setFacing(-1)
@@ -149,6 +160,24 @@ export function usePigMovement(mode, isPanelOpen = false) {
       } else if (state.y === 0 && Math.abs(state.vx) < 0.1) {
         // Đang không đi bộ và đã dừng trượt
         state.vx = 0
+      }
+
+      // Xử lý hiệu ứng gió (wind lines) khi bay lên hoặc rơi xuống nhanh
+      if (windRef && windRef.current) {
+        if (!state.isDragging && Math.abs(state.vy) > 15) {
+          // Bay lên hoặc rơi xuống đủ nhanh
+          windRef.current.style.opacity = Math.min(1, Math.abs(state.vy) / 40)
+          
+          if (state.vy > 0) {
+            // Đang rơi xuống -> Lộn ngược tia gió để nó hướng lên trên
+            windRef.current.style.transform = 'rotate(180deg)'
+          } else {
+            // Bay lên
+            windRef.current.style.transform = 'none'
+          }
+        } else {
+          windRef.current.style.opacity = 0
+        }
       }
       
       // Cập nhật React state
@@ -282,6 +311,7 @@ export function usePigMovement(mode, isPanelOpen = false) {
     handleDragStart,
     handleDrag,
     handleDragEnd,
-    wasDragged: useCallback(() => stateRef.current.hasMoved, [])
+    wasDragged: useCallback(() => stateRef.current.hasMoved, []),
+    isWallHit
   }
 }

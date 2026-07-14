@@ -15,7 +15,7 @@ export default function App() {
   const [permissionWarning, setPermissionWarning] = useState(false)
   const [isCleaning, setIsCleaning] = useState(false)
 
-  const { mode, bubble, pigScale, totalEaten, cameraFollowsPig, triggerEat, setMode, forceBubble } = usePigState(trashInfo)
+  const { mode, bubble, pigScale, totalEaten, cameraFollowsPig, reloadSettings, triggerEat, setMode, forceBubble } = usePigState(trashInfo)
   const isPanelOpen = showStats || showCache || showSettings || permissionWarning
 
   // Setup IPC listeners
@@ -177,7 +177,10 @@ export default function App() {
 
       {/* Settings Panel */}
       {showSettings && (
-        <SettingsPanel onClose={() => setShowSettings(false)} />
+        <SettingsPanel onClose={() => {
+          setShowSettings(false)
+          reloadSettings()
+        }} />
       )}
 
       {/* Con Heo Chính */}

@@ -51,17 +51,18 @@ export function usePigState(trashInfo) {
   useEffect(() => { scaleRef.current = pigScale }, [pigScale])
   useEffect(() => { eatenRef.current = totalEaten }, [totalEaten])
 
+  const reloadSettings = async () => {
+    if (window.pigAPI) {
+      const s = await window.pigAPI.getSettings()
+      if (s.pigScale) setPigScale(s.pigScale)
+      if (s.totalEaten) setTotalEaten(s.totalEaten)
+      if (s.cameraFollowsPig !== undefined) setCameraFollowsPig(s.cameraFollowsPig)
+    }
+  }
+
   // 1. Load initial settings
   useEffect(() => {
-    async function init() {
-      if (window.pigAPI) {
-        const s = await window.pigAPI.getSettings()
-        if (s.pigScale) setPigScale(s.pigScale)
-        if (s.totalEaten) setTotalEaten(s.totalEaten)
-        if (s.cameraFollowsPig !== undefined) setCameraFollowsPig(s.cameraFollowsPig)
-      }
-    }
-    init()
+    reloadSettings()
   }, [])
 
   // 2. Shrink pig over time (0.001 per second)
@@ -164,6 +165,6 @@ export function usePigState(trashInfo) {
     setTimeout(() => setBubble(null), 4000)
   }
 
-  return { mode, bubble, pigScale, totalEaten, cameraFollowsPig, triggerEat, setMode, forceBubble }
+  return { mode, bubble, pigScale, totalEaten, cameraFollowsPig, reloadSettings, triggerEat, setMode, forceBubble }
 }
 

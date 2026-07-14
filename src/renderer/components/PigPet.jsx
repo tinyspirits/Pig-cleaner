@@ -70,6 +70,8 @@ function useSprite(mode) {
 const isElectron = typeof window !== 'undefined' && window.pigAPI
 
 export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = false, isCleaning = false, cameraFollowsPig, onDoubleClick }) {
+  const windRef = useRef(null)
+  
   const {
     position,
     facing,
@@ -80,8 +82,9 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
     handleDragStart,
     handleDrag,
     handleDragEnd,
-    wasDragged
-  } = usePigMovement(mode, isPanelOpen)
+    wasDragged,
+    isWallHit
+  } = usePigMovement(mode, isPanelOpen, windRef)
 
   const handleClick = (e) => {
     if (!wasDragged()) {
@@ -107,14 +110,21 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
       <SkyClouds altitude={altitude} />
       <GrassTrail x={position.x} y={position.y} isWalking={mode === 'walking'} />
       <div
-      className={`pig-container pig-${mode}`}
+      className={`pig-container pig-${displayMode} ${isWallHit ? 'pig-hit-wall' : ''}`}
       style={containerStyle}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onMouseDown={handleDragStart}
+      onMouseUp={handleDragEnd}
       onClick={handleClick}
       title="Nhấn vào heo để dọn rác!"
     >
+        <div ref={windRef} className="wind-lines">
+          <div className="wind-line" style={{ left: '-30px', animationDelay: '0s' }} />
+          <div className="wind-line" style={{ left: '-15px', animationDelay: '0.1s', height: '80px' }} />
+          <div className="wind-line" style={{ right: '-30px', animationDelay: '0.15s' }} />
+          <div className="wind-line" style={{ right: '-15px', animationDelay: '0.05s', height: '60px' }} />
+        </div>
       {/* Speech Bubble */}
       {bubble && (
         <div className="speech-bubble" style={{ transform: `scaleX(${facing})` }}>
