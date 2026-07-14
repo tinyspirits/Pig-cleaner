@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react'
+import React, { useEffect, useState, useMemo, useRef } from 'react'
 
 // Số lượng hạt tối đa — giữ thấp để không lag
 const MAX_RAIN = 40
@@ -81,7 +81,7 @@ function SnowLayer({ windForceX }) {
           background: 'rgba(220, 235, 255, 0.95)',
           boxShadow: '0 0 4px rgba(180,210,255,0.8)',
           opacity: f.opacity,
-          animation: `snow-fall ${f.duration}s ${f.delay}s ease-in infinite`,
+          animation: `snow-fall ${f.duration}s ${f.delay}s linear infinite`,
           '--drift': `${drift}px`,
         }} />
       ))}
@@ -180,6 +180,33 @@ function LightningFlash() {
 
 // ─── WeatherEffects (main export) ────────────────────────────────────────────
 export default function WeatherEffects({ weather }) {
+  const containerRef = useRef(null)
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (!containerRef.current) return
+      
+      const { isFlying, vy } = e.detail || {}
+      let rate = 1
+      if (isFlying && typeof vy === 'number') {
+        // vy < 0 means pig moving UP -> camera moving UP -> rain falls FASTER -> rate > 1
+        // vy > 0 means pig moving DOWN -> camera moving DOWN -> rain falls SLOWER -> rate < 1
+        // vy = 0 means stationary -> rate = 1
+        // Adjust the divisor (15) to tune the sensitivity.
+        rate = Math.max(0.05, Math.min(5.0, 1 - vy / 15))
+      }
+
+      const anims = containerRef.current.getAnimations({ subtree: true })
+      for (const anim of anims) {
+        if (Math.abs(anim.playbackRate - rate) > 0.05) {
+          anim.playbackRate = rate
+        }
+      }
+    }
+    window.addEventListener('pig-flying', handler)
+    return () => window.removeEventListener('pig-flying', handler)
+  }, [])
+
   if (!weather) return null
 
   const { condition, windForceX, windSpeed, isStorm } = weather
@@ -192,11 +219,11 @@ export default function WeatherEffects({ weather }) {
   if (!showRain && !showSnow && !showWind && !showLightning) return null
 
   return (
-    <>
+    <div ref={containerRef} style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 50 }}>
       {showRain && <RainLayer windForceX={windForceX} intensity={Math.min(rainIntensity, 1)} />}
       {showSnow && <SnowLayer windForceX={windForceX} />}
       {showWind && <WindStreaks windForceX={windForceX} windSpeed={windSpeed} />}
       {showLightning && <LightningFlash />}
-    </>
+    </div>
   )
 }

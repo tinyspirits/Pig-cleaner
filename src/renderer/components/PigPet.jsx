@@ -68,8 +68,8 @@ function useSprite(mode) {
 
 // ─── PigPet ───────────────────────────────────────────────────────────────────
 
-const PIG_WIDTH = 150
-const PIG_HEIGHT = 150
+export const PIG_WIDTH = 150
+export const PIG_HEIGHT = 150
 
 const isElectron = typeof window !== 'undefined' && window.pigAPI
 
@@ -92,13 +92,24 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
   } = usePigMovement(mode, isPanelOpen, windRef, pigScale, weatherData)
 
   const handleClick = (e) => {
-    if (!wasDragged()) {
+    // Chỉ ngửi rác khi heo đang ở trên mặt đất (không rơi) và không bị kéo đi
+    if (!wasDragged() && !isDragging && position.y >= -10) {
       onDoubleClick?.(e) // Call the same handler, but it's now a single click
     }
   }
 
-  const isBusyMode = mode === 'eating' || mode === 'sniffing' || mode === 'full' || mode === 'scared'
-  const displayMode = isBusyMode ? mode : (dragState ? `drag_${dragState}` : mode)
+
+
+  let displayMode = mode
+  if (isDragging) {
+    displayMode = dragState ? `drag_${dragState}` : 'drag_held'
+  } else if (position.y < -5) {
+    displayMode = 'drag_falling'
+  } else if (dragState === 'landed') {
+    displayMode = 'drag_landed'
+  } else if (mode === 'eating' || mode === 'sniffing' || mode === 'full' || mode === 'scared') {
+    displayMode = mode
+  }
   const currentSprite = useSprite(displayMode)
 
   const screenHeight = window.innerHeight
@@ -169,26 +180,6 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
       style={containerStyle}
       onMouseUp={handleDragEnd}
     >
-        <div 
-        className="pig-interact-zone"
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        onMouseDown={(e) => {
-          if (mode === 'sleeping') onWakeUp?.()
-          handleDragStart(e)
-        }}
-        onClick={handleClick}
-        style={{
-          width: PIG_WIDTH * 1.5,
-          height: PIG_HEIGHT * 1.5,
-          cursor: isDragging ? 'grabbing' : 'grab',
-          position: 'absolute',
-          bottom: 0,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 10
-        }}
-      />
         <div ref={windRef} className="wind-lines">
           <div className="wind-line" style={{ left: '-30px', animationDelay: '0s' }} />
           <div className="wind-line" style={{ left: '-15px', animationDelay: '0.1s', height: '80px' }} />
@@ -203,7 +194,7 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
       )}
 
       {/* Cleaning indicator */}
-      {isCleaning && (
+      {(isCleaning && mode === 'eating') && (
         <div style={{
           position: 'absolute',
           top: -30,
@@ -241,7 +232,21 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
             src={currentSprite}
             alt="pig pet"
             className="pig-sprite"
-            style={{ filter: imageFilter }}
+            draggable="false"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            onMouseDown={(e) => {
+              if (mode === 'sleeping') onWakeUp?.()
+              handleDragStart(e)
+            }}
+            onClick={handleClick}
+            style={{
+              objectFit: 'contain',
+              imageRendering: 'pixelated',
+              filter: imageFilter,
+              cursor: isDragging ? 'grabbing' : 'grab',
+              pointerEvents: 'auto',
+            }}
           />
       </div>
     </div>

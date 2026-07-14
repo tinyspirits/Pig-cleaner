@@ -86,15 +86,17 @@ function App() {
 
     let msg = null
 
-    // Cảnh báo thời tiết sắp tới
-    if (upcomingCondition === 'thunderstorm') msg = '⛈️ Bão sắp đến! Trú ẩn nào!'
-    else if (upcomingCondition === 'rain') msg = '🌧️ Sắp mưa rồi! Ướt thôi...'
-    else if (upcomingCondition === 'drizzle') msg = '🌦️ Sắp có mưa phùn!'
+    // Cảnh báo thời tiết sắp tới (chỉ báo nếu hiện tại chưa mưa)
+    const isRainingNow = condition === 'rain' || condition === 'drizzle' || condition === 'thunderstorm'
+
+    if (upcomingCondition === 'thunderstorm' && !isRainingNow) msg = '⛈️ Bão sắp đến! Trú ẩn nào!'
+    else if (upcomingCondition === 'rain' && !isRainingNow) msg = '🌧️ Sắp mưa rồi! Ướt thôi...'
+    else if (upcomingCondition === 'drizzle' && !isRainingNow) msg = '🌦️ Sắp có mưa phùn!'
     // Thời tiết hiện tại
     else if (windSpeed > 60) msg = '🌪️ Gió quá mạnh! Tôi sắp bay...'
     else if (windSpeed > 40) msg = '🌬️ Gió mạnh quá đó!'
     else if (condition === 'thunderstorm') msg = '⚡️ Trời nổi giận!'
-    else if (condition === 'rain') msg = '💧 Ồi! Ướt rồi! Lạnh quá!'
+    else if (condition === 'rain' || condition === 'drizzle') msg = '💧 Ồi! Ướt rồi! Lạnh quá!'
     else if (condition === 'snow') msg = '❄️ Tuyết rơi! Lạnh quá đi!'
     else if (condition === 'clear' && temperature > 35) msg = '🔥 Nắng nóng cực! Cháy da rồi!'
     else if (condition === 'clear' && temperature > 30) msg = '☀️ Nóng quá! Cho tôi nghỉ tí!'
@@ -287,8 +289,15 @@ function App() {
 
         // B2: Đổi sang mode eating và tiến hành dọn
         setMode('eating')
-        forceBubble('Đang ăn... 😋')
+        
+        // Ensure eating animation shows for at least 3 seconds
+        const startTime = Date.now()
         const result = await window.pigAPI.cleanAll()
+        const elapsed = Date.now() - startTime
+        if (elapsed < 3000) {
+          await new Promise(resolve => setTimeout(resolve, 3000 - elapsed))
+        }
+        
         setIsCleaning(false)
 
         if (result.trash?.success === false) {
@@ -299,8 +308,6 @@ function App() {
 
         if (result.freedBytes > 0) {
           triggerEat(result.freedBytes / 1024) // convert to KB
-          // cleanTrash() (bên trong cleanAll) giờ đã tự chờ + xác minh thật,
-          // nên lấy số liệu thật thay vì set cứng về 0.
           const newInfo = await window.pigAPI.getTrashInfo()
           setTrashInfo(newInfo)
           const remaining = result.trash?.remainingBytes || 0

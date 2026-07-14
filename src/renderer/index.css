@@ -194,6 +194,7 @@ body,
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%) translateY(-8px);
+  pointer-events: none;
   background: white;
   border-radius: 16px;
   padding: 8px 14px;

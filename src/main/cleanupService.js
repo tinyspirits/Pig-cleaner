@@ -16,18 +16,18 @@ function formatBytes(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
 }
 
-function getFolderSize(folderPath) {
+async function getFolderSize(folderPath) {
   let totalSize = 0
   let fileCount = 0
   try {
-    const items = fs.readdirSync(folderPath, { withFileTypes: true })
+    const items = await fs.promises.readdir(folderPath, { withFileTypes: true })
     for (const item of items) {
       if (item.name.startsWith('.')) continue
       const itemPath = path.join(folderPath, item.name)
       try {
-        const stat = fs.statSync(itemPath)
+        const stat = await fs.promises.stat(itemPath)
         if (stat.isDirectory()) {
-          const sub = getFolderSize(itemPath)
+          const sub = await getFolderSize(itemPath)
           totalSize += sub.size
           fileCount += sub.count
         } else {
@@ -64,7 +64,7 @@ async function getTrashInfo() {
   } catch (err) {
     console.error('[cleanupService] AppleScript failed:', err.message)
     // Fallback về cách đếm folder cũ nếu AppleScript lỗi
-    const result = getFolderSize(TRASH_PATH)
+    const result = await getFolderSize(TRASH_PATH)
     sizeBytes = result.size
     fileCount = result.count
   }
@@ -176,7 +176,7 @@ async function getCacheTypes() {
     for (const p of cat.paths) {
       try {
         if (fs.existsSync(p)) {
-          const info = getFolderSize(p)
+          const info = await getFolderSize(p)
           totalSize += info.size
           totalCount += info.count
         }
@@ -210,31 +210,31 @@ async function cleanCache(categoryIds) {
         if (id === 'temp') {
           // Temp: chỉ xoá file cũ hơn 7 ngày
           const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000
-          const items = fs.readdirSync(p, { withFileTypes: true })
+          const items = await fs.promises.readdir(p, { withFileTypes: true })
           for (const item of items) {
             if (item.name.startsWith('.')) continue
             const itemPath = path.join(p, item.name)
             try {
-              const stat = fs.statSync(itemPath)
+              const stat = await fs.promises.stat(itemPath)
               if (stat.mtimeMs < cutoff) {
-                const size = item.isDirectory() ? getFolderSize(itemPath).size : stat.size
-                fs.rmSync(itemPath, { recursive: true, force: true })
+                const size = item.isDirectory() ? (await getFolderSize(itemPath)).size : stat.size
+                await fs.promises.rm(itemPath, { recursive: true, force: true })
                 freed += size
               }
             } catch { /* skip */ }
           }
         } else {
-          const sizeBefore = getFolderSize(p).size
+          const sizeBefore = (await getFolderSize(p)).size
           try {
             // Xóa từng file/folder bên trong thay vì xóa cả thư mục gốc để tránh bị nghẽn ở 1 file bị khóa (locked)
-            const items = fs.readdirSync(p)
+            const items = await fs.promises.readdir(p)
             for (const item of items) {
               try {
-                fs.rmSync(path.join(p, item), { recursive: true, force: true })
+                await fs.promises.rm(path.join(p, item), { recursive: true, force: true })
               } catch { /* skip locked file */ }
             }
           } catch { /* skip */ }
-          const sizeAfter = getFolderSize(p).size
+          const sizeAfter = (await getFolderSize(p)).size
           freed += (sizeBefore - sizeAfter)
         }
       } catch { /* skip */ }
@@ -261,9 +261,9 @@ async function emptyTrashViaFS() {
   // đôi khi "báo xong" nhưng Finder vẫn chưa xoá thật (chạy ngầm, bất đồng
   // bộ), hoặc thậm chí bị treo (hang) trong 1 số trường hợp. Xoá trực tiếp
   // qua fs tránh hoàn toàn 2 vấn đề đó.
-  // Cần Full Disk Access; nếu không có, readdirSync sẽ throw EPERM và
+  // Cần Full Disk Access; nếu không có, readdir sẽ throw EPERM và
   // cleanTrash() sẽ tự chuyển sang phương án AppleScript bên dưới.
-  const items = fs.readdirSync(TRASH_PATH, { withFileTypes: true })
+  const items = await fs.promises.readdir(TRASH_PATH, { withFileTypes: true })
   let freed = 0
   let remaining = 0
   for (const item of items) {
@@ -271,11 +271,11 @@ async function emptyTrashViaFS() {
     const itemPath = path.join(TRASH_PATH, item.name)
     let itemSize = 0
     try {
-      const stat = fs.statSync(itemPath)
-      itemSize = stat.isDirectory() ? getFolderSize(itemPath).size : stat.size
+      const stat = await fs.promises.stat(itemPath)
+      itemSize = stat.isDirectory() ? (await getFolderSize(itemPath)).size : stat.size
     } catch { /* không đọc được size, coi như 0 */ }
     try {
-      fs.rmSync(itemPath, { recursive: true, force: true })
+      await fs.promises.rm(itemPath, { recursive: true, force: true })
       freed += itemSize
     } catch {
       // File có thể đang mở/bị khoá — bỏ qua, tính vào phần "còn lại"

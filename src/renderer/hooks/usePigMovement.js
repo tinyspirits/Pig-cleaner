@@ -142,6 +142,11 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
         setDragVelocity({ x: 0, y: 0 })
       }
 
+      // Phát sự kiện bay để hiệu ứng thời tiết bắt tốc độ
+      const isFlying = state.isDragging || state.y < 0
+      const currentVy = state.isDragging ? dragVy : state.vy
+      window.dispatchEvent(new CustomEvent('pig-flying', { detail: { isFlying, vy: currentVy } }))
+
       // Áp dụng quán tính (vx) khi ở trên không hoặc trượt trên đất
       if (!state.isDragging && Math.abs(state.vx) > 0.1) {
         state.x += state.vx
@@ -273,6 +278,8 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
   }, [isPanelOpen])
 
   const handleDragStart = useCallback((e) => {
+    if (mode === 'eating' || mode === 'sniffing' || mode === 'full') return
+
     stateRef.current.isMouseDown = true
     
     // Lưu vị trí chuột ban đầu để tính delta
@@ -281,6 +288,16 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
     stateRef.current.dragOffset = { x: stateRef.current.x, y: stateRef.current.y }
     stateRef.current.hasMoved = false
     
+    // Nếu heo đang bay/rơi (y < 0), lập tức tóm được heo (bỏ qua ngưỡng 5px)
+    if (stateRef.current.y < 0) {
+      stateRef.current.isDragging = true
+      setIsDragging(true)
+      stateRef.current.hasMoved = true
+      // Reset vận tốc ngay khi tóm
+      stateRef.current.vx = 0
+      stateRef.current.vy = 0
+    }
+
     // Khởi tạo history
     dragHistoryRef.current = [{ x: e.clientX, y: e.clientY, time: performance.now() }]
 
@@ -324,8 +341,9 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
 
   const handleDragEnd = useCallback(() => {
     stateRef.current.isMouseDown = false
+    const wasDragging = stateRef.current.isDragging
     
-    if (stateRef.current.isDragging) {
+    if (wasDragging) {
       stateRef.current.isDragging = false
       setIsDragging(false)
       
@@ -348,25 +366,42 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
         stateRef.current.vx = 0
         stateRef.current.vy = 0
       }
+
+      // Nếu thả heo ngay trên mặt đất (y >= 0) và ĐÃ DRAG
+      if (stateRef.current.y >= 0 && stateRef.current.hasMoved) {
+        stateRef.current.y = 0
+        updateDragState('landed')
+        
+        if (pigScaleRef.current >= 2.0) {
+          window.dispatchEvent(new CustomEvent('earthquake'))
+        }
+
+        clearTimeout(landedTimeoutRef.current)
+        landedTimeoutRef.current = setTimeout(() => {
+          updateDragState(null)
+        }, 600)
+      }
     }
     
     if (isElectron && !isPanelOpen) window.pigAPI.setIgnoreMouse(true)
-
-    // Nếu thả heo ngay trên mặt đất (y >= 0) và ĐÃ DRAG
-    if (stateRef.current.y >= 0 && stateRef.current.hasMoved) {
-      stateRef.current.y = 0
-      updateDragState('landed')
-      
-      if (pigScaleRef.current >= 2.0) {
-        window.dispatchEvent(new CustomEvent('earthquake'))
-      }
-
-      clearTimeout(landedTimeoutRef.current)
-      landedTimeoutRef.current = setTimeout(() => {
-        updateDragState(null)
-      }, 600)
-    }
   }, [isPanelOpen])
+
+  // Lắng nghe sấm sét: nếu đang cầm trên tay thì heo giật mình rớt xuống
+  useEffect(() => {
+    const handleLightningDrop = () => {
+      if (stateRef.current.isDragging) {
+        stateRef.current.isMouseDown = false
+        stateRef.current.isDragging = false
+        setIsDragging(false)
+        
+        // Thêm một lực đẩy nhẹ để tạo cảm giác heo giãy giụa tuột khỏi tay
+        stateRef.current.vx = (Math.random() - 0.5) * 20
+        stateRef.current.vy = -10
+      }
+    }
+    window.addEventListener('lightning-strike', handleLightningDrop)
+    return () => window.removeEventListener('lightning-strike', handleLightningDrop)
+  }, [])
 
   // Bind global drag events
   useEffect(() => {

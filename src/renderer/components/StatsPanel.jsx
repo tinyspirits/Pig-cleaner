@@ -5,7 +5,8 @@ function formatBytes(bytes) {
   const k = 1024
   const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+  const precision = i >= 3 ? 2 : 1 // Hiện 2 chữ số cho GB và TB để dễ thấy thay đổi
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(precision)) + ' ' + sizes[i]
 }
 
 export default function StatsPanel({ trashInfo, cacheInfo = [], totalEaten, pigScale, weather, onClose }) {
@@ -47,7 +48,9 @@ export default function StatsPanel({ trashInfo, cacheInfo = [], totalEaten, pigS
 
         <div className="stats-row" style={{ marginTop: 6 }}>
           <span>🍽️ Đã ăn tổng</span>
-          <strong>{formatBytes(totalEaten * 1024)}</strong>
+          <strong title={`${(totalEaten * 1024).toLocaleString('en-US')} Bytes`}>
+            {formatBytes(totalEaten * 1024)}
+          </strong>
         </div>
         <div className="stats-row">
           <span>📏 Kích thước heo</span>

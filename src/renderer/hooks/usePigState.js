@@ -6,7 +6,6 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 const IDLE_QUOTES = [
   'Oink oink! 🐽',
   'Ăn gì chưa? 🍖',
-  'Nhìn trời đẹp ghê...',
   'Buồn ngủ quá~',
   '*hít thở*',
   'Hôm nay có rác không ta?',
