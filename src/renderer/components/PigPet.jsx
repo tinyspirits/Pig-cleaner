@@ -117,19 +117,19 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
   const altitude = cameraFollowsPig ? Math.max(0, -position.y - screenHeight * 0.7) : 0
 
   // Hiệu ứng thiên thạch: rơi quá nhanh sinh nhiệt (ma sát)
-  const isFallingFast = !isDragging && dragVelocity.y > 15
-  const meteoriteRedness = isFallingFast ? Math.min(1, (dragVelocity.y - 15) / 25) : 0
+  const isFalling = !isDragging && dragVelocity.y > 10
+  const meteoriteHeat = isFalling ? Math.min(1, (dragVelocity.y - 10) / 35) : 0
+  const isFallingFast = meteoriteHeat >= 0.4 // Bật CSS tia lửa và class lắc
 
   // Hiệu ứng thiếu oxy: chuyển sang màu đỏ khi bay lên quá mây (altitude > 1500)
   const redness = Math.min(1, Math.max(0, (altitude - 1500) / 2000))
 
   // Hiệu ứng nhiệt độ thời tiết
   const temp = weatherData?.temperature ?? null
-  // Giảm mức ngưỡng để dễ thấy đổi màu hơn: Nóng khi > 26°C, Lạnh khi < 22°C
-  const heatLevel = temp !== null && temp > 26 ? Math.min(1, (temp - 26) / 14) : 0  // 26°C→0, 40°C→1
-  const coldLevel = temp !== null && temp < 22 ? Math.min(1, (22 - temp) / 14) : 0  // 22°C→0, 8°C→1
+  const heatLevel = temp !== null && temp > 26 ? Math.min(1, (temp - 26) / 14) : 0
+  const coldLevel = temp !== null && temp < 22 ? Math.min(1, (22 - temp) / 14) : 0
 
-  // Cảm giác ướt do mưa/bão tăng dần/giảm dần
+  // Cảm giác ướt do mưa/bão
   const [wetness, setWetness] = useState(0)
   const conditionStr = weatherData?.condition?.toLowerCase() || ''
   const isWetWeather = conditionStr.includes('mưa') || conditionStr.includes('bão') || conditionStr.includes('rain') || conditionStr.includes('drizzle') || conditionStr.includes('thunderstorm')
@@ -138,39 +138,51 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
     const isSunny = conditionStr.includes('nắng') || conditionStr.includes('quang đãng') || conditionStr.includes('clear') || conditionStr.includes('sun')
     const isCloudy = conditionStr.includes('mây') || conditionStr.includes('âm u') || conditionStr.includes('cloud') || conditionStr.includes('overcast')
     
-    // Nắng: 20s khô, Bình thường: 40s khô, Mây/Âm u: 80s khô
     const dryRate = isSunny ? 0.05 : (isCloudy ? 0.0125 : 0.025)
 
     const interval = setInterval(() => {
       setWetness(prev => {
-        if (isWetWeather) {
-          return Math.min(1, prev + 0.05) // Ướt dần: 20 giây để đạt 100%
-        } else {
-          return Math.max(0, prev - dryRate)
-        }
+        if (isWetWeather) return Math.min(1, prev + 0.05)
+        return Math.max(0, prev - dryRate)
       })
     }, 1000)
     return () => clearInterval(interval)
   }, [isWetWeather, conditionStr])
 
-  // Kết hợp: đỏ từ altitude + đỏ từ nắng nóng + đỏ từ thiên thạch
-  const totalRed = Math.min(1, redness + heatLevel + meteoriteRedness)
-  const totalCold = Math.min(1, coldLevel + wetness * 0.6) // Mưa càng lâu càng lạnh (tối đa +60%)
+  // Tính filter bình thường
+  const totalRed = Math.min(1, redness + heatLevel)
+  const totalCold = Math.min(1, coldLevel + wetness * 0.6)
 
   let baseFilter = ''
   if (totalCold > totalRed) {
-    // Lạnh / Ướt lấn át
     baseFilter = `drop-shadow(0 4px 10px rgba(100, 150, 255, 0.4)) saturate(${1 - totalCold * 0.4}) hue-rotate(${30 * totalCold}deg) brightness(${1 - totalCold * 0.15})`
   } else if (totalRed > 0) {
-    // Nóng lấn át
     baseFilter = `drop-shadow(0 4px 10px rgba(255, 100, 50, 0.3)) sepia(${totalRed * 0.6}) hue-rotate(${-40 * totalRed}deg) saturate(${1 + 2 * totalRed}) contrast(${1 + 0.2 * totalRed})`
   } else {
-    // Bình thường
     baseFilter = `drop-shadow(0 4px 10px rgba(0, 0, 0, 0.25))`
   }
 
-  // Nếu ướt thì thêm độ bóng (contrast) và tối màu lại do dính nước
-  const imageFilter = baseFilter + (wetness > 0 ? ` contrast(${1 + 0.15 * wetness}) brightness(${1 - 0.1 * wetness}) sepia(${0.2 * wetness}) hue-rotate(${190 * wetness}deg)` : '')
+  let imageFilter = baseFilter + (wetness > 0 ? ` contrast(${1 + 0.15 * wetness}) brightness(${1 - 0.1 * wetness}) sepia(${0.2 * wetness}) hue-rotate(${190 * wetness}deg)` : '')
+
+  // Áp dụng filter thiên thạch đè lên nếu đang rơi
+  let meteoriteRedness = 0;
+  if (meteoriteHeat > 0) {
+    if (meteoriteHeat < 0.4) {
+      // Vàng dần
+      const p = meteoriteHeat / 0.4
+      imageFilter = `sepia(${p}) hue-rotate(-10deg) saturate(${1 + p*2}) brightness(${1 + p*0.3}) drop-shadow(0 0 10px rgba(255,200,0,${p}))`
+    } else if (meteoriteHeat < 0.7) {
+      // Bốc cháy đỏ rực
+      const p = (meteoriteHeat - 0.4) / 0.3
+      meteoriteRedness = p
+      imageFilter = `sepia(1) hue-rotate(${-10 - 30 * p}deg) saturate(${3 + p}) brightness(${1.3 - p*0.3}) drop-shadow(0 0 15px rgba(255,80,0,1))`
+    } else {
+      // Cháy đen thui
+      const p = (meteoriteHeat - 0.7) / 0.3
+      meteoriteRedness = 1
+      imageFilter = `sepia(${1-p}) brightness(${1 - p}) contrast(${1 + p}) drop-shadow(0 0 ${15 - 15*p}px rgba(255,80,0,${1-p}))`
+    }
+  }
 
   const safeX = isNaN(position.x) ? 0 : position.x
   const safeY = isNaN(visualY) ? 0 : visualY
