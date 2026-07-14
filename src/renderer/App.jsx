@@ -181,8 +181,8 @@ function App() {
       setIsCleaning(false)
       if (data.freedBytes > 0) {
         triggerEat(data.freedBytes / 1024)
-        const newInfo = await window.pigAPI.getTrashInfo()
-        setTrashInfo(newInfo)
+        // Lạc quan set trash về 0 vì Finder có thể xóa chậm ngầm
+        setTrashInfo({ sizeBytes: 0, sizeFormatted: '0 B', fileCount: 0 })
       } else {
         forceBubble('Đã dọn xong!')
         setTimeout(() => setMode('idle'), 1500)
@@ -259,9 +259,8 @@ function App() {
         setIsCleaning(false)
         if (result.freedBytes > 0) {
           triggerEat(result.freedBytes / 1024) // convert to KB
-          // Cập nhật trash info sau khi dọn
-          const newInfo = await window.pigAPI.getTrashInfo()
-          setTrashInfo(newInfo)
+          // Lạc quan set trash về 0
+          setTrashInfo({ sizeBytes: 0, sizeFormatted: '0 B', fileCount: 0 })
         } else {
           forceBubble('Đã dọn xong!')
           setTimeout(() => setMode('idle'), 1500)
