@@ -217,9 +217,18 @@ async function cleanCache(categoryIds) {
             } catch { /* skip */ }
           }
         } else {
-          const size = getFolderSize(p).size
-          fs.rmSync(p, { recursive: true, force: true })
-          freed += size
+          const sizeBefore = getFolderSize(p).size
+          try {
+            // Xóa từng file/folder bên trong thay vì xóa cả thư mục gốc để tránh bị nghẽn ở 1 file bị khóa (locked)
+            const items = fs.readdirSync(p)
+            for (const item of items) {
+              try {
+                fs.rmSync(path.join(p, item), { recursive: true, force: true })
+              } catch { /* skip locked file */ }
+            }
+          } catch { /* skip */ }
+          const sizeAfter = getFolderSize(p).size
+          freed += (sizeBefore - sizeAfter)
         }
       } catch { /* skip */ }
     }
