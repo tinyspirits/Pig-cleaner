@@ -55,6 +55,7 @@ async function getTrashInfo() {
       sizeBytes = 0
     }
   } catch (err) {
+    console.error('[cleanupService] AppleScript failed:', err.message)
     // Fallback về cách đếm folder cũ nếu AppleScript lỗi
     const result = getFolderSize(TRASH_PATH)
     sizeBytes = result.size
@@ -243,14 +244,18 @@ async function cleanTrash() {
 
   try {
     // Dùng AppleScript để dọn rác (phát âm thanh chuẩn của Mac)
+    // Lệnh này sẽ chờ người dùng confirm (nếu có bật cảnh báo)
     await execAsync(`osascript -e 'tell application "Finder" to empty trash'`)
-    const after = await getTrashInfo()
+    
+    // Nếu AppleScript chạy thành công (người dùng bấm OK và không có lỗi),
+    // Finder sẽ dọn rác dưới nền. Chúng ta có thể tự tin cho rằng toàn bộ số rác "before" đã được dọn.
+    // Không nên gọi getTrashInfo() ngay lập tức vì Finder có thể chưa update xong dung lượng.
     return {
       success: true,
       type: 'trash',
-      freedBytes: before - after.sizeBytes,
-      freedFormatted: formatBytes(Math.max(0, before - after.sizeBytes)),
-      message: `Đã dọn ${formatBytes(Math.max(0, before - after.sizeBytes))} rác!`,
+      freedBytes: before,
+      freedFormatted: formatBytes(before),
+      message: `Đã dọn ${formatBytes(before)} rác!`,
     }
   } catch (err) {
     // Fallback: xóa thủ công

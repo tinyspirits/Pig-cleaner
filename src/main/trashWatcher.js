@@ -36,8 +36,7 @@ function start(cb) {
       }
     })
   } catch (err) {
-    console.log('[TrashWatcher] fs.watch unavailable, using polling:', err.message)
-    // Fallback: polling mỗi 30 giây
+    // Fallback: polling mỗi 30 giây (không in log lỗi EPERM ra để tránh gây nhầm lẫn)
     let lastSize = -1
     watcher = { _pollInterval: setInterval(() => {
       try {

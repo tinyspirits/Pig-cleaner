@@ -153,7 +153,7 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
         </div>
       {/* Speech Bubble */}
       {bubble && (
-        <div className="speech-bubble" style={{ transform: `scaleX(${facing})` }}>
+        <div className="speech-bubble">
           {bubble}
         </div>
       )}
@@ -164,7 +164,7 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
           position: 'absolute',
           top: -30,
           left: '50%',
-          transform: `translateX(-50%) scaleX(${facing})`,
+          transform: 'translateX(-50%)',
           background: 'rgba(255,107,157,0.9)',
           color: 'white',
           padding: '6px 16px',
@@ -182,7 +182,7 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
 
       {/* ZZZ khi ngủ */}
       {mode === 'sleeping' && (
-        <div className="zzz" style={{ transform: `scaleX(${facing})` }}>z z z</div>
+        <div className="zzz">z z z</div>
       )}
 
       {/* Sprite image */}
