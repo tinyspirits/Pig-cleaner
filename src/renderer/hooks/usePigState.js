@@ -113,14 +113,37 @@ export function usePigState(trashInfo) {
 
   // Auto behavior cycle
   useEffect(() => {
-    const behaviors = [
-      { mode: 'idle', weight: 40 },
-      { mode: 'walking', weight: 30 },
-      { mode: 'sniffing', weight: 15 },
-      { mode: 'sleeping', weight: 10 },
-    ]
+    function getBehaviors() {
+      const hour = new Date().getHours()
+      const isNight = hour >= 22 || hour < 6
+      const isEvening = hour >= 19 && hour < 22
+
+      if (isNight) {
+        return [
+          { mode: 'idle', weight: 10 },
+          { mode: 'walking', weight: 5 },
+          { mode: 'sniffing', weight: 5 },
+          { mode: 'sleeping', weight: 80 }, // Ban đêm ngủ rất nhiều
+        ]
+      } else if (isEvening) {
+        return [
+          { mode: 'idle', weight: 30 },
+          { mode: 'walking', weight: 20 },
+          { mode: 'sniffing', weight: 15 },
+          { mode: 'sleeping', weight: 35 }, // Chiều tối hay ngáp ngủ
+        ]
+      } else {
+        return [
+          { mode: 'idle', weight: 40 },
+          { mode: 'walking', weight: 30 },
+          { mode: 'sniffing', weight: 15 },
+          { mode: 'sleeping', weight: 10 }, // Ban ngày lanh lợi
+        ]
+      }
+    }
 
     function randomBehavior() {
+      const behaviors = getBehaviors()
       const total = behaviors.reduce((s, b) => s + b.weight, 0)
       let r = Math.random() * total
       for (const b of behaviors) {
