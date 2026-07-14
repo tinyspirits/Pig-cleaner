@@ -174,6 +174,13 @@ function App() {
     // Lắng nghe hoàn thành dọn dẹp (từ tray)
     const unsubCleanComplete = window.pigAPI.onCleanComplete(async (data) => {
       setIsCleaning(false)
+
+      if (data.trash?.success === false) {
+        forceBubble('Heo chưa được cấp quyền full access ⚠️')
+        setTimeout(() => setMode('idle'), 4000)
+        return
+      }
+
       if (data.freedBytes > 0) {
         triggerEat(data.freedBytes / 1024)
       }
@@ -262,7 +269,7 @@ function App() {
         setIsCleaning(false)
 
         if (result.trash?.success === false) {
-          forceBubble(`⚠️ ${result.trash.error || 'Lỗi quyền truy cập, vui lòng cấp quyền Full Disk Access!'}`)
+          forceBubble('Heo chưa được cấp quyền full access ⚠️')
           setTimeout(() => setMode('idle'), 4000)
           return
         }

@@ -131,12 +131,16 @@ function WindStreaks({ windForceX, windSpeed }) {
 
 // ─── Chớp sét ────────────────────────────────────────────────────────────────
 function LightningFlash() {
-  const [visible, setVisible] = useState(false)
+  const [flashData, setFlashData] = useState(null)
 
   useEffect(() => {
     function flash() {
-      setVisible(true)
-      setTimeout(() => setVisible(false), 120)
+      setFlashData({
+        left: randomBetween(10, 90),
+        scale: randomBetween(0.7, 1.3),
+        flip: Math.random() > 0.5 ? 1 : -1,
+      })
+      setTimeout(() => setFlashData(null), 150)
       // Flash lại ngẫu nhiên sau 4-15 giây
       setTimeout(flash, randomBetween(4000, 15000))
     }
@@ -144,14 +148,29 @@ function LightningFlash() {
     return () => clearTimeout(t)
   }, [])
 
-  if (!visible) return null
+  if (!flashData) return null
   return (
-    <div style={{
-      position: 'fixed', inset: 0,
-      background: 'rgba(200, 220, 255, 0.3)',
-      pointerEvents: 'none', zIndex: 55,
-      animation: 'lightning-flash 0.12s ease-out',
-    }} />
+    <>
+      <div style={{
+        position: 'fixed', inset: 0,
+        background: 'rgba(220, 230, 255, 0.4)',
+        pointerEvents: 'none', zIndex: 55,
+        animation: 'lightning-flash 0.15s ease-out',
+      }} />
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: `${flashData.left}%`,
+        transform: `translateX(-50%) scaleX(${flashData.flip}) scale(${flashData.scale})`,
+        transformOrigin: 'top center',
+        pointerEvents: 'none', zIndex: 56,
+        animation: 'lightning-flash 0.15s ease-out',
+      }}>
+        <svg width="80" height="300" viewBox="0 0 120 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M70 0L0 200H50L30 400L120 150H60L90 0H70Z" fill="#FFF" filter="drop-shadow(0 0 20px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 40px rgba(180, 210, 255, 0.8))" />
+        </svg>
+      </div>
+    </>
   )
 }
 

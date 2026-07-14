@@ -287,60 +287,79 @@ async function cleanTrash() {
     return { success: true, type: 'trash', freedBytes: 0, remainingBytes: 0, freedFormatted: '0 B', message: 'Thùng rác đã trống!' }
   }
 
-  // Cách 1 (ưu tiên): xoá trực tiếp qua filesystem
+  let fsFreed = 0
+  let fsUsed = false
+
+  // Cách 1 (ưu tiên): xoá trực tiếp qua filesystem (chỉ xoá được ~/.Trash)
   try {
-    const { freed, remaining } = await emptyTrashViaFS()
-    if (remaining > 0) {
-      console.warn(`[cleanupService] Không xoá được ${formatBytes(remaining)} qua fs (có thể do file bị khoá/đang mở)`)
-    }
-    return {
-      success: true,
-      type: 'trash',
-      freedBytes: freed,
-      remainingBytes: remaining,
-      freedFormatted: formatBytes(freed),
-      message: remaining > 0
-        ? `Đã dọn ${formatBytes(freed)}, còn ${formatBytes(remaining)} chưa xoá được (có thể có file đang mở)!`
-        : `Đã dọn ${formatBytes(freed)} rác!`,
-    }
+    const { freed } = await emptyTrashViaFS()
+    fsFreed = freed
+    fsUsed = true
   } catch (fsErr) {
     console.warn('[cleanupService] Không xoá trực tiếp qua fs được (có thể thiếu Full Disk Access), thử qua AppleScript:', fsErr.message)
   }
 
-  // Cách 2 (dự phòng): AppleScript — chỉ dùng khi fs không đọc/xoá được
-  // trực tiếp (thiếu Full Disk Access). Có timeout để tránh treo vô hạn,
-  // và LUÔN kiểm tra lại thật sau khi chạy thay vì tin ngay là đã xong.
+  // Kiểm tra lại tổng lượng rác thực tế (bao gồm ổ ngoài/iCloud)
+  let globalRemaining = (await getTrashInfo()).sizeBytes
+
+  // Nếu xoá qua fs xong mà không còn gì, trả kết quả luôn
+  if (fsUsed && globalRemaining === 0) {
+    return {
+      success: true,
+      type: 'trash',
+      freedBytes: fsFreed,
+      remainingBytes: 0,
+      freedFormatted: formatBytes(fsFreed),
+      message: `Đã dọn ${formatBytes(fsFreed)} rác!`,
+    }
+  }
+
+  if (globalRemaining > 0) {
+    console.warn(`[cleanupService] Vẫn còn ${formatBytes(globalRemaining)} rác (có thể ổ ngoài/iCloud hoặc file khoá), fallback sang AppleScript...`)
+  }
+
+  // Cách 2 (dự phòng): AppleScript — dọn sạch toàn bộ Trash trên mọi ổ đĩa.
   try {
     await execAsync(`osascript -e 'tell application "Finder" to empty trash'`, { timeout: 8000 })
 
-    let after = before
+    let finalRemaining = globalRemaining
     for (let i = 0; i < 8; i++) {
       await new Promise(resolve => setTimeout(resolve, 400))
-      after = (await getTrashInfo()).sizeBytes
-      if (after === 0) break
+      finalRemaining = (await getTrashInfo()).sizeBytes
+      if (finalRemaining === 0 || finalRemaining < globalRemaining) break
     }
+    
+    // Kiểm tra lại chắc chắn
+    finalRemaining = (await getTrashInfo()).sizeBytes
 
-    const freed = Math.max(0, before - after)
-    if (after > 0) {
-      console.warn(`[cleanupService] Trash vẫn còn ${formatBytes(after)} sau khi dọn qua AppleScript (có thể do file bị khoá, cần xác nhận thủ công trong Finder, hoặc thiếu quyền Automation cho Finder trong System Settings → Privacy & Security → Automation)`)
+    const appleScriptFreed = Math.max(0, globalRemaining - finalRemaining)
+    const totalFreed = fsFreed + appleScriptFreed
+
+    if (finalRemaining > 0) {
+      console.warn(`[cleanupService] Trash vẫn còn ${formatBytes(finalRemaining)} sau khi dọn qua AppleScript (có thể do file bị khoá, cần xác nhận thủ công trong Finder, hoặc thiếu quyền Automation cho Finder trong System Settings → Privacy & Security → Automation)`)
     }
 
     return {
       success: true,
       type: 'trash',
-      freedBytes: freed,
-      remainingBytes: after,
-      freedFormatted: formatBytes(freed),
-      message: after > 0
-        ? `Đã dọn ${formatBytes(freed)}, còn ${formatBytes(after)} chưa xoá được!`
-        : `Đã dọn ${formatBytes(freed)} rác!`,
+      freedBytes: totalFreed,
+      remainingBytes: finalRemaining,
+      freedFormatted: formatBytes(totalFreed),
+      message: finalRemaining > 0
+        ? `Đã dọn ${formatBytes(totalFreed)}, còn ${formatBytes(finalRemaining)} chưa xoá được!`
+        : `Đã dọn ${formatBytes(totalFreed)} rác!`,
     }
   } catch (err) {
     return {
-      success: false,
+      success: fsUsed ? true : false,
       type: 'trash',
+      freedBytes: fsFreed,
+      remainingBytes: globalRemaining,
+      freedFormatted: formatBytes(fsFreed),
       error: err.message,
-      message: 'Không thể dọn rác: ' + err.message + ' — hãy cấp quyền Full Disk Access cho app trong System Settings → Privacy & Security → Full Disk Access.',
+      message: fsUsed
+        ? `Đã dọn ${formatBytes(fsFreed)} rác, còn ${formatBytes(globalRemaining)} không thể xoá: ${err.message}`
+        : 'Không thể dọn rác: ' + err.message + ' — hãy cấp quyền Full Disk Access cho app trong System Settings → Privacy & Security → Full Disk Access.',
     }
   }
 }
