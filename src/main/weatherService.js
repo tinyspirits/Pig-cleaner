@@ -49,12 +49,23 @@ async function getLocation() {
   if (cachedLocation) return cachedLocation
   try {
     const data = await fetchJson('https://ipapi.co/json/')
-    cachedLocation = { lat: data.latitude, lon: data.longitude, city: data.city || 'Unknown' }
-  } catch {
-    // Fallback: Hà Nội
-    cachedLocation = { lat: 21.0285, lon: 105.8542, city: 'Hà Nội' }
+    // ipapi.co có thể trả về HTTP 200 nhưng body là lỗi (vd bị rate-limit:
+    // {"error":true,"reason":"RateLimited"}) — lúc đó latitude/longitude sẽ
+    // undefined. Trước đây code không kiểm tra điều này, nên vẫn cache lại
+    // "vị trí" với lat/lon undefined, khiến gọi Open-Meteo với toạ độ rỗng
+    // (dữ liệu thời tiết vô nghĩa) và city hiện "Unknown" mãi mãi.
+    if (typeof data.latitude === 'number' && typeof data.longitude === 'number' &&
+        !Number.isNaN(data.latitude) && !Number.isNaN(data.longitude)) {
+      cachedLocation = { lat: data.latitude, lon: data.longitude, city: data.city || 'Không rõ' }
+      return cachedLocation
+    }
+    console.warn('[Weather] ipapi.co trả về dữ liệu không hợp lệ (có thể bị rate-limit):', JSON.stringify(data).slice(0, 200))
+  } catch (err) {
+    console.warn('[Weather] Không lấy được vị trí theo IP:', err.message)
   }
-  return cachedLocation
+  // Không cache thất bại vào cachedLocation — lần poll tiếp theo (30 phút
+  // sau) sẽ thử gọi lại ipapi.co thay vì kẹt ở fallback mãi mãi.
+  return { lat: 21.0285, lon: 105.8542, city: 'Hà Nội (mặc định)' }
 }
 
 // Chuyển hướng gió (độ) → windForceX

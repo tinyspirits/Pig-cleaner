@@ -251,20 +251,41 @@ async function cleanTrash() {
   const beforeInfo = await getTrashInfo()
   const before = beforeInfo.sizeBytes
 
+  if (before === 0) {
+    return { success: true, type: 'trash', freedBytes: 0, remainingBytes: 0, freedFormatted: '0 B', message: 'Thùng rác đã trống!' }
+  }
+
   try {
     // Dùng AppleScript để dọn rác (phát âm thanh chuẩn của Mac)
-    // Lệnh này sẽ chờ người dùng confirm (nếu có bật cảnh báo)
     await execAsync(`osascript -e 'tell application "Finder" to empty trash'`)
-    
-    // Nếu AppleScript chạy thành công (người dùng bấm OK và không có lỗi),
-    // Finder sẽ dọn rác dưới nền. Chúng ta có thể tự tin cho rằng toàn bộ số rác "before" đã được dọn.
-    // Không nên gọi getTrashInfo() ngay lập tức vì Finder có thể chưa update xong dung lượng.
+
+    // Finder xoá rác BẤT ĐỒNG BỘ dưới nền — osascript trả về ngay khi gửi
+    // xong Apple Event, không phải khi xoá xong thật sự. Trước đây code cứ
+    // tin là đã xoá hết "before" bytes, nên khi mở lại Thống Kê (query lại
+    // getTrashInfo() thật) vẫn thấy rác còn nguyên. Giờ chờ + kiểm tra lại
+    // thực tế (tối đa ~3.2s) trước khi báo kết quả cho người dùng.
+    let after = before
+    for (let i = 0; i < 8; i++) {
+      await new Promise(resolve => setTimeout(resolve, 400))
+      after = (await getTrashInfo()).sizeBytes
+      if (after === 0) break
+    }
+
+    const freed = Math.max(0, before - after)
+
+    if (after > 0) {
+      console.warn(`[cleanupService] Trash vẫn còn ${formatBytes(after)} sau khi dọn (có thể do file bị khoá hoặc cần xác nhận thủ công trong Finder)`)
+    }
+
     return {
       success: true,
       type: 'trash',
-      freedBytes: before,
-      freedFormatted: formatBytes(before),
-      message: `Đã dọn ${formatBytes(before)} rác!`,
+      freedBytes: freed,
+      remainingBytes: after,
+      freedFormatted: formatBytes(freed),
+      message: after > 0
+        ? `Đã dọn ${formatBytes(freed)}, còn ${formatBytes(after)} chưa xoá được (có thể có file đang mở)!`
+        : `Đã dọn ${formatBytes(freed)} rác!`,
     }
   } catch (err) {
     // Fallback: xóa thủ công
@@ -280,10 +301,12 @@ async function cleanTrash() {
           fs.rmSync(itemPath, { recursive: true, force: true })
         } catch { /* skip */ }
       }
+      const after = (await getTrashInfo()).sizeBytes
       return {
         success: true,
         type: 'trash',
         freedBytes: freed,
+        remainingBytes: after,
         freedFormatted: formatBytes(freed),
         message: `Đã dọn ${formatBytes(freed)} rác!`,
       }
