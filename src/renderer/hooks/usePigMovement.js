@@ -210,7 +210,8 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null) {
 
     return () => {
       clearInterval(interval)
-      clearTimeout(landedTimeoutRef.current)
+      // Không clearTimeout ở đây để đảm bảo state landed luôn được giải phóng sau 600ms
+      // kể cả khi effect bị re-run do thay đổi mode
     }
   }, [mode, screenSize])
 

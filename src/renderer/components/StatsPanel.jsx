@@ -28,7 +28,7 @@ export default function StatsPanel({ trashInfo, totalEaten, pigScale, onClose })
       </div>
       <div className="stats-row">
         <span>🍽️ Đã ăn tổng</span>
-        <strong>{formatBytes(totalEaten)}</strong>
+        <strong>{formatBytes(totalEaten * 1024)}</strong>
       </div>
       <div className="stats-row">
         <span>📏 Kích thước heo</span>

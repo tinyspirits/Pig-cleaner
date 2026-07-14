@@ -93,7 +93,8 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
     }
   }
 
-  const displayMode = dragState ? `drag_${dragState}` : mode
+  const isBusyMode = mode === 'eating' || mode === 'sniffing' || mode === 'full'
+  const displayMode = isBusyMode ? mode : (dragState ? `drag_${dragState}` : mode)
   const currentSprite = useSprite(displayMode)
 
   const screenHeight = window.innerHeight
@@ -127,7 +128,8 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
   const dragSkewX = -Math.min(25, Math.max(-25, dragVelocity.x / 3)) // Nghiêng ngược hướng kéo
 
   const containerStyle = {
-    transform: `translate(${safeX}px, ${safeY}px) scale(${safeScale})`, // bỏ scaleX(facing) ở đây
+    transform: `translate(${safeX}px, ${safeY}px) scale(${safeScale})`,
+    transformOrigin: 'bottom center',
     cursor: isDragging ? 'grabbing' : 'grab',
   }
 
