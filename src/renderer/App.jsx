@@ -95,8 +95,14 @@ function App() {
     })
 
     // Lắng nghe show stats
-    const unsubStats = window.pigAPI.onShowStats(() => {
+    const unsubStats = window.pigAPI.onShowStats(async () => {
       setShowStats(prev => !prev)
+      if (isElectron) {
+        const newTrash = await window.pigAPI.getTrashInfo()
+        setTrashInfo(newTrash)
+        const newCache = await window.pigAPI.getCacheTypes()
+        setCacheInfo(newCache)
+      }
     })
 
     // Lắng nghe show cache panel
@@ -109,10 +115,23 @@ function App() {
       setShowSettings(prev => !prev)
     })
 
-    // Lắng nghe bắt đầu dọn dẹp
+    // Lắng nghe bắt đầu dọn dẹp (từ tray)
     const unsubCleanStarted = window.pigAPI.onCleanStarted(() => {
       setIsCleaning(true)
       setMode('eating')
+    })
+
+    // Lắng nghe hoàn thành dọn dẹp (từ tray)
+    const unsubCleanComplete = window.pigAPI.onCleanComplete(async (data) => {
+      setIsCleaning(false)
+      if (data.freedBytes > 0) {
+        triggerEat(data.freedBytes / 1024)
+        const newInfo = await window.pigAPI.getTrashInfo()
+        setTrashInfo(newInfo)
+      } else {
+        forceBubble('Đã dọn xong!')
+        setTimeout(() => setMode('idle'), 1500)
+      }
     })
 
     // Load trash info ban đầu
@@ -128,6 +147,7 @@ function App() {
       unsubCache?.()
       unsubSettings?.()
       unsubCleanStarted?.()
+      unsubCleanComplete?.()
     }
   }, [])
 
@@ -146,10 +166,40 @@ function App() {
   async function handlePigDoubleClick() {
     if (isCleaning) return
     setIsCleaning(true)
-    setMode('eating')
-
+    
     if (isElectron) {
       try {
+        // B1: Đổi sang mode sniffing để kiểm tra rác
+        setMode('sniffing')
+        const currentTrash = await window.pigAPI.getTrashInfo()
+        const currentCache = await window.pigAPI.getCacheTypes()
+        const totalCacheBytes = currentCache.reduce((sum, c) => sum + c.sizeBytes, 0)
+        const totalBytes = currentTrash.sizeBytes + totalCacheBytes
+        
+        if (totalBytes === 0) {
+          forceBubble('Trắng bóc rồi! Không có gì để dọn ✨')
+          setTimeout(() => {
+            setMode('idle')
+            setIsCleaning(false)
+          }, 1500)
+          return
+        }
+
+        // Format size
+        let formattedSize = ''
+        if (totalBytes < 1024) formattedSize = totalBytes + ' B'
+        else if (totalBytes < 1024 * 1024) formattedSize = (totalBytes / 1024).toFixed(1) + ' KB'
+        else if (totalBytes < 1024 * 1024 * 1024) formattedSize = (totalBytes / (1024 * 1024)).toFixed(1) + ' MB'
+        else formattedSize = (totalBytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB'
+
+        // Hiện thông báo lượng rác phát hiện được
+        forceBubble(`Phát hiện ${formattedSize} rác!`)
+        
+        // Chờ 1.5 giây để người dùng đọc thông báo
+        await new Promise(resolve => setTimeout(resolve, 1500))
+
+        // B2: Đổi sang mode eating và tiến hành dọn
+        setMode('eating')
         const result = await window.pigAPI.cleanAll()
         setIsCleaning(false)
         if (result.freedBytes > 0) {
@@ -158,7 +208,7 @@ function App() {
           const newInfo = await window.pigAPI.getTrashInfo()
           setTrashInfo(newInfo)
         } else {
-          forceBubble('Trắng bóc rồi! Không có gì để dọn ✨')
+          forceBubble('Đã dọn xong!')
           setTimeout(() => setMode('idle'), 1500)
         }
       } catch (err) {
