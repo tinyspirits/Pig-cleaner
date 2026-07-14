@@ -10,6 +10,7 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null) {
   const [facing, setFacing] = useState(1) // 1 = right, -1 = left
   
   const [dragState, setDragState] = useState(null)
+  const [dragVelocity, setDragVelocity] = useState({ x: 0, y: 0 })
   const [isWallHit, setIsWallHit] = useState(false)
   const dragStateRef = useRef(null)
   const wallHitTimeoutRef = useRef(null)
@@ -84,6 +85,24 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null) {
         // Nếu đang kéo thả, không chạy vật lý
         updateDragState('held')
         state.vy = 0
+
+        // Tính toán vận tốc kéo hiện tại để làm hiệu ứng quán tính (squash/stretch)
+        const history = dragHistoryRef.current
+        const now = performance.now()
+        // Chỉ lấy history trong 100ms gần nhất
+        const recent = history.filter(h => now - h.time < 100)
+        let dragVx = 0
+        let dragVy = 0
+        if (recent.length > 1) {
+          const first = recent[0]
+          const last = recent[recent.length - 1]
+          const dt = last.time - first.time
+          if (dt > 0) {
+            dragVx = ((last.x - first.x) / dt) * 16 // multiplier scale for effect
+            dragVy = ((last.y - first.y) / dt) * 16
+          }
+        }
+        setDragVelocity({ x: dragVx, y: dragVy })
       } else if (state.y < 0) {
         // Vật lý rơi rớt
         state.vy += 1.5 // Gia tốc rơi
@@ -108,6 +127,10 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null) {
         updateDragState(prev => prev === 'landed' ? 'landed' : null)
       }
       
+      if (!state.isDragging) {
+        setDragVelocity({ x: 0, y: 0 })
+      }
+
       // Áp dụng quán tính (vx) khi ở trên không hoặc trượt trên đất
       if (!state.isDragging && Math.abs(state.vx) > 0.1) {
         state.x += state.vx
@@ -312,6 +335,7 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null) {
     handleDrag,
     handleDragEnd,
     wasDragged: useCallback(() => stateRef.current.hasMoved, []),
-    isWallHit
+    isWallHit,
+    dragVelocity
   }
 }

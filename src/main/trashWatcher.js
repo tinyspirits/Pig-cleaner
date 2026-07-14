@@ -2,67 +2,23 @@ const fs = require('fs')
 const path = require('path')
 const os = require('os')
 
+const cleanupService = require('./cleanupService')
+
 const TRASH_PATH = path.join(os.homedir(), '.Trash')
 
 let watcher = null
 let callback = null
-
-function getFolderSize(folderPath) {
-  let totalSize = 0
-  let fileCount = 0
-
-  try {
-    const items = fs.readdirSync(folderPath, { withFileTypes: true })
-    for (const item of items) {
-      if (item.name.startsWith('.')) continue
-      const itemPath = path.join(folderPath, item.name)
-      try {
-        const stat = fs.statSync(itemPath)
-        if (stat.isDirectory()) {
-          const subResult = getFolderSize(itemPath)
-          totalSize += subResult.size
-          fileCount += subResult.count
-        } else {
-          totalSize += stat.size
-          fileCount++
-        }
-      } catch {
-        // skip
-      }
-    }
-  } catch {
-    // skip
-  }
-
-  return { size: totalSize, count: fileCount }
-}
-
-function formatBytes(bytes) {
-  if (bytes === 0) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
-}
-
-function getTrashInfo() {
-  const result = getFolderSize(TRASH_PATH)
-  return {
-    sizeBytes: result.size,
-    sizeFormatted: formatBytes(result.size),
-    fileCount: result.count,
-  }
-}
 
 function start(cb) {
   callback = cb
 
   // Gửi thông tin ban đầu
   try {
-    const info = getTrashInfo()
-    setTimeout(() => {
-      if (callback) callback(info)
-    }, 1000)
+    cleanupService.getTrashInfo().then(info => {
+      setTimeout(() => {
+        if (callback) callback(info)
+      }, 1000)
+    })
   } catch {
     // skip
   }
@@ -73,7 +29,9 @@ function start(cb) {
       if (eventType === 'rename' || eventType === 'change') {
         clearTimeout(watcher._debounce)
         watcher._debounce = setTimeout(() => {
-          if (callback) callback(getTrashInfo())
+          cleanupService.getTrashInfo().then(info => {
+            if (callback) callback(info)
+          })
         }, 500)
       }
     })
@@ -83,11 +41,12 @@ function start(cb) {
     let lastSize = -1
     watcher = { _pollInterval: setInterval(() => {
       try {
-        const info = getTrashInfo()
-        if (info.sizeBytes !== lastSize) {
-          lastSize = info.sizeBytes
-          if (callback) callback(info)
-        }
+        cleanupService.getTrashInfo().then(info => {
+          if (info.sizeBytes !== lastSize) {
+            lastSize = info.sizeBytes
+            if (callback) callback(info)
+          }
+        })
       } catch {}
     }, 30000) }
   }
@@ -100,4 +59,4 @@ function stop() {
   }
 }
 
-module.exports = { start, stop, getTrashInfo }
+module.exports = { start, stop }

@@ -5,9 +5,41 @@ import CachePanel from './components/CachePanel'
 import SettingsPanel from './components/SettingsPanel'
 import { usePigState } from './hooks/usePigState'
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: 20, background: 'red', color: 'white', zIndex: 9999, position: 'fixed', top: 0, left: 0, width: '100%', height: '100%' }}>
+          <h1>React Crashed!</h1>
+          <pre>{this.state.error.toString()}</pre>
+          <pre>{this.state.error.stack}</pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export default function AppWrapper() {
+  return (
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  )
+}
+
 const isElectron = typeof window !== 'undefined' && window.pigAPI
 
-export default function App() {
+function App() {
   const [trashInfo, setTrashInfo] = useState(null)
   const [showStats, setShowStats] = useState(false)
   const [showCache, setShowCache] = useState(false)
@@ -121,7 +153,7 @@ export default function App() {
         const result = await window.pigAPI.cleanAll()
         setIsCleaning(false)
         if (result.freedBytes > 0) {
-          triggerEat(result.freedBytes / 1024)
+          triggerEat(result.freedBytes / 1024) // convert to KB
           // Cập nhật trash info sau khi dọn
           const newInfo = await window.pigAPI.getTrashInfo()
           setTrashInfo(newInfo)

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
 // Trạng thái: idle → walking → sniffing → eating → sleeping → full
 // Cycle ngẫu nhiên dựa trên context
@@ -68,7 +68,10 @@ export function usePigState(trashInfo) {
   // 2. Shrink pig over time (0.001 per second)
   useEffect(() => {
     const shrinkInterval = setInterval(() => {
-      setPigScale(prev => Math.max(1.0, prev - 0.001))
+      setPigScale(prev => {
+        if (isNaN(prev)) return 1.0;
+        return Math.max(1.0, prev - 0.001)
+      })
     }, 1000)
     return () => clearInterval(shrinkInterval)
   }, [])
@@ -140,26 +143,32 @@ export function usePigState(trashInfo) {
   }, [mode])
 
   // Hành động ăn — freedKB là số KB đã giải phóng
-  function triggerEat(freedKB) {
+  const triggerEat = useCallback((freedKB) => {
     setMode('eating')
-    showBubble(EAT_QUOTES)
-
-    // Tăng kích thước: đảm bảo luôn có base tăng 2% (0.02) để dễ nhận thấy
-    const freedMB = (freedKB || 0) / 1024
-    const growth = freedMB > 0
-      ? 0.02 + Math.min(0.2, Math.log10(1 + freedMB) * 0.03)
+    
+    // Tăng kích thước: đảm bảo luôn có base tăng 5% (0.05) để dễ nhận thấy
+    const growth = freedKB > 0
+      ? 0.05 + Math.min(0.2, Math.log10(1 + freedKB) * 0.04)
       : 0
 
-    setPigScale(prev => Math.min(prev + growth, 2.5))
-    setTotalEaten(prev => prev + (freedKB || 0))
+    setPigScale(prev => {
+      const next = prev + (isNaN(growth) ? 0 : growth)
+      return isNaN(next) ? 1.0 : Math.min(next, 2.5)
+    })
+    setTotalEaten(prev => prev + (isNaN(freedKB) ? 0 : freedKB))
+
+    const sizeStr = freedKB < 1024 
+      ? `+${freedKB.toFixed(0)}KB` 
+      : `+${(freedKB / 1024).toFixed(1)}MB`
+      
+    forceBubble(`${sizeStr}! Ngon quá!`)
 
     setTimeout(() => {
       setMode('full')
       showBubble(FULL_QUOTES)
       setTimeout(() => setMode('idle'), 4000)
     }, 5000)
-  }
-
+  }, [])
   function forceBubble(text) {
     setBubble(text)
     setTimeout(() => setBubble(null), 4000)

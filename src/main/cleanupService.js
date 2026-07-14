@@ -41,11 +41,30 @@ function getFolderSize(folderPath) {
 }
 
 async function getTrashInfo() {
-  const result = getFolderSize(TRASH_PATH)
+  let sizeBytes = 0
+  let fileCount = 0
+  
+  try {
+    // Ưu tiên dùng AppleScript để lấy size của Trash vì nó không bị lỗi EPERM (Full Disk Access)
+    const { stdout } = await execAsync(`osascript -e 'tell application "Finder" to return size of trash'`)
+    const size = parseInt(stdout.trim(), 10)
+    if (!isNaN(size)) {
+      sizeBytes = size
+    } else {
+      // Fallback: Nếu Finder trả về "missing value" (nghĩa là trống rỗng)
+      sizeBytes = 0
+    }
+  } catch (err) {
+    // Fallback về cách đếm folder cũ nếu AppleScript lỗi
+    const result = getFolderSize(TRASH_PATH)
+    sizeBytes = result.size
+    fileCount = result.count
+  }
+
   return {
-    sizeBytes: result.size,
-    sizeFormatted: formatBytes(result.size),
-    fileCount: result.count,
+    sizeBytes,
+    sizeFormatted: formatBytes(sizeBytes),
+    fileCount,
   }
 }
 

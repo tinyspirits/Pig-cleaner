@@ -83,7 +83,8 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
     handleDrag,
     handleDragEnd,
     wasDragged,
-    isWallHit
+    isWallHit,
+    dragVelocity
   } = usePigMovement(mode, isPanelOpen, windRef)
 
   const handleClick = (e) => {
@@ -99,9 +100,34 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
   const visualY = cameraFollowsPig ? Math.max(-screenHeight * 0.7, position.y) : position.y
   const altitude = cameraFollowsPig ? Math.max(0, -position.y - screenHeight * 0.7) : 0
 
+  // Hiệu ứng thiếu oxy: chuyển sang màu đỏ khi bay lên quá mây (altitude > 1500)
+  // Tính độ đỏ: 0 ở 1500, tăng dần lên 1 ở 3500
+  const redness = Math.min(1, Math.max(0, (altitude - 1500) / 2000))
+  // Pig mặc định màu hồng, đổi sang đỏ đậm bằng cách thêm saturate, độ tương phản (contrast), và giảm brightness xíu
+  // Hoặc dùng sepia + hue-rotate để áp màu đỏ rực
+  const imageFilter = redness > 0
+    ? `drop-shadow(0 4px 10px rgba(0, 0, 0, 0.25)) sepia(${redness}) hue-rotate(${-50 * redness}deg) saturate(${1 + 4 * redness}) contrast(${1 + 0.5 * redness})`
+    : `drop-shadow(0 4px 10px rgba(0, 0, 0, 0.25))`
+
+  const safeX = isNaN(position.x) ? 0 : position.x
+  const safeY = isNaN(visualY) ? 0 : visualY
+  const safeScale = isNaN(pigScale) ? 1.0 : pigScale
+
+  const speedX = Math.abs(dragVelocity.x)
+  const speedY = Math.abs(dragVelocity.y)
+  
+  // Tính độ co giãn
+  const stretchX = 1 + Math.min(0.4, speedX / 100)
+  const stretchY = 1 + Math.min(0.4, speedY / 100)
+  const squashX = 1 - Math.min(0.2, speedY / 100)
+  const squashY = 1 - Math.min(0.2, speedX / 100)
+
+  const dragScaleX = stretchX * squashX
+  const dragScaleY = stretchY * squashY
+  const dragSkewX = -Math.min(25, Math.max(-25, dragVelocity.x / 3)) // Nghiêng ngược hướng kéo
+
   const containerStyle = {
-    transform: `translate(${position.x}px, ${visualY}px) scale(${pigScale}) scaleX(${facing})`,
-    transition: isDragging ? 'none' : 'transform 0.05s linear', // Fast transition for smooth walking
+    transform: `translate(${safeX}px, ${safeY}px) scale(${safeScale})`, // bỏ scaleX(facing) ở đây
     cursor: isDragging ? 'grabbing' : 'grab',
   }
 
@@ -160,12 +186,20 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
       )}
 
       {/* Sprite image */}
-      <img
-        className={`pig-sprite pig-sprite--${mode} ${isDragging ? 'dragging' : ''}`}
-        src={currentSprite}
-        alt={`pig ${mode}`}
-        draggable={false}
-      />
+      <div style={{
+        transform: `scaleX(${facing}) skewX(${dragSkewX}deg) scale(${dragScaleX}, ${dragScaleY})`,
+        transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)', // Hiệu ứng nẩy khi dừng đột ngột
+        transformOrigin: 'bottom center',
+        display: 'flex',
+        justifyContent: 'center'
+      }}>
+        <img
+            src={currentSprite}
+            alt="pig pet"
+            className="pig-sprite"
+            style={{ filter: imageFilter }}
+          />
+      </div>
     </div>
     </>
   )

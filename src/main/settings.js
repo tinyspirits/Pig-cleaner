@@ -35,7 +35,9 @@ function load() {
 
 function save(settings) {
   try {
-    fs.writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2), 'utf8')
+    const current = load()
+    const merged = { ...current, ...settings }
+    fs.writeFileSync(SETTINGS_PATH, JSON.stringify(merged, null, 2), 'utf8')
   } catch { /* ignore */ }
 }
 
