@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { usePigMovement } from '../hooks/usePigMovement'
 import SkyClouds from './SkyClouds'
 import GrassTrail from './GrassTrail'
@@ -128,6 +129,7 @@ export const PIG_HEIGHT = 150
 const isElectron = typeof window !== 'undefined' && window.pigAPI
 
 export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = false, isCleaning = false, cameraFollowsPig, onDoubleClick, onWakeUp, weatherData = null, floodMode = false, snowMode = false }) {
+  const { t } = useTranslation()
   const windRef = useRef(null)
   
   const {
@@ -400,7 +402,7 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
           backdropFilter: 'blur(10px)',
           whiteSpace: 'nowrap'
         }}>
-          Đang ăn rác... 🐽
+          {t('pig.cleaning', 'Eating trash... 🐽')}
         </div>
       )}
 

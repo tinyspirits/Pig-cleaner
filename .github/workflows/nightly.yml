@@ -46,6 +46,7 @@ jobs:
           fi
 
       - name: Set Custom Build Version
+        shell: bash
         run: |
           RUN_NUM=${{ github.run_number }}
           PATCH=$(( (RUN_NUM - 1) / 12 ))
@@ -86,6 +87,7 @@ jobs:
           merge-multiple: true
 
       - name: Calculate Version
+        shell: bash
         run: |
           RUN_NUM=${{ github.run_number }}
           PATCH=$(( (RUN_NUM - 1) / 12 ))

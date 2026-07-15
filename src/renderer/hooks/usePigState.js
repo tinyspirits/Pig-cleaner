@@ -1,42 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 
 // Trạng thái: idle → walking → sniffing → eating → sleeping → full
 // Cycle ngẫu nhiên dựa trên context
 
-const IDLE_QUOTES = [
-  'Oink oink! 🐽',
-  'Ăn gì chưa? 🍖',
-  'Buồn ngủ quá~',
-  '*hít thở*',
-  'Hôm nay có rác không ta?',
-]
-
-const SNIFF_QUOTES = [
-  'Khứu... Có mùi rác! 👃',
-  'Ngửi thấy rồi! 🐽',
-  'Rác rác... đâu đâu?',
-  'Hmm... thùng rác có gì?',
-]
-
-const EAT_QUOTES = [
-  'Mmm ngon quá! 😋',
-  'CHOMP CHOMP! 🍽️',
-  'Ăn tiếp! Ăn tiếp!',
-  'Rác này nhìn ngon há...',
-  'Nom nom nom 🐷',
-]
-
-const FULL_QUOTES = [
-  'Căng da bụng quá! 🤰',
-  'No rồi... ợ~ 😮‍💨',
-  'Ăn thêm được nữa 💪',
-  'Heo mập hơn rồi nè!',
-  'Béo ra rồi nha 🐖',
-]
-
-const SLEEP_QUOTES = null // không hiện bubble khi ngủ
+// Quotes will be fetched from i18n
 
 export function usePigState(trashInfo) {
+  const { t } = useTranslation()
   const [mode, setMode] = useState('idle')
   const [bubble, setBubble] = useState(null)
   const [pigScale, setPigScale] = useState(1.0)
@@ -106,7 +77,7 @@ export function usePigState(trashInfo) {
     if (!trashInfo) return
     if (trashInfo.sizeBytes > 0) {
       setMode('sniffing')
-      showBubble(SNIFF_QUOTES)
+      showBubble(t('pig.sniffQuotes', { returnObjects: true, defaultValue: ['Khứu... Có mùi rác! 👃', 'Ngửi thấy rồi! 🐽', 'Rác rác... đâu đâu?', 'Hmm... thùng rác có gì?'] }))
       setTimeout(() => setMode('idle'), 4000)
     }
   }, [trashInfo])
@@ -161,7 +132,7 @@ export function usePigState(trashInfo) {
       setMode(next)
 
       if (next === 'idle' && Math.random() < 0.3) {
-        showBubble(IDLE_QUOTES)
+        showBubble(t('pig.idleQuotes', { returnObjects: true, defaultValue: ['Oink oink! 🐽', 'Ăn gì chưa? 🍖', 'Buồn ngủ quá~', '*hít thở*', 'Hôm nay có rác không ta?'] }))
       }
     }, 5000 + Math.random() * 5000)
 
@@ -188,11 +159,11 @@ export function usePigState(trashInfo) {
       ? `+${freedKB.toFixed(0)}KB` 
       : `+${(freedKB / 1024).toFixed(1)}MB`
       
-    forceBubble(`${sizeStr}! Ngon quá!`)
+    forceBubble(`${sizeStr}! ${t('pig.yummy', 'Ngon quá!')}`)
 
     setTimeout(() => {
       setMode('full')
-      showBubble(FULL_QUOTES)
+      showBubble(t('pig.fullQuotes', { returnObjects: true, defaultValue: ['Căng da bụng quá! 🤰', 'No rồi... ợ~ 😮‍💨', 'Ăn thêm được nữa 💪', 'Heo mập hơn rồi nè!', 'Béo ra rồi nha 🐖'] }))
       setTimeout(() => setMode('idle'), 4000)
     }, 5000)
   }, [])

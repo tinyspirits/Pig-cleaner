@@ -6,6 +6,7 @@ import SettingsPanel from './components/SettingsPanel'
 import WeatherEffects from './components/WeatherEffects'
 import { usePigState } from './hooks/usePigState'
 import { useWeather } from './hooks/useWeather'
+import { useTranslation } from 'react-i18next'
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -54,6 +55,7 @@ function App() {
   const { mode, bubble, pigScale, totalEaten, cameraFollowsPig, reloadSettings, triggerEat, setMode, forceBubble } = usePigState(trashInfo)
   const isPanelOpen = showStats || showCache || showSettings || permissionWarning
   const weather = useWeather()
+  const { t, i18n } = useTranslation()
 
   // Load weather settings khi app khởi động
   useEffect(() => {
@@ -65,6 +67,9 @@ function App() {
           floodMode: s.floodMode === true,
           snowMode: s.snowMode === true,
         })
+        if (s.language) {
+          i18n.changeLanguage(s.language)
+        }
       })
     }
   }, [])
@@ -80,6 +85,9 @@ function App() {
           floodMode: s.floodMode === true,
           snowMode: s.snowMode === true,
         })
+        if (s.language && s.language !== i18n.language) {
+          i18n.changeLanguage(s.language)
+        }
       })
     }
   }
@@ -94,28 +102,28 @@ function App() {
     // Cảnh báo thời tiết sắp tới (chỉ báo nếu hiện tại chưa mưa)
     const isRainingNow = condition === 'rain' || condition === 'drizzle' || condition === 'thunderstorm'
 
-    if (upcomingCondition === 'thunderstorm' && !isRainingNow) msg = '⛈️ Bão sắp đến! Trú ẩn nào!'
-    else if (upcomingCondition === 'rain' && !isRainingNow) msg = '🌧️ Sắp mưa rồi! Ướt thôi...'
-    else if (upcomingCondition === 'drizzle' && !isRainingNow) msg = '🌦️ Sắp có mưa phùn!'
+    if (upcomingCondition === 'thunderstorm' && !isRainingNow) msg = t('weather.stormComing')
+    else if (upcomingCondition === 'rain' && !isRainingNow) msg = t('weather.rainComing')
+    else if (upcomingCondition === 'drizzle' && !isRainingNow) msg = t('weather.drizzleComing')
     // Thời tiết hiện tại
-    else if (windSpeed > 60) msg = '🌪️ Gió quá mạnh! Tôi sắp bay...'
-    else if (windSpeed > 40) msg = '🌬️ Gió mạnh quá đó!'
-    else if (condition === 'thunderstorm') msg = '⚡️ Trời nổi giận!'
-    else if (condition === 'rain' || condition === 'drizzle') msg = '💧 Ồi! Ướt rồi! Lạnh quá!'
-    else if (condition === 'snow') msg = '❄️ Tuyết rơi! Lạnh quá đi!'
-    else if (condition === 'clear' && temperature > 35) msg = '🔥 Nắng nóng cực! Cháy da rồi!'
-    else if (condition === 'clear' && temperature > 30) msg = '☀️ Nóng quá! Cho tôi nghỉ tí!'
-    else if (temperature !== null && temperature < 10) msg = '🥶 Lạnh cắt da luôn!'
-    else if (temperature !== null && temperature < 18) msg = '🧊 Tôi đang thấy lạnh!'
+    else if (windSpeed > 60) msg = t('weather.windStrong')
+    else if (windSpeed > 40) msg = t('weather.windBrisk')
+    else if (condition === 'thunderstorm') msg = t('weather.thunderstorm')
+    else if (condition === 'rain' || condition === 'drizzle') msg = t('weather.rain')
+    else if (condition === 'snow') msg = t('weather.snow')
+    else if (condition === 'clear' && temperature > 35) msg = t('weather.hotExtreme')
+    else if (condition === 'clear' && temperature > 30) msg = t('weather.hot')
+    else if (temperature !== null && temperature < 10) msg = t('weather.coldExtreme')
+    else if (temperature !== null && temperature < 18) msg = t('weather.cold')
 
     if (msg) setTimeout(() => forceBubble(msg), 3000)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weather.condition, weather.upcomingCondition, weatherSettings.weatherAlerts])
+  }, [weather.condition, weather.upcomingCondition, weatherSettings.weatherAlerts, t])
 
   // Heo than lạnh thường xuyên hơn khi nhiệt độ <= 0
   useEffect(() => {
     if (!weatherSettings.weatherAlerts || weather.temperature === null || weather.temperature > 0) return
-    const messages = ['🥶 Lạnh quá đi mất!', '🧊 Cứu tôi, đông đá luôn rồi!', '❄️ Lạnh buốt giá luôn!', '🥶 Da đổi màu xanh rồi nè!']
+    const messages = [t('weather.coldComplain1'), t('weather.coldComplain2'), t('weather.coldComplain3'), t('weather.coldComplain4')]
     const interval = setInterval(() => {
       const randomMsg = messages[Math.floor(Math.random() * messages.length)]
       forceBubble(randomMsg)
@@ -128,7 +136,7 @@ function App() {
     if (!weatherSettings.weatherAlerts) return
     const handleLightning = () => {
       setMode('scared')
-      forceBubble('Sợ quá! 😭')
+      forceBubble(t('weather.scared'))
       setTimeout(() => setMode('idle'), 2000)
     }
     window.addEventListener('lightning-strike', handleLightning)
@@ -164,9 +172,9 @@ function App() {
       setTrashInfo(info)
       if (info.sizeBytes > 0) {
         setMode('sniffing')
-        forceBubble(`Thùng rác đang có ${info.sizeFormatted} rác! 🗑️`)
+        forceBubble(t('trash.found', { size: info.sizeFormatted }))
       } else {
-        forceBubble(`Thùng rác sạch bóng! ✨`)
+        forceBubble(t('trash.clean'))
       }
     })
 
@@ -217,7 +225,7 @@ function App() {
       setIsCleaning(false)
 
       if (data.trash?.success === false) {
-        forceBubble('Heo chưa được cấp quyền full access ⚠️')
+        forceBubble(t('trash.noPermission'))
         setTimeout(() => setMode('idle'), 4000)
         return
       }
@@ -232,10 +240,10 @@ function App() {
       const newInfo = await window.pigAPI.getTrashInfo()
       setTrashInfo(newInfo)
       if (data.freedBytes <= 0) {
-        forceBubble('Ủa, không có rác à? 🐷')
+        forceBubble(t('trash.empty'))
         setTimeout(() => setMode('idle'), 1500)
       } else if (data.remainingBytes > 0) {
-        forceBubble(`Còn ${newInfo.sizeFormatted} chưa dọn được, có file đang mở à? 🤔`)
+        forceBubble(t('trash.remaining', { size: newInfo.sizeFormatted }))
       }
     })
 
@@ -281,14 +289,14 @@ function App() {
       try {
         // B1: Đổi sang mode sniffing để kiểm tra rác
         setMode('sniffing')
-        forceBubble('Đang tìm rác... 🐽')
+        forceBubble(t('trash.sniffing'))
         const currentTrash = await window.pigAPI.getTrashInfo()
         const currentCache = await window.pigAPI.getCacheTypes()
         const totalCacheBytes = currentCache.reduce((sum, c) => sum + c.sizeBytes, 0)
         const totalBytes = currentTrash.sizeBytes + totalCacheBytes
         
         if (totalBytes === 0 && currentTrash.fileCount === 0 && totalCacheBytes === 0) {
-          forceBubble('Trắng bóc rồi! Không có gì để dọn ✨')
+          forceBubble(t('trash.spotless'))
           setTimeout(() => {
             setMode('idle')
             setIsCleaning(false)
@@ -304,7 +312,7 @@ function App() {
         else formattedSize = (totalBytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB'
 
         // Hiện thông báo lượng rác phát hiện được
-        forceBubble(`Phát hiện ${formattedSize} rác!`)
+        forceBubble(t('trash.detected', { size: formattedSize }))
         
         // Chờ 1.5 giây để người dùng đọc thông báo
         await new Promise(resolve => setTimeout(resolve, 1500))
@@ -324,7 +332,7 @@ function App() {
         setIsCleaning(false)
 
         if (result.trash?.success === false) {
-          forceBubble('Heo chưa được cấp quyền full access ⚠️')
+          forceBubble(t('trash.noPermission'))
           setTimeout(() => setMode('idle'), 4000)
           return
         }
@@ -338,9 +346,9 @@ function App() {
         
         const remaining = result.trash?.remainingBytes || 0
         if (result.freedBytes > 0 && remaining > 0) {
-          forceBubble(`Còn ${newInfo.sizeFormatted} chưa dọn được, có file đang mở à? 🤔`)
+          forceBubble(t('trash.remaining', { size: newInfo.sizeFormatted }))
         } else {
-          forceBubble('Đã dọn xong!')
+          forceBubble(t('trash.done'))
           setTimeout(() => setMode('idle'), 1500)
         }
       } catch (err) {
@@ -377,8 +385,8 @@ function App() {
       {/* Permission Warning */}
       {permissionWarning && (
         <div className="permission-warning" onClick={() => setPermissionWarning(false)}>
-          ⚠️ Cần cấp Full Disk Access<br />
-          <small>System Settings → Privacy & Security → Full Disk Access</small>
+          {t('permissions.warning')}<br />
+          <small>{t('permissions.instruction')}</small>
         </div>
       )}
 
