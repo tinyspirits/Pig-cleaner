@@ -1,0 +1,56 @@
+name: Nightly Build
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Application
+        run: npm run build
+
+      - name: Delete old release assets
+        uses: mknejp/delete-release-assets@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: nightly
+          assets: '*'
+          fail-if-no-assets: false
+          fail-if-no-release: false
+
+      - name: Update Nightly Tag
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git tag -f nightly
+          git push -f origin nightly
+
+      - name: Publish Nightly Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly
+          name: "🐷 Bản thử nghiệm mới nhất (Nightly)"
+          body: "Bản build tự động mới nhất từ nhánh `master`."
+          prerelease: true
+          files: release/*.dmg
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
