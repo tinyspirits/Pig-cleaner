@@ -45,6 +45,17 @@ jobs:
             echo "No MAC_CERTS found, skipping code signing."
           fi
 
+      - name: Set Custom Build Version
+        run: |
+          RUN_NUM=${{ github.run_number }}
+          PATCH=$(( (RUN_NUM - 1) / 12 ))
+          BUILD=$(( (RUN_NUM - 1) % 12 + 1 ))
+          if [ "$PATCH" -ge 13 ]; then
+            PATCH=$((PATCH + 1))
+          fi
+          NEW_VERSION="1.0.${PATCH}.${BUILD}"
+          npm version $NEW_VERSION --no-git-tag-version
+
       - name: Build Application
         run: npm run build
         env:
@@ -74,11 +85,21 @@ jobs:
           path: artifacts
           merge-multiple: true
 
+      - name: Calculate Version
+        run: |
+          RUN_NUM=${{ github.run_number }}
+          PATCH=$(( (RUN_NUM - 1) / 12 ))
+          BUILD=$(( (RUN_NUM - 1) % 12 + 1 ))
+          if [ "$PATCH" -ge 13 ]; then
+            PATCH=$((PATCH + 1))
+          fi
+          echo "CUSTOM_VERSION=1.0.${PATCH}.${BUILD}" >> $GITHUB_ENV
+
       - name: Publish Nightly Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: nightly_v${{ github.run_number }}
-          name: "🐷 Bản thử nghiệm mới nhất (Nightly v${{ github.run_number }})"
+          tag_name: nightly_v${{ env.CUSTOM_VERSION }}
+          name: "🐷 Bản thử nghiệm mới nhất (Nightly v${{ env.CUSTOM_VERSION }})"
           body: |
             Bản build tự động mới nhất từ nhánh `master`.
 

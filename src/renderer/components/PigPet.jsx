@@ -145,7 +145,8 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
     dragVelocity,
     swimAction,
     isAboveWater,
-    paleLevel
+    paleLevel,
+    isSpaceFrozen
   } = usePigMovement(mode, isPanelOpen, windRef, pigScale, weatherData, floodMode)
 
   const handleClick = (e) => {
@@ -160,7 +161,9 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
 
 
   let displayMode = mode
-  if (mode === 'eating') {
+  if (isSpaceFrozen) {
+    displayMode = 'drag_falling' // Nhắm mắt, người cứng đơ
+  } else if (mode === 'eating') {
     displayMode = 'eating'
   } else if (isDragging) {
     displayMode = dragState ? `drag_${dragState}` : 'drag_held'
@@ -194,7 +197,7 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
   const screenHeight = window.innerHeight
   const visualY = cameraFollowsPig ? Math.max(-screenHeight * 0.7, position.y) : position.y
   const altitude = cameraFollowsPig ? Math.max(0, -position.y - screenHeight * 0.7) : 0
-
+  const freezeLevel = Math.min(1, Math.max(0, (altitude - 12500) / 2500))
   // Hiệu ứng thiên thạch: rơi quá nhanh sinh nhiệt (ma sát)
   const isFalling = !isDragging && dragVelocity.y > 10
   const meteoriteHeat = isFalling ? Math.min(1, (dragVelocity.y - 30) / 120) : 0
@@ -262,7 +265,10 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
 
   // Áp dụng filter thiên thạch đè lên nếu đang rơi hoặc đang bị cháy đen
   let meteoriteRedness = 0;
-  if (isCharred) {
+  if (isSpaceFrozen) {
+    // Bị đóng băng ngoài vũ trụ
+    imageFilter = `drop-shadow(0 0 25px rgba(0,255,255,0.8)) hue-rotate(180deg) saturate(0.5) brightness(1.5) contrast(1.2)`
+  } else if (isCharred) {
     // Cháy đen thui còn 2 con mắt trắng
     meteoriteRedness = 1
     imageFilter = `invert(1) grayscale(1) contrast(5) brightness(0.6) drop-shadow(0 0 4px rgba(0,0,0,1))`

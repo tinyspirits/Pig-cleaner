@@ -28,7 +28,7 @@
   },
   "build": {
     "appId": "com.pig.cleaner",
-    "artifactName": "${name}-${version}.${env.GITHUB_RUN_NUMBER}-nightly-${arch}.${ext}",
+    "artifactName": "${name}-${version}-nightly-${arch}.${ext}",
     "directories": {
       "output": "release"
     },
