@@ -24,12 +24,18 @@ import sleep4 from '../assets/sprites/sleep4.png'
 import drag1 from '../assets/sprites/drag1.png'
 import drag2 from '../assets/sprites/drag2.png'
 import drag3 from '../assets/sprites/drag3.png'
-import dive0 from '../assets/sprites/dive_frames/pig_17.png'
-import dive1 from '../assets/sprites/dive_frames/pig_18.png'
-import dive2 from '../assets/sprites/dive_frames/pig_19.png'
-import dive3 from '../assets/sprites/dive_frames/pig_20.png'
-import dive4 from '../assets/sprites/dive_frames/pig_21.png'
-import dive5 from '../assets/sprites/dive_frames/pig_22.png'
+// Dive frames (kỹ năng lặn sau khi tỉnh) — theo mapping của all_pigs:
+// 11-15 = bơi dưới đáy nước, 18-20 = lặn xuống, 21 = ngoi lên, 22 = nổi lơ lửng
+import diveBottom0 from '../assets/sprites/dive_frames/pig_11.png'
+import diveBottom1 from '../assets/sprites/dive_frames/pig_12.png'
+import diveBottom2 from '../assets/sprites/dive_frames/pig_13.png'
+import diveBottom3 from '../assets/sprites/dive_frames/pig_14.png'
+import diveBottom4 from '../assets/sprites/dive_frames/pig_15.png'
+import diveDown0 from '../assets/sprites/dive_frames/pig_18.png'
+import diveDown1 from '../assets/sprites/dive_frames/pig_19.png'
+import diveDown2 from '../assets/sprites/dive_frames/pig_20.png'
+import diveUp from '../assets/sprites/dive_frames/pig_21.png'
+import diveFloat from '../assets/sprites/dive_frames/pig_22.png'
 import drown0 from '../assets/sprites/drowning_frames/pig_15.png'
 import drown1 from '../assets/sprites/drowning_frames/pig_16.png'
 import drown2 from '../assets/sprites/drowning_frames/pig_17.png'
@@ -52,8 +58,10 @@ const ANIMATIONS = {
   drag_held: { frames: [drag1], fps: 1, loop: false },
   drag_falling: { frames: [drag2], fps: 1, loop: false },
   drag_landed: { frames: [drag3], fps: 1, loop: false },
-  diving: { frames: [dive0, dive1, dive2, dive3, dive4, dive5], fps: 6, loop: true },
-  swimming: { frames: [dive0, dive1, dive2, dive3, dive4, dive5], fps: 4, loop: true },
+  diving_float: { frames: [diveFloat], fps: 1, loop: true }, // Nổi lơ lửng, không di chuyển
+  diving_down: { frames: [diveDown0, diveDown1, diveDown2], fps: 6, loop: true }, // Đang lặn xuống
+  diving_up: { frames: [diveUp], fps: 1, loop: true }, // Đang ngoi lên
+  diving_bottom: { frames: [diveBottom0, diveBottom1, diveBottom2, diveBottom3, diveBottom4], fps: 6, loop: true }, // Bơi dưới đáy nước
   drowning: { frames: [drown0, drown1, drown2, drown3, drown4], fps: 6, loop: true },
   struggling: { frames: [struggle1, struggle2, struggle3], fps: 6, loop: true },
 }
@@ -130,9 +138,21 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
   } else if (isSinking) {
     displayMode = position.y >= -5 ? 'sleeping' : 'drowning'
   } else if (isUnderwater && !isDragging) {
-    displayMode = 'diving'
+    // Heo đã có "kỹ năng lặn" — chọn đúng sub-animation theo hướng di chuyển
+    const vy = dragVelocity.y
+    if (position.y >= -5) {
+      displayMode = 'diving_bottom' // Đang bơi/nghỉ dưới đáy nước
+    } else if (vy > 2) {
+      displayMode = 'diving_down' // Đang chủ động lặn xuống
+    } else if (vy < -2) {
+      displayMode = 'diving_up' // Đang ngoi lên
+    } else {
+      displayMode = 'diving_float' // Nổi lơ lửng, không di chuyển nhiều
+    }
   } else if (isFloating && !isDragging) {
-    displayMode = 'swimming'
+    // Nước đang dâng, heo CHƯA có kỹ năng lặn -> chỉ biết giãy giụa trên mặt nước
+    // (dùng chung animation với isStruggling, cùng bộ khung hình 11-13 drowning_frames)
+    displayMode = 'struggling'
   } else if (position.y < -5) {
     displayMode = 'drag_falling'
   } else if (dragState === 'landed') {
