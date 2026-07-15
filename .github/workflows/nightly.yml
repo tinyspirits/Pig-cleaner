@@ -86,16 +86,19 @@ jobs:
             <summary>🍏 <b>Dành cho macOS (Chip M1/M2/M3 và Intel)</b></summary>
             
             ⚠️ **Hướng dẫn cài đặt trên macOS (Quan trọng):**
-            Vì ứng dụng là dự án mã nguồn mở (không có chứng chỉ trả phí của Apple), macOS có thể sẽ báo lỗi *"App is damaged and can't be opened"* khi bạn mở lần đầu. Để khắc phục, vui lòng làm theo các bước sau:
+            Sau khi tải file `.dmg` và kéo thả `pig-cleaner.app` vào thư mục **Applications** (Ứng dụng), bạn có thể gặp cảnh báo bảo mật. Vui lòng xử lý theo 1 trong 2 trường hợp sau:
             
-            1. Tải file `.dmg` phù hợp với máy của bạn.
-            2. Kéo thả `pig-cleaner.app` vào thư mục **Applications** (Ứng dụng).
-            3. Mở ứng dụng **Terminal** trên máy Mac.
-            4. Chạy dòng lệnh sau và ấn Enter:
+            **👉 Trường hợp 1: Báo lỗi "Unidentified Developer" (Nhà phát triển không xác định)**
+            - Mở **System Settings** (Cài đặt hệ thống) -> **Privacy & Security** (Quyền riêng tư & Bảo mật).
+            - Cuộn xuống dưới cùng, tìm dòng chữ báo Pig Cleaner bị chặn và bấm nút **Open Anyway** (Vẫn mở).
+            
+            **👉 Trường hợp 2 (Trên macOS đời mới): Báo lỗi "App is damaged..." (App bị hỏng)**
+            - Mở ứng dụng **Terminal** trên máy Mac.
+            - Chạy dòng lệnh sau và ấn Enter (lệnh này giúp xoá nhãn cách ly an toàn của file tải từ internet):
                ```bash
                xattr -cr /Applications/pig-cleaner.app
                ```
-            5. Mở ứng dụng và trải nghiệm bình thường!
+            - Mở lại ứng dụng bình thường!
             </details>
 
             <details>
