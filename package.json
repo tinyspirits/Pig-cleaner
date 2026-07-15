@@ -22,11 +22,20 @@
     "@vitejs/plugin-react": "^4.5.2",
     "concurrently": "^9.2.0",
     "electron": "^43.1.0",
+    "electron-builder": "^24.13.3",
     "vite": "^7.0.4",
     "wait-on": "^8.0.3"
   },
   "build": {
     "appId": "com.pig.cleaner",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/renderer/**/*",
+      "src/main/**/*",
+      "package.json"
+    ],
     "mac": {
       "target": "dmg",
       "arch": [

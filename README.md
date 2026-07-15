@@ -41,6 +41,16 @@ npm run dev
 > **⚠️ Lưu ý cấp quyền (Permissions):** Để dọn dẹp một số thư mục hệ thống (như Safari Cache hoặc Xcode DerivedData), ứng dụng cần được cấp quyền **Full Disk Access**.
 > *Vào System Settings → Privacy & Security → Full Disk Access → Thêm ứng dụng / Terminal của bạn vào.*
 
+## 📦 Đóng gói ứng dụng (Build DMG)
+
+Để xuất ứng dụng thành file cài đặt `.dmg` chạy trên macOS (tự động hỗ trợ cả chip Apple Silicon và Intel), bạn chỉ cần chạy lệnh sau:
+
+```bash
+npm run build
+```
+
+Sau khi quá trình hoàn tất (mất khoảng 1-2 phút), file `.dmg` sẽ được xuất ra và nằm trong thư mục `release/` của dự án. Bạn có thể mở file này để cài đặt hoặc gửi cho bạn bè.
+
 ## 🎨 Hướng dẫn Custom Sprite (Tự thiết kế heo của bạn)
 
 Bạn hoàn toàn có thể thay đổi hình ảnh chú heo thành nhân vật yêu thích của mình (mèo, chó, capybara...) bằng cách thay thế các file ảnh (sprite) trong mã nguồn.
