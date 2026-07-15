@@ -97,6 +97,11 @@ jobs:
             <summary>🪟 <b>Dành cho Windows</b></summary>
             
             - Tải file `.exe` ở dưới và cài đặt bình thường.
+            
+            ⚠️ **Hướng dẫn bỏ qua màn hình xanh SmartScreen:**
+            Vì ứng dụng chưa có chứng chỉ trả phí của Microsoft, Windows sẽ hiện bảng xanh báo động "Windows protected your PC". Để mở app, bạn có 2 cách:
+            - **Cách 1 (Nhanh nhất):** Bấm vào dòng chữ **"More info"** (Thêm thông tin), sau đó bấm nút **"Run anyway"** (Vẫn chạy).
+            - **Cách 2 (Xoá vĩnh viễn cảnh báo):** Trước khi mở, nhấn chuột phải vào file `.exe` -> Chọn **Properties** (Thuộc tính) -> Ở thẻ General, tick vào ô **Unblock** (Mở khoá) ở dưới cùng -> Nhấn OK.
             </details>
             
             📝 **Dành cho Lập trình viên:**

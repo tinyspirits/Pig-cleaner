@@ -290,10 +290,25 @@ ipcMain.handle('search-location', async (_, query) => {
   return await weatherService.searchLocation(query)
 })
 
-app.whenReady().then(async () => {
-  createWindow()
-  createTray()
-  setupAutoClean()
+const gotTheLock = app.requestSingleInstanceLock()
+
+if (!gotTheLock) {
+  app.quit()
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    // Someone tried to run a second instance, focus the main window.
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
+      // Optional: show pig visual feedback
+      mainWindow.webContents.send('pig-called-home')
+    }
+  })
+
+  app.whenReady().then(async () => {
+    createWindow()
+    createTray()
+    setupAutoClean()
 
   // Tự động thay đổi kích thước cửa sổ khi thanh Dock thay đổi trạng thái (hiện/ẩn)
   screen.on('display-metrics-changed', (event, display, changedMetrics) => {
@@ -349,3 +364,4 @@ app.on('activate', () => {
     createWindow()
   }
 })
+} // Close else block for single instance lock
