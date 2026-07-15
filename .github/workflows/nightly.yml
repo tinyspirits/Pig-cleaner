@@ -90,7 +90,22 @@ jobs:
         with:
           tag_name: nightly
           name: "🐷 Bản thử nghiệm mới nhất (Nightly)"
-          body: "Bản build tự động mới nhất từ nhánh `master`."
+          body: |
+            Bản build tự động mới nhất từ nhánh `master`.
+            
+            ⚠️ **Hướng dẫn cài đặt trên macOS (Quan trọng):**
+            Vì ứng dụng là dự án mã nguồn mở (không có chứng chỉ trả phí của Apple), macOS có thể sẽ báo lỗi *"App is damaged and can't be opened"* khi bạn mở lần đầu. Để khắc phục, vui lòng làm theo các bước sau:
+            
+            1. Kéo thả `pig-cleaner.app` vào thư mục **Applications** (Ứng dụng).
+            2. Mở ứng dụng **Terminal** trên máy Mac.
+            3. Chạy dòng lệnh sau và ấn Enter:
+               ```bash
+               xattr -cr /Applications/pig-cleaner.app
+               ```
+            4. Mở ứng dụng và trải nghiệm bình thường!
+            
+            📝 **Dành cho Lập trình viên:**
+            Nếu bạn muốn tự custom, chỉnh sửa code và tự đóng gói (build) ứng dụng cho riêng mình, hãy xem hướng dẫn chi tiết tại [Trang chủ dự án (README)](https://github.com/tinyspirits/Pig-cleaner).
           prerelease: true
           files: artifacts/*
           fail_on_unmatched_files: false
