@@ -23,6 +23,7 @@ export default function SettingsPanel({ onClose }) {
     weatherLocation: null,
     floodMode: false,
     snowMode: false,
+    stormMode: false,
     language: i18n.language || 'en',
   })
   const [categories, setCategories] = useState([])
@@ -137,6 +138,18 @@ export default function SettingsPanel({ onClose }) {
               <option value="en">{t('settingsPanel.english')}</option>
               <option value="vi">{t('settingsPanel.vietnamese')}</option>
               <option value="ja">{t('settingsPanel.japanese')}</option>
+            </select>
+          </div>
+
+          <div className="settings-section">
+            <div className="settings-section-title">🐾 {t('settingsPanel.petType', 'Pet Type')}</div>
+            <select 
+              className="settings-select"
+              value={settings.petType || 'pig'}
+              onChange={e => setSettings(prev => ({ ...prev, petType: e.target.value }))}
+            >
+              <option value="pig">{t('settingsPanel.pig', 'Heo (Pig)')}</option>
+              <option value="duck">{t('settingsPanel.duck', 'Vịt (Duck)')}</option>
             </select>
           </div>
 
@@ -276,6 +289,14 @@ export default function SettingsPanel({ onClose }) {
                 onChange={e => setSettings(prev => ({ ...prev, snowMode: e.target.checked }))}
               />
               <span className="cache-item-label">{t('settingsPanel.snowStorm')}</span>
+            </label>
+            <label className="cache-item">
+              <input
+                type="checkbox"
+                checked={settings.stormMode === true}
+                onChange={e => setSettings(prev => ({ ...prev, stormMode: e.target.checked }))}
+              />
+              <span className="cache-item-label">{t('settingsPanel.stormMode', 'Giả lập sấm sét (Thunderstorm)')}</span>
             </label>
             <label className="cache-item">
               <input

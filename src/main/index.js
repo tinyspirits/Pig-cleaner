@@ -71,6 +71,8 @@ function createWindow() {
 
 function buildTrayMenu() {
   const w = weatherService.getCurrent()
+  const settings = settingsStore.load()
+  const isDuck = settings.petType === 'duck'
   const weatherLabel = w.description || i18n.t('weather.loading')
   const tempLabel = w.temperature !== null && w.temperature !== undefined ? ` (${Math.round(w.temperature)}°C)` : ''
   const upcomingLabel = w.upcomingCondition ? `${i18n.t('weather.upcoming')}${
@@ -90,7 +92,7 @@ function buildTrayMenu() {
     },
     { type: 'separator' },
     {
-      label: i18n.t('tray.callPig'),
+      label: isDuck ? i18n.t('tray.callDuck', '🦆 Gọi vịt về góc phải') : i18n.t('tray.callPig'),
       click: () => {
         mainWindow.webContents.send('pig-called-home')
       },
@@ -154,14 +156,18 @@ function buildTrayMenu() {
     },
   ])
 
-  tray.setToolTip(i18n.t('tray.tooltip'))
+  tray.setToolTip(isDuck ? i18n.t('tray.tooltipDuck', 'Vịt Dọn Rác 🦆') : i18n.t('tray.tooltip'))
   tray.setContextMenu(contextMenu)
 }
 
 function createTray() {
+  const settings = settingsStore.load()
+  const isDuck = settings.petType === 'duck'
+  
+  const iconName = isDuck ? 'duck-tray-icon.png' : 'tray-icon.png'
   const iconPath = isDev
-    ? path.join(__dirname, '../../src/renderer/assets/tray-icon.png')
-    : path.join(process.resourcesPath, 'assets/tray-icon.png')
+    ? path.join(__dirname, `../../src/renderer/assets/${iconName}`)
+    : path.join(process.resourcesPath, `assets/${iconName}`)
 
   let image = nativeImage.createFromPath(iconPath)
   // Resize to standard macOS tray height (18px) and preserve aspect ratio
@@ -271,7 +277,23 @@ ipcMain.handle('save-settings', (_, newSettings) => {
 
   if (newSettings.language && newSettings.language !== prev.language) {
     i18n.changeLanguage(newSettings.language)
-    if (tray && !tray.isDestroyed()) buildTrayMenu()
+  }
+  
+  // Update tray if language or petType changed
+  if ((newSettings.language !== prev.language) || (newSettings.petType !== prev.petType)) {
+    if (tray && !tray.isDestroyed()) {
+      const isDuck = newSettings.petType === 'duck'
+      const iconName = isDuck ? 'duck-tray-icon.png' : 'tray-icon.png'
+      const iconPath = isDev
+        ? path.join(__dirname, `../../src/renderer/assets/${iconName}`)
+        : path.join(process.resourcesPath, `assets/${iconName}`)
+      
+      let image = nativeImage.createFromPath(iconPath)
+      image = image.resize({ height: 18 })
+      tray.setImage(image)
+      
+      buildTrayMenu()
+    }
   }
 
   // Nếu vị trí thời tiết thay đổi, áp dụng ngay cho weatherService
