@@ -877,3 +877,37 @@ body,
   80% { transform: translateY(-40px) scale(1.2); opacity: 1; }
   100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
 }
+
+/* Water splash effect */
+.water-splash-effect {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 150px;
+  height: 20px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.water-splash-drop {
+  position: absolute;
+  bottom: 0;
+  width: 12px;
+  height: 12px;
+  background: rgba(180, 220, 255, 0.85);
+  border-radius: 50%;
+  animation: splashDrop 0.5s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+@keyframes splashDrop {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty)) scale(0);
+    opacity: 0;
+  }
+}

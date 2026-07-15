@@ -281,6 +281,20 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
     cursor: isDragging ? 'grabbing' : 'grab',
   }
 
+  const [splashes, setSplashes] = useState([])
+  useEffect(() => {
+    const handleSplash = (e) => {
+      const vy = e.detail?.vy || 0
+      const id = Date.now() + Math.random()
+      setSplashes(prev => [...prev, { id, vy }])
+      setTimeout(() => {
+        setSplashes(prev => prev.filter(s => s.id !== id))
+      }, 600)
+    }
+    window.addEventListener('water-splash', handleSplash)
+    return () => window.removeEventListener('water-splash', handleSplash)
+  }, [])
+
   return (
     <>
       <SkyClouds altitude={altitude} />
@@ -355,6 +369,32 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
           <div className="zzz z3">Z</div>
         </div>
       )}
+
+      {/* Water Splashes */}
+      {splashes.map(({ id, vy }) => {
+        const isBigSplash = vy > 10;
+        const dropCount = isBigSplash ? 8 : 3;
+        const scatterX = isBigSplash ? 150 : 50;
+        const scatterY = isBigSplash ? 80 : 20;
+        const baseHeight = isBigSplash ? 30 : 10;
+        
+        return (
+          <div key={id} className="water-splash-effect">
+            {[...Array(dropCount)].map((_, i) => (
+              <div 
+                key={i} 
+                className="water-splash-drop"
+                style={{
+                  '--tx': `${(Math.random() - 0.5) * scatterX}px`,
+                  '--ty': `${-baseHeight - Math.random() * scatterY}px`,
+                  left: `${50 + (Math.random() - 0.5) * (isBigSplash ? 40 : 20)}%`,
+                  transform: isBigSplash ? 'scale(1)' : 'scale(0.6)'
+                }}
+              />
+            ))}
+          </div>
+        );
+      })}
 
       {/* Sprite image */}
       <div style={{

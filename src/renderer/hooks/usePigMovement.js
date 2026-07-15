@@ -28,6 +28,8 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
   const swimActionRef = useRef('none')
   const swimPhaseRef = useRef(0)
   const nextSwimChangeRef = useRef(0)
+  const hasImpactedRef = useRef(true)
+  const lastIsDraggingRef = useRef(false)
   const floodModeRef = useRef(floodMode)
   
   // Cập nhật refs mỗi khi props thay đổi
@@ -126,18 +128,28 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
           swimActionRef.current = 'surface'
           setSwimAction('surface')
         } else {
-          swimActionRef.current = 'bottom'
-          setSwimAction('bottom')
-          nextSwimChangeRef.current = performance.now() + 5000 + Math.random() * 10000
+          swimActionRef.current = 'rising'
+          setSwimAction('rising')
+          nextSwimChangeRef.current = performance.now() + 2000
         }
       } else if (!isInWater && swimActionRef.current !== 'none') {
         swimActionRef.current = 'none'
         setSwimAction('none')
         swimPhaseRef.current = 0 // Quên cách bơi khi cạn nước
+      } else if (isInWater && state.isDragging && state.y < floatingY && swimActionRef.current !== 'surface' && swimActionRef.current !== 'rising') {
+        // Bị nhấc ra khỏi mặt nước khi đang lặn
+        const nextAction = swimPhaseRef.current === 0 ? 'surface' : 'rising'
+        swimActionRef.current = nextAction
+        setSwimAction(nextAction)
       }
 
       currentFloorRef.current = !isInWater || swimActionRef.current === 'bottom' || swimActionRef.current === 'diving' ? 0 : floatingY
       
+      if (state.isDragging && !lastIsDraggingRef.current) {
+        hasImpactedRef.current = false
+      }
+      lastIsDraggingRef.current = state.isDragging
+
       if (state.isDragging) {
         // Nếu đang kéo thả, không chạy vật lý
         updateDragState('held')
@@ -273,10 +285,29 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
         if (state.y < activeFloor) {
             updateDragState('falling')
         } else {
-            if (dragStateRef.current === 'falling') {
+            if (dragStateRef.current === 'falling' || (dragStateRef.current === 'held' && state.vy > 5)) {
                 updateDragState('landed')
-                if (pigScaleRef.current >= 2.0 && state.y === 0) {
-                    window.dispatchEvent(new CustomEvent('earthquake'))
+                if (isInWater && state.y >= floatingY) {
+                    if (!hasImpactedRef.current) {
+                        window.dispatchEvent(new CustomEvent('water-splash', { detail: { vy: Math.abs(state.vy) } }))
+                        hasImpactedRef.current = true
+                        
+                        if (state.vy > 10) {
+                            // Rơi tòm xuống nước, chìm xuống 1 chút do quán tính rồi sẽ tự nổi lên
+                            state.vy *= 0.4 // Giảm lực rơi mạnh
+                        } else {
+                            // Chỉ dập dềnh nhẹ
+                            state.vy *= 0.8
+                        }
+                    } else {
+                        // Natural bobbing, no splash
+                        state.vy *= 0.8
+                    }
+                } else if (pigScaleRef.current >= 2.0 && state.y >= 0) {
+                    if (!hasImpactedRef.current) {
+                        window.dispatchEvent(new CustomEvent('earthquake'))
+                        hasImpactedRef.current = true
+                    }
                 }
                 clearTimeout(landedTimeoutRef.current)
                 landedTimeoutRef.current = setTimeout(() => {
@@ -497,8 +528,10 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
     
     // Cập nhật hướng mặt khi kéo
     if (newX - stateRef.current.x > 2) {
+      stateRef.current.facing = 1
       setFacing(1)
     } else if (stateRef.current.x - newX > 2) {
+      stateRef.current.facing = -1
       setFacing(-1)
     }
     
