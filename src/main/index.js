@@ -293,7 +293,7 @@ ipcMain.handle('search-location', async (_, query) => {
 const gotTheLock = app.requestSingleInstanceLock()
 
 if (!gotTheLock) {
-  app.quit()
+  app.exit(0)
 } else {
   app.on('second-instance', (event, commandLine, workingDirectory) => {
     // Someone tried to run a second instance, focus the main window.

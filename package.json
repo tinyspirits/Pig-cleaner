@@ -44,6 +44,9 @@
       }
     ],
     "mac": {
+      "extendInfo": {
+        "LSUIElement": true
+      },
       "target": [
         {
           "target": "dmg",
