@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import os
 
-img = cv2.imread('src/renderer/assets/Gemini_Generated_Image_57x9jc57x9jc57x9.png')
+img = cv2.imread('src/renderer/assets/drowning.png')
 height, width = img.shape[:2]
 
 hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)

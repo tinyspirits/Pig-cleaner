@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import os
 
-img_path = 'src/renderer/assets/actions.png'
+img_path = 'src/renderer/assets/drowning.png'
 img = cv2.imread(img_path)
 if img is None:
     print("Could not read image!")

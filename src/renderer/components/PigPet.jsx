@@ -24,6 +24,20 @@ import sleep4 from '../assets/sprites/sleep4.png'
 import drag1 from '../assets/sprites/drag1.png'
 import drag2 from '../assets/sprites/drag2.png'
 import drag3 from '../assets/sprites/drag3.png'
+import dive0 from '../assets/sprites/dive_frames/pig_17.png'
+import dive1 from '../assets/sprites/dive_frames/pig_18.png'
+import dive2 from '../assets/sprites/dive_frames/pig_19.png'
+import dive3 from '../assets/sprites/dive_frames/pig_20.png'
+import dive4 from '../assets/sprites/dive_frames/pig_21.png'
+import dive5 from '../assets/sprites/dive_frames/pig_22.png'
+import drown0 from '../assets/sprites/drowning_frames/pig_15.png'
+import drown1 from '../assets/sprites/drowning_frames/pig_16.png'
+import drown2 from '../assets/sprites/drowning_frames/pig_17.png'
+import drown3 from '../assets/sprites/drowning_frames/pig_18.png'
+import drown4 from '../assets/sprites/drowning_frames/pig_19.png'
+import struggle1 from '../assets/sprites/drowning_frames/pig_11.png'
+import struggle2 from '../assets/sprites/drowning_frames/pig_12.png'
+import struggle3 from '../assets/sprites/drowning_frames/pig_13.png'
 
 // ─── Animation configs ────────────────────────────────────────────────────────
 // fps: frames per second, frames: array of images, loop: boolean
@@ -38,6 +52,9 @@ const ANIMATIONS = {
   drag_held: { frames: [drag1], fps: 1, loop: false },
   drag_falling: { frames: [drag2], fps: 1, loop: false },
   drag_landed: { frames: [drag3], fps: 1, loop: false },
+  diving: { frames: [dive0, dive1, dive2, dive3, dive4, dive5], fps: 6, loop: true },
+  drowning: { frames: [drown0, drown1, drown2, drown3, drown4], fps: 6, loop: true },
+  struggling: { frames: [struggle1, struggle2, struggle3], fps: 6, loop: true },
 }
 
 // ─── useSprite hook ───────────────────────────────────────────────────────────
@@ -88,12 +105,15 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
     handleDragEnd,
     wasDragged,
     isWallHit,
-    dragVelocity
+    dragVelocity,
+    isStruggling,
+    isSinking,
+    isUnderwater
   } = usePigMovement(mode, isPanelOpen, windRef, pigScale, weatherData)
 
   const handleClick = (e) => {
     // Chỉ ngửi rác khi heo đang ở trên mặt đất (không rơi) và không bị kéo đi
-    if (!wasDragged() && !isDragging && position.y >= -10) {
+    if (!wasDragged() && !isDragging && position.y >= -10 && !isSinking && !isStruggling) {
       onDoubleClick?.(e) // Call the same handler, but it's now a single click
     }
   }
@@ -101,8 +121,14 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
 
 
   let displayMode = mode
-  if (isDragging) {
+  if (isStruggling) {
+    displayMode = 'struggling'
+  } else if (isDragging) {
     displayMode = dragState ? `drag_${dragState}` : 'drag_held'
+  } else if (isSinking) {
+    displayMode = position.y >= -5 ? 'sleeping' : 'drowning'
+  } else if (isUnderwater && !isDragging) {
+    displayMode = 'diving'
   } else if (position.y < -5) {
     displayMode = 'drag_falling'
   } else if (dragState === 'landed') {
