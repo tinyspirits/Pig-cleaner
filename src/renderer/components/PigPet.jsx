@@ -88,12 +88,14 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
     handleDragEnd,
     wasDragged,
     isWallHit,
-    dragVelocity
+    dragVelocity,
+    isStruggling,
+    isSinking
   } = usePigMovement(mode, isPanelOpen, windRef, pigScale, weatherData)
 
   const handleClick = (e) => {
     // Chỉ ngửi rác khi heo đang ở trên mặt đất (không rơi) và không bị kéo đi
-    if (!wasDragged() && !isDragging && position.y >= -10) {
+    if (!wasDragged() && !isDragging && position.y >= -10 && !isSinking && !isStruggling) {
       onDoubleClick?.(e) // Call the same handler, but it's now a single click
     }
   }
@@ -101,8 +103,12 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
 
 
   let displayMode = mode
-  if (isDragging) {
+  if (isStruggling) {
+    displayMode = 'scared'
+  } else if (isDragging) {
     displayMode = dragState ? `drag_${dragState}` : 'drag_held'
+  } else if (isSinking) {
+    displayMode = position.y >= -5 ? 'sleeping' : 'drag_falling'
   } else if (position.y < -5) {
     displayMode = 'drag_falling'
   } else if (dragState === 'landed') {

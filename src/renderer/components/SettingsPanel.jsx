@@ -25,6 +25,7 @@ export default function SettingsPanel({ onClose }) {
   const [locationQuery, setLocationQuery] = useState('')
   const [locationResults, setLocationResults] = useState([])
   const [searchingLocation, setSearchingLocation] = useState(false)
+  const [autoCity, setAutoCity] = useState(null)
 
   useEffect(() => {
     loadData()
@@ -38,6 +39,11 @@ export default function SettingsPanel({ onClose }) {
       const cats = await window.pigAPI.getCacheTypes()
       // Add trash manually as it's handled differently
       setCategories([{ id: 'trash', label: '🗑️ Thùng rác' }, ...cats])
+
+      const weather = await window.pigAPI.getWeather()
+      if (weather && weather.city) {
+        setAutoCity(weather.city)
+      }
     } else {
       // Mock data
       setSettings({
@@ -150,7 +156,7 @@ export default function SettingsPanel({ onClose }) {
             <div style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>
               Hiện tại: {settings.weatherLocation
                 ? `${settings.weatherLocation.city} (tự chọn)`
-                : 'Tự động theo IP (có thể không chính xác nếu bị rate-limit)'}
+                : `Tự động theo IP (${autoCity || 'đang tải...'})`}
             </div>
             <div style={{ display: 'flex', gap: '6px' }}>
               <input

@@ -47,28 +47,59 @@ function fetchJson(url) {
 }
 
 async function getLocation() {
-  // Vị trí người dùng tự chọn trong Settings luôn được ưu tiên — bỏ qua
-  // hoàn toàn bước gọi IP geolocation (ipapi.co vốn hay bị rate-limit).
+  // Vị trí người dùng tự chọn trong Settings luôn được ưu tiên
   if (manualLocation) return manualLocation
   if (cachedLocation) return cachedLocation
-  try {
-    const data = await fetchJson('https://ipapi.co/json/')
-    // ipapi.co có thể trả về HTTP 200 nhưng body là lỗi (vd bị rate-limit:
-    // {"error":true,"reason":"RateLimited"}) — lúc đó latitude/longitude sẽ
-    // undefined. Trước đây code không kiểm tra điều này, nên vẫn cache lại
-    // "vị trí" với lat/lon undefined, khiến gọi Open-Meteo với toạ độ rỗng
-    // (dữ liệu thời tiết vô nghĩa) và city hiện "Unknown" mãi mãi.
-    if (typeof data.latitude === 'number' && typeof data.longitude === 'number' &&
-        !Number.isNaN(data.latitude) && !Number.isNaN(data.longitude)) {
-      cachedLocation = { lat: data.latitude, lon: data.longitude, city: data.city || 'Không rõ' }
-      return cachedLocation
+
+  // Các API lấy vị trí qua IP, theo thứ tự ưu tiên
+  const apis = [
+    {
+      url: 'https://get.geojs.io/v1/ip/geo.json',
+      parse: (data) => ({
+        lat: parseFloat(data.latitude),
+        lon: parseFloat(data.longitude),
+        city: data.city || data.region || data.country
+      })
+    },
+    {
+      url: 'https://ipapi.co/json/',
+      parse: (data) => ({
+        lat: typeof data.latitude === 'number' ? data.latitude : parseFloat(data.latitude),
+        lon: typeof data.longitude === 'number' ? data.longitude : parseFloat(data.longitude),
+        city: data.city || data.region || data.country_name
+      })
+    },
+    {
+      url: 'https://ipinfo.io/json',
+      parse: (data) => {
+        if (!data.loc) return {}
+        const [lat, lon] = data.loc.split(',').map(parseFloat)
+        return { lat, lon, city: data.city || data.region || data.country }
+      }
     }
-    console.warn('[Weather] ipapi.co trả về dữ liệu không hợp lệ (có thể bị rate-limit):', JSON.stringify(data).slice(0, 200))
-  } catch (err) {
-    console.warn('[Weather] Không lấy được vị trí theo IP:', err.message)
+  ]
+
+  for (const api of apis) {
+    try {
+      const data = await fetchJson(api.url)
+      const parsed = api.parse(data)
+      
+      if (typeof parsed.lat === 'number' && typeof parsed.lon === 'number' &&
+          !Number.isNaN(parsed.lat) && !Number.isNaN(parsed.lon)) {
+        cachedLocation = { lat: parsed.lat, lon: parsed.lon, city: parsed.city || 'Không rõ' }
+        console.log(`[Weather] Lấy vị trí thành công từ ${new URL(api.url).hostname}:`, cachedLocation.city)
+        return cachedLocation
+      } else {
+        console.warn(`[Weather] ${api.url} trả về dữ liệu không hợp lệ:`, JSON.stringify(data).slice(0, 200))
+      }
+    } catch (err) {
+      console.warn(`[Weather] Lỗi khi gọi ${api.url}:`, err.message)
+    }
   }
-  // Không cache thất bại vào cachedLocation — lần poll tiếp theo (30 phút
-  // sau) sẽ thử gọi lại ipapi.co thay vì kẹt ở fallback mãi mãi.
+
+  // Không cache thất bại vào cachedLocation — lần poll tiếp theo
+  // sẽ thử gọi lại thay vì kẹt ở fallback mãi mãi.
+  console.warn('[Weather] Tất cả API lấy vị trí đều thất bại, dùng mặc định.')
   return { lat: 21.0285, lon: 105.8542, city: 'Hà Nội (mặc định)' }
 }
 
