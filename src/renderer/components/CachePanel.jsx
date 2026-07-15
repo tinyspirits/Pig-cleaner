@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 
 const isElectron = typeof window !== 'undefined' && window.pigAPI
 
 export default function CachePanel({ onClose, onCleaned }) {
+  const { t } = useTranslation()
   const [categories, setCategories] = useState([])
   const [selected, setSelected] = useState({})
   const [loading, setLoading] = useState(true)
@@ -92,28 +94,28 @@ export default function CachePanel({ onClose, onCleaned }) {
       <div className="cache-panel" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="cache-panel-header">
-          <span>🐷 Dọn Cache</span>
+          <span>🐷 {t('cachePanel.title', 'Cache Cleanup')}</span>
           <button className="cache-close-btn" onClick={onClose}>✕</button>
         </div>
 
         {loading ? (
-          <div className="cache-loading">Đang quét... 🔍</div>
+          <div className="cache-loading">{t('cachePanel.scanning', 'Scanning... 🔍')}</div>
         ) : result ? (
           /* Result screen */
           <div className="cache-result">
             <div className="cache-result-icon">🎉</div>
-            <div className="cache-result-text">Đã dọn được</div>
+            <div className="cache-result-text">{t('cachePanel.cleaned', 'Cleaned')}</div>
             <div className="cache-result-size">{result.freedFormatted}</div>
             <button className="cache-clean-btn" onClick={() => { setResult(null); loadCategories() }}>
-              Quét lại
+              {t('cachePanel.scanAgain', 'Scan Again')}
             </button>
           </div>
         ) : (
           <>
             {/* Select all / none */}
             <div className="cache-select-all">
-              <button onClick={() => toggleAll(true)}>Chọn tất cả</button>
-              <button onClick={() => toggleAll(false)}>Bỏ chọn</button>
+              <button onClick={() => toggleAll(true)}>{t('cachePanel.selectAll', 'Select All')}</button>
+              <button onClick={() => toggleAll(false)}>{t('cachePanel.deselectAll', 'Deselect All')}</button>
               <span className="cache-total-size">
                 {selectedIds.length > 0 ? `~${formatBytes(totalSelected)}` : ''}
               </span>
@@ -132,7 +134,7 @@ export default function CachePanel({ onClose, onCleaned }) {
                     disabled={!cat.exists}
                     onChange={e => setSelected(prev => ({ ...prev, [cat.id]: e.target.checked }))}
                   />
-                  <span className="cache-item-label">{cat.label}</span>
+                  <span className="cache-item-label">{t(`cacheCategories.${cat.id}`, cat.label)}</span>
                   <span className="cache-item-size">{cat.exists ? cat.sizeFormatted : '—'}</span>
                 </label>
               ))}
@@ -144,7 +146,7 @@ export default function CachePanel({ onClose, onCleaned }) {
               disabled={selectedIds.length === 0 || cleaning}
               onClick={handleClean}
             >
-              {cleaning ? 'Đang dọn... 🐽' : `🧹 Dọn ${selectedIds.length} mục`}
+              {cleaning ? t('cachePanel.cleaning', 'Cleaning... 🐽') : `🧹 ${t('cachePanel.cleanItems', { count: selectedIds.length, defaultValue: 'Clean {{count}} items' })}`}
             </button>
           </>
         )}

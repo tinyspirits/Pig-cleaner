@@ -5,6 +5,7 @@ const cleanupService = require('./cleanupService')
 const permissions = require('./permissions')
 const settingsStore = require('./settings')
 const weatherService = require('./weatherService')
+const i18n = require('./i18n')
 
 let mainWindow
 let tray
@@ -70,33 +71,39 @@ function createWindow() {
 
 function buildTrayMenu() {
   const w = weatherService.getCurrent()
-  const weatherLabel = w.description || '🌤️ Đang tải thời tiết...'
+  const weatherLabel = w.description || i18n.t('weather.loading')
   const tempLabel = w.temperature !== null && w.temperature !== undefined ? ` (${Math.round(w.temperature)}°C)` : ''
-  const upcomingLabel = w.upcomingCondition ? ` | Sắp: ${{
-    rain: '🌧️ Mưa', thunderstorm: '⛈️ Bão', drizzle: '🌦️ Mưa nhẹ', snow: '❄️ Tuyết'
-  }[w.upcomingCondition] || ''}` : ''
+  const upcomingLabel = w.upcomingCondition ? `${i18n.t('weather.upcoming')}${
+    {
+      rain: i18n.t('weather.rainShort'),
+      thunderstorm: i18n.t('weather.stormShort'),
+      drizzle: i18n.t('weather.drizzleShort'),
+      snow: i18n.t('weather.snowShort')
+    }[w.upcomingCondition] || ''
+  }` : ''
 
+  const cityLabel = w.city ? ` (${w.city})` : ''
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: `🌤️ ${weatherLabel}${tempLabel}${upcomingLabel}`,
+      label: `🌤️ ${weatherLabel}${tempLabel}${cityLabel}${upcomingLabel}`,
       enabled: false,
     },
     { type: 'separator' },
     {
-      label: '🐷 Gọi heo về góc phải',
+      label: i18n.t('tray.callPig'),
       click: () => {
         mainWindow.webContents.send('pig-called-home')
       },
     },
     {
-      label: '🗑️ Kiểm tra rác ngay',
+      label: i18n.t('tray.checkTrash'),
       click: async () => {
         const info = await cleanupService.getTrashInfo()
         mainWindow.webContents.send('trash-checked-manually', info)
       },
     },
     {
-      label: '🧹 Dọn thùng rác',
+      label: i18n.t('tray.cleanTrash'),
       click: async () => {
         mainWindow.webContents.send('clean-started')
         const result = await cleanupService.cleanTrash()
@@ -104,13 +111,13 @@ function buildTrayMenu() {
       },
     },
     {
-      label: '🗂️ Dọn Cache',
+      label: i18n.t('tray.cleanCache'),
       click: () => {
         mainWindow.webContents.send('show-cache-panel')
       },
     },
     {
-      label: '🧹 Dọn tất cả',
+      label: i18n.t('tray.cleanAll'),
       click: async () => {
         mainWindow.webContents.send('clean-started')
         const settings = settingsStore.load()
@@ -127,27 +134,27 @@ function buildTrayMenu() {
     },
     { type: 'separator' },
     {
-      label: '⚙️ Cài đặt',
+      label: i18n.t('tray.settings'),
       click: () => {
         mainWindow.webContents.send('show-settings')
       },
     },
     {
-      label: '📊 Xem thống kê',
+      label: i18n.t('tray.stats'),
       click: () => {
         mainWindow.webContents.send('show-stats')
       },
     },
     { type: 'separator' },
     {
-      label: '❌ Thoát',
+      label: i18n.t('tray.quit'),
       click: () => {
         app.quit()
       },
     },
   ])
 
-  tray.setToolTip('Heo Ăn Rác 🐷')
+  tray.setToolTip(i18n.t('tray.tooltip'))
   tray.setContextMenu(contextMenu)
 }
 
@@ -262,6 +269,11 @@ ipcMain.handle('save-settings', (_, newSettings) => {
   settingsStore.save(newSettings)
   setupAutoClean()
 
+  if (newSettings.language && newSettings.language !== prev.language) {
+    i18n.changeLanguage(newSettings.language)
+    if (tray && !tray.isDestroyed()) buildTrayMenu()
+  }
+
   // Nếu vị trí thời tiết thay đổi, áp dụng ngay cho weatherService
   const locChanged = JSON.stringify(newSettings.weatherLocation) !== JSON.stringify(prev.weatherLocation)
   if (newSettings.weatherLocation !== undefined && locChanged) {
@@ -306,6 +318,11 @@ if (!gotTheLock) {
   })
 
   app.whenReady().then(async () => {
+    const savedSettingsInit = settingsStore.load()
+    if (savedSettingsInit.language) {
+      i18n.changeLanguage(savedSettingsInit.language)
+    }
+
     createWindow()
     createTray()
     setupAutoClean()

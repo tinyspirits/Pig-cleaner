@@ -1,4 +1,5 @@
 const https = require('https')
+const i18n = require('./i18n')
 
 // ─── WMO Weather Code → condition ───────────────────────────────────────────
 // https://open-meteo.com/en/docs#weathervariables
@@ -28,14 +29,19 @@ function defaultWeather() {
     windDirection: 0,
     windForceX: 0, // -1 = gió sang trái (W→E), +1 = sang phải
     isStorm: false,
-    description: 'Đang tải thời tiết...',
+    description: '',
   }
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function fetchJson(url) {
   return new Promise((resolve, reject) => {
-    https.get(url, { timeout: 10000 }, (res) => {
+    https.get(url, { 
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'PigCleaner/1.0 (https://github.com/tinyspirits/pig-cleaner)'
+      }
+    }, (res) => {
       let data = ''
       res.on('data', chunk => { data += chunk })
       res.on('end', () => {
@@ -54,14 +60,6 @@ async function getLocation() {
   // Các API lấy vị trí qua IP, theo thứ tự ưu tiên
   const apis = [
     {
-      url: 'https://get.geojs.io/v1/ip/geo.json',
-      parse: (data) => ({
-        lat: parseFloat(data.latitude),
-        lon: parseFloat(data.longitude),
-        city: data.city || data.region || data.country
-      })
-    },
-    {
       url: 'https://ipapi.co/json/',
       parse: (data) => ({
         lat: typeof data.latitude === 'number' ? data.latitude : parseFloat(data.latitude),
@@ -76,6 +74,14 @@ async function getLocation() {
         const [lat, lon] = data.loc.split(',').map(parseFloat)
         return { lat, lon, city: data.city || data.region || data.country }
       }
+    },
+    {
+      url: 'https://get.geojs.io/v1/ip/geo.json',
+      parse: (data) => ({
+        lat: parseFloat(data.latitude),
+        lon: parseFloat(data.longitude),
+        city: data.city || data.region || data.country
+      })
     }
   ]
 
@@ -86,7 +92,7 @@ async function getLocation() {
       
       if (typeof parsed.lat === 'number' && typeof parsed.lon === 'number' &&
           !Number.isNaN(parsed.lat) && !Number.isNaN(parsed.lon)) {
-        cachedLocation = { lat: parsed.lat, lon: parsed.lon, city: parsed.city || 'Không rõ' }
+        cachedLocation = { lat: parsed.lat, lon: parsed.lon, city: parsed.city || i18n.t('weatherCond.unknown', 'Unknown') }
         console.log(`[Weather] Lấy vị trí thành công từ ${new URL(api.url).hostname}:`, cachedLocation.city)
         return cachedLocation
       } else {
@@ -100,7 +106,7 @@ async function getLocation() {
   // Không cache thất bại vào cachedLocation — lần poll tiếp theo
   // sẽ thử gọi lại thay vì kẹt ở fallback mãi mãi.
   console.warn('[Weather] Tất cả API lấy vị trí đều thất bại, dùng mặc định.')
-  return { lat: 21.0285, lon: 105.8542, city: 'Hà Nội (mặc định)' }
+  return { lat: 21.0285, lon: 105.8542, city: i18n.t('weatherCond.hanoi', 'Hanoi (default)') }
 }
 
 // Chuyển hướng gió (độ) → windForceX
@@ -116,24 +122,24 @@ function calcWindForceX(directionDeg) {
 
 function buildDescription(condition, windSpeed, temperature) {
   const condLabels = {
-    clear: '☀️ Trời quang',
-    cloudy: '⛅ Trời nhiều mây',
-    fog: '🌫️ Sương mù',
-    drizzle: '🌦️ Mưa phùn',
-    rain: '🌧️ Trời mưa',
-    snow: '❄️ Tuyết rơi',
-    thunderstorm: '⛈️ Bão sấm sét',
+    clear: `☀️ ${i18n.t('weatherCond.clear', 'Clear')}`,
+    cloudy: `⛅ ${i18n.t('weatherCond.cloudy', 'Cloudy')}`,
+    fog: `🌫️ ${i18n.t('weatherCond.fog', 'Fog')}`,
+    drizzle: `🌦️ ${i18n.t('weatherCond.drizzle', 'Drizzle')}`,
+    rain: `🌧️ ${i18n.t('weatherCond.rain', 'Rain')}`,
+    snow: `❄️ ${i18n.t('weatherCond.snow', 'Snow')}`,
+    thunderstorm: `⛈️ ${i18n.t('weatherCond.thunderstorm', 'Thunderstorm')}`,
   }
-  const label = condLabels[condition] || '🌤️ Trời bình thường'
+  const label = condLabels[condition] || `🌤️ ${i18n.t('weatherCond.normal', 'Normal')}`
   const tempStr = temperature !== null && temperature !== undefined ? `, ${Math.round(temperature)}°C` : ''
-  return `${label}${tempStr}, gió ${Math.round(windSpeed)} km/h`
+  return `${label}${tempStr}, ${i18n.t('weatherCond.wind', 'wind')} ${Math.round(windSpeed)} km/h`
 }
 
 // ─── Main fetch ───────────────────────────────────────────────────────────────
 async function fetchWeather() {
   try {
     const loc = await getLocation()
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=weathercode,windspeed_10m,winddirection_10m,temperature_2m&hourly=weathercode,temperature_2m&windspeed_unit=kmh&timezone=auto&forecast_days=1`
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=weathercode,windspeed_10m,winddirection_10m,temperature_2m&hourly=weathercode,temperature_2m&windspeed_unit=kmh&timezone=auto&forecast_days=2`
     const data = await fetchJson(url)
 
     // Open-Meteo API v1: data.current holds current values
@@ -210,7 +216,7 @@ async function searchLocation(query) {
 
 function setManualLocation(loc) {
   if (loc && typeof loc.lat === 'number' && typeof loc.lon === 'number') {
-    manualLocation = { lat: loc.lat, lon: loc.lon, city: loc.city || loc.label || 'Vị trí đã chọn' }
+    manualLocation = { lat: loc.lat, lon: loc.lon, city: loc.city || loc.label || i18n.t('weatherCond.selected', 'Selected Location') }
     cachedLocation = null // bỏ cache IP cũ, không cần nữa
     fetchWeather() // cập nhật thời tiết ngay theo vị trí mới
   }

@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 
 function formatBytes(bytes) {
   if (!bytes || bytes === 0) return '0 B'
@@ -10,6 +11,7 @@ function formatBytes(bytes) {
 }
 
 export default function StatsPanel({ trashInfo, cacheInfo = [], totalEaten, pigScale, weather, onClose }) {
+  const { t } = useTranslation()
   const totalCacheBytes = cacheInfo.reduce((s, c) => s + (c.sizeBytes || 0), 0)
   const totalRac = (trashInfo?.sizeBytes || 0) + totalCacheBytes
 
@@ -21,43 +23,43 @@ export default function StatsPanel({ trashInfo, cacheInfo = [], totalEaten, pigS
       />
       <div className="stats-panel" style={{ zIndex: 200 }}>
         <button className="close-btn" onClick={onClose}>✕</button>
-        <h3>🐷 Heo Thống Kê</h3>
+        <h3>🐷 {t('statsPanel.title')}</h3>
 
         {/* Thời tiết */}
         {weather?.description && (
           <div className="stats-row" style={{ marginBottom: 4 }}>
-            <span>🌤️ Thời tiết</span>
+            <span>🌤️ {t('statsPanel.weather', 'Weather')}</span>
             <strong style={{ fontSize: 11, maxWidth: 130, textAlign: 'right' }}>{weather.description}</strong>
           </div>
         )}
 
         <div className="stats-row" style={{ marginTop: 6 }}>
-          <span>🗑️ Thùng rác</span>
+          <span>🗑️ {t('statsPanel.trashSize')}</span>
           <strong>{trashInfo?.sizeFormatted || '0 B'}</strong>
         </div>
         {totalCacheBytes > 0 && (
           <div className="stats-row">
-            <span>📦 Cache bẩn</span>
+            <span>📦 {t('statsPanel.dirtyCache', 'Dirty Cache')}</span>
             <strong>{formatBytes(totalCacheBytes)}</strong>
           </div>
         )}
         <div className="stats-row" style={{ borderTop: '1px dashed rgba(0,0,0,0.1)', paddingTop: 4 }}>
-          <span>📊 Tổng rác</span>
+          <span>📊 {t('statsPanel.totalTrash', 'Total Trash')}</span>
           <strong style={{ color: '#FF6B9D' }}>{formatBytes(totalRac)}</strong>
         </div>
 
         <div className="stats-row" style={{ marginTop: 6 }}>
-          <span>🍽️ Đã ăn tổng</span>
+          <span>🍽️ {t('statsPanel.totalEaten')}</span>
           <strong title={`${(totalEaten * 1024).toLocaleString('en-US')} Bytes`}>
             {formatBytes(totalEaten * 1024)}
           </strong>
         </div>
         <div className="stats-row">
-          <span>📏 Kích thước heo</span>
+          <span>📏 {t('statsPanel.pigSize')}</span>
           <strong>{Math.round((pigScale - 1) * 100 + 100)}%</strong>
         </div>
         <div style={{ marginTop: 10, fontSize: 11, color: '#999', textAlign: 'center' }}>
-          Nhấp vào heo để ăn rác! 🐽
+          {t('statsPanel.clickToEat', 'Click on pig to eat trash! 🐽')}
         </div>
       </div>
     </>
