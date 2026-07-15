@@ -37,10 +37,14 @@
       "package.json"
     ],
     "mac": {
-      "target": "dmg",
-      "arch": [
-        "arm64",
-        "x64"
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
       ]
     }
   }
