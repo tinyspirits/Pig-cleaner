@@ -12,8 +12,10 @@ let autoCleanTimer = null
 let isMouseIgnored = true
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
-// Ẩn khỏi Dock
-app.dock.hide()
+// Ẩn khỏi Dock (chỉ trên macOS)
+if (process.platform === 'darwin') {
+  app.dock.hide()
+}
 
 function createWindow() {
   const { width, height, x, y } = screen.getPrimaryDisplay().workArea

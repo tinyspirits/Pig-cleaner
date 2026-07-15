@@ -44,6 +44,25 @@ async function getTrashInfo() {
   let sizeBytes = 0
   let fileCount = 0
   
+  if (process.platform === 'win32') {
+    try {
+      const { stdout } = await execAsync(`powershell -NoProfile -Command "$items = (New-Object -ComObject Shell.Application).NameSpace(10).Items(); $size = 0; foreach($item in $items) { $size += $item.Size }; Write-Output \\"COUNT:$($items.Count) SIZE:$size\\""`, { timeout: 8000 })
+      const matchCount = stdout.match(/COUNT:(\d+)/)
+      const matchSize = stdout.match(/SIZE:(\d+)/)
+      if (matchCount && matchSize) {
+        fileCount = parseInt(matchCount[1], 10)
+        sizeBytes = parseInt(matchSize[1], 10) || 0
+      }
+    } catch (err) {
+      console.error('[cleanupService] Windows PowerShell failed:', err.message)
+    }
+    return {
+      sizeBytes,
+      sizeFormatted: formatBytes(sizeBytes),
+      fileCount,
+    }
+  }
+
   try {
     // Ưu tiên dùng AppleScript để lấy size của Trash vì nó không bị lỗi EPERM (Full Disk Access)
     // CẦN KIỂM TRA SỐ LƯỢNG TRƯỚC: Do macOS có bug thỉnh thoảng `size of trash` báo số ảo (ví dụ 8GB) dù thùng rác trống rỗng.
@@ -81,19 +100,28 @@ async function getTrashInfo() {
 
 // ─── Cache categories ─────────────────────────────────────────────────────────
 const home = os.homedir()
+const isWin = process.platform === 'win32'
+const appData = process.env.APPDATA || path.join(home, 'AppData', 'Roaming')
+const localAppData = process.env.LOCALAPPDATA || path.join(home, 'AppData', 'Local')
 
 const CACHE_CATEGORIES = [
   {
     id: 'system',
     label: '🖥️ System Cache',
-    paths: [
+    paths: isWin ? [
+      path.join(localAppData, 'Temp'),
+      path.join(home, 'AppData', 'Local', 'Microsoft', 'Windows', 'INetCache'),
+    ] : [
       path.join(home, 'Library', 'Caches'),
     ],
   },
   {
     id: 'npm',
     label: '📦 npm Cache',
-    paths: [
+    paths: isWin ? [
+      path.join(localAppData, 'npm-cache'),
+      path.join(home, '.npm', '_cacache'),
+    ] : [
       path.join(home, '.npm', '_cacache'),
       path.join(home, 'Library', 'Caches', 'npm'),
     ],
@@ -101,7 +129,9 @@ const CACHE_CATEGORIES = [
   {
     id: 'yarn',
     label: '🧶 Yarn Cache',
-    paths: [
+    paths: isWin ? [
+      path.join(localAppData, 'Yarn', 'Cache'),
+    ] : [
       path.join(home, 'Library', 'Caches', 'yarn'),
       path.join(home, '.yarn', 'cache'),
     ],
@@ -109,7 +139,9 @@ const CACHE_CATEGORIES = [
   {
     id: 'pip',
     label: '🐍 pip / Python Cache',
-    paths: [
+    paths: isWin ? [
+      path.join(localAppData, 'pip', 'Cache'),
+    ] : [
       path.join(home, 'Library', 'Caches', 'pip'),
       path.join(home, '.cache', 'pip'),
     ],
@@ -117,7 +149,7 @@ const CACHE_CATEGORIES = [
   {
     id: 'brew',
     label: '🍺 Homebrew Cache',
-    paths: [
+    paths: isWin ? [] : [
       path.join(home, 'Library', 'Caches', 'Homebrew'),
       '/Library/Caches/Homebrew',
     ],
@@ -125,7 +157,7 @@ const CACHE_CATEGORIES = [
   {
     id: 'xcode',
     label: '🔨 Xcode DerivedData',
-    paths: [
+    paths: isWin ? [] : [
       path.join(home, 'Library', 'Developer', 'Xcode', 'DerivedData'),
       path.join(home, 'Library', 'Caches', 'com.apple.dt.Xcode'),
     ],
@@ -133,7 +165,11 @@ const CACHE_CATEGORIES = [
   {
     id: 'vscode',
     label: '💻 VS Code Cache',
-    paths: [
+    paths: isWin ? [
+      path.join(appData, 'Code', 'Cache'),
+      path.join(appData, 'Code', 'CachedData'),
+      path.join(appData, 'Code', 'CachedExtensions'),
+    ] : [
       path.join(home, 'Library', 'Application Support', 'Code', 'Cache'),
       path.join(home, 'Library', 'Application Support', 'Code', 'CachedData'),
       path.join(home, 'Library', 'Application Support', 'Code', 'CachedExtensions'),
@@ -149,14 +185,20 @@ const CACHE_CATEGORIES = [
   {
     id: 'docker',
     label: '🐳 Docker Cache',
-    paths: [
+    paths: isWin ? [
+      path.join(appData, 'Docker'),
+      path.join(localAppData, 'Docker', 'wsl'),
+    ] : [
       path.join(home, 'Library', 'Containers', 'com.docker.docker', 'Data', 'vms'),
     ],
   },
   {
     id: 'browser',
     label: '🌐 Browser Cache',
-    paths: [
+    paths: isWin ? [
+      path.join(localAppData, 'Google', 'Chrome', 'User Data', 'Default', 'Cache'),
+      path.join(localAppData, 'Microsoft', 'Edge', 'User Data', 'Default', 'Cache'),
+    ] : [
       path.join(home, 'Library', 'Caches', 'Google', 'Chrome'),
       path.join(home, 'Library', 'Containers', 'com.apple.Safari', 'Data', 'Library', 'Caches', 'com.apple.Safari'),
       path.join(home, 'Library', 'Caches', 'Firefox'),
@@ -316,6 +358,35 @@ async function cleanTrash() {
 
   if (before === 0 && beforeInfo.fileCount === 0) {
     return { success: true, type: 'trash', freedBytes: 0, remainingBytes: 0, freedFormatted: '0 B', message: 'Thùng rác đã trống!' }
+  }
+
+  if (process.platform === 'win32') {
+    try {
+      await execAsync(`powershell -NoProfile -Command "Clear-RecycleBin -Force -ErrorAction SilentlyContinue"`, { timeout: 60000 })
+      await new Promise(r => setTimeout(r, 1000))
+      const finalInfo = await getTrashInfo()
+      const freedBytes = Math.max(0, before - finalInfo.sizeBytes)
+      return {
+        success: true,
+        type: 'trash',
+        freedBytes: freedBytes,
+        remainingBytes: finalInfo.sizeBytes,
+        freedFormatted: formatBytes(freedBytes),
+        message: finalInfo.sizeBytes > 0 
+          ? `Đã dọn ${formatBytes(freedBytes)}, còn lại ${formatBytes(finalInfo.sizeBytes)}!` 
+          : `Đã dọn ${formatBytes(freedBytes)} rác!`,
+      }
+    } catch (err) {
+      return {
+        success: false,
+        type: 'trash',
+        freedBytes: 0,
+        remainingBytes: before,
+        freedFormatted: '0 B',
+        error: err.message,
+        message: 'Lỗi dọn rác Windows: ' + err.message,
+      }
+    }
   }
 
   let fsFreed = 0

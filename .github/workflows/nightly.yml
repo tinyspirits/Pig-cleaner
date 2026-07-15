@@ -8,10 +8,11 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
-    permissions:
-      contents: write
-
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -24,10 +25,39 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      - name: Set Build Version
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          npm --no-git-tag-version version $CURRENT_VERSION-nightly.${{ github.run_number }}
+
       - name: Build Application
         run: npm run build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.os }}
+          path: |
+            release/*.dmg
+            release/*.exe
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
 
       - name: Delete old release assets
         uses: mknejp/delete-release-assets@v1
@@ -52,7 +82,7 @@ jobs:
           name: "🐷 Bản thử nghiệm mới nhất (Nightly)"
           body: "Bản build tự động mới nhất từ nhánh `master`."
           prerelease: true
-          files: release/*.dmg
+          files: artifacts/*
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
