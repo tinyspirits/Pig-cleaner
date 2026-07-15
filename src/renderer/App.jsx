@@ -48,7 +48,8 @@ function App() {
   const [showSettings, setShowSettings] = useState(false)
   const [permissionWarning, setPermissionWarning] = useState(false)
   const [isCleaning, setIsCleaning] = useState(false)
-  const [weatherSettings, setWeatherSettings] = useState({ weatherEffects: true, weatherAlerts: true })
+  const [isSuspended, setIsSuspended] = useState(false)
+  const [weatherSettings, setWeatherSettings] = useState({ weatherEffects: true, weatherAlerts: true, floodMode: false, snowMode: false })
 
   const { mode, bubble, pigScale, totalEaten, cameraFollowsPig, reloadSettings, triggerEat, setMode, forceBubble } = usePigState(trashInfo)
   const isPanelOpen = showStats || showCache || showSettings || permissionWarning
@@ -61,6 +62,8 @@ function App() {
         setWeatherSettings({
           weatherEffects: s.weatherEffects !== false,
           weatherAlerts: s.weatherAlerts !== false,
+          floodMode: s.floodMode === true,
+          snowMode: s.snowMode === true,
         })
       })
     }
@@ -74,6 +77,8 @@ function App() {
         setWeatherSettings({
           weatherEffects: s.weatherEffects !== false,
           weatherAlerts: s.weatherAlerts !== false,
+          floodMode: s.floodMode === true,
+          snowMode: s.snowMode === true,
         })
       })
     }
@@ -106,6 +111,17 @@ function App() {
     if (msg) setTimeout(() => forceBubble(msg), 3000)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weather.condition, weather.upcomingCondition, weatherSettings.weatherAlerts])
+
+  // Heo than lạnh thường xuyên hơn khi nhiệt độ <= 0
+  useEffect(() => {
+    if (!weatherSettings.weatherAlerts || weather.temperature === null || weather.temperature > 0) return
+    const messages = ['🥶 Lạnh quá đi mất!', '🧊 Cứu tôi, đông đá luôn rồi!', '❄️ Lạnh buốt giá luôn!', '🥶 Da đổi màu xanh rồi nè!']
+    const interval = setInterval(() => {
+      const randomMsg = messages[Math.floor(Math.random() * messages.length)]
+      forceBubble(randomMsg)
+    }, 20000) // 20 giây than 1 lần
+    return () => clearInterval(interval)
+  }, [weather.temperature, weatherSettings.weatherAlerts, forceBubble])
 
   // Lắng nghe sự kiện sét đánh từ WeatherEffects
   useEffect(() => {
@@ -226,6 +242,10 @@ function App() {
     // Load trash info ban đầu
     window.pigAPI.getTrashInfo().then(setTrashInfo)
 
+    // Lắng nghe sự kiện Suspend/Resume
+    const unsubSuspend = window.pigAPI.onAppSuspend(() => setIsSuspended(true))
+    const unsubResume = window.pigAPI.onAppResume(() => setIsSuspended(false))
+
     return () => {
       unsubTrash?.()
       unsubTrashManual?.()
@@ -236,6 +256,8 @@ function App() {
       unsubSettings?.()
       unsubCleanStarted?.()
       unsubCleanComplete?.()
+      unsubSuspend?.()
+      unsubResume?.()
     }
   }, [])
 
@@ -336,10 +358,12 @@ function App() {
     }
   }
 
+  if (isSuspended) return null
+
   return (
     <div className={`pig-wrapper ${isEarthquake ? 'earthquake' : ''}`}>
       {/* Weather visual effects (respects settings toggle) */}
-      {weatherSettings.weatherEffects && <WeatherEffects weather={weather} />}
+      {(weatherSettings.weatherEffects || weatherSettings.floodMode || weatherSettings.snowMode) && <WeatherEffects weather={weather} floodMode={weatherSettings.floodMode} snowMode={weatherSettings.snowMode} effectsEnabled={weatherSettings.weatherEffects} />}
       {/* Stats Panel */}
       {showStats && (
         <StatsPanel
@@ -388,6 +412,8 @@ function App() {
         onDoubleClick={handlePigDoubleClick}
         onWakeUp={() => setMode('idle')}
         weatherData={weatherSettings.weatherAlerts ? weather : null}
+        floodMode={weatherSettings.floodMode}
+        snowMode={weatherSettings.snowMode}
       />
     </div>
   )

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, screen, nativeImage } = require('electron')
+const { app, BrowserWindow, ipcMain, Tray, Menu, screen, nativeImage, powerMonitor } = require('electron')
 const path = require('path')
 const trashWatcher = require('./trashWatcher')
 const cleanupService = require('./cleanupService')
@@ -323,6 +323,19 @@ app.whenReady().then(async () => {
       mainWindow.webContents.send('permission-status', hasPermission)
     }
   }, 2000)
+
+  powerMonitor.on('suspend', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('app-suspend')
+  })
+  powerMonitor.on('resume', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('app-resume')
+  })
+  powerMonitor.on('lock-screen', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('app-suspend')
+  })
+  powerMonitor.on('unlock-screen', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('app-resume')
+  })
 })
 
 app.on('window-all-closed', () => {

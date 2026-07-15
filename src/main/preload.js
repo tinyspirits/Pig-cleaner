@@ -71,4 +71,12 @@ contextBridge.exposeInMainWorld('pigAPI', {
     ipcRenderer.on('weather-update', (_, data) => callback(data))
     return () => ipcRenderer.removeAllListeners('weather-update')
   },
+  onAppSuspend: (callback) => {
+    ipcRenderer.on('app-suspend', () => callback())
+    return () => ipcRenderer.removeAllListeners('app-suspend')
+  },
+  onAppResume: (callback) => {
+    ipcRenderer.on('app-resume', () => callback())
+    return () => ipcRenderer.removeAllListeners('app-resume')
+  },
 })

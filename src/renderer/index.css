@@ -799,6 +799,33 @@ body,
 .spark.s5 { left: 30%; animation-delay: 0.15s; }
 .spark.s6 { left: 70%; animation-delay: 0.2s; }
 
+/* ─── Freezing & Shivering Effects ────────────────────────────────────────── */
+@keyframes pigShiver {
+  0% { transform: translateX(-2px) translateY(1px); }
+  100% { transform: translateX(2px) translateY(-1px); }
+}
+
+.pig-shivering .pig-sprite {
+  animation: pigShiver 0.1s infinite alternate;
+}
+
+.cold-breath-puff {
+  position: absolute;
+  width: 15px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  filter: blur(2px);
+  animation: breathFloat 2.5s ease-out forwards;
+}
+
+@keyframes breathFloat {
+  0% { transform: scale(0.5) translate(0, 0); opacity: 0; }
+  20% { opacity: 0.8; }
+  100% { transform: scale(2.5) translate(20px, -20px); opacity: 0; }
+}
+
+
 @keyframes sparkFly {
   0% { transform: translateY(0) scaleY(1); opacity: 1; }
   100% { transform: translateY(-120px) scaleY(0.3); opacity: 0; }
@@ -846,4 +873,68 @@ body,
 @keyframes fireballFlicker {
   0% { transform: translate(-50%, -50%) scale(0.95); opacity: 0.8; }
   100% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+}
+
+.water-bubbles {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50px;
+  height: 50px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 15;
+}
+
+.water-bubble {
+  position: absolute;
+  bottom: 0;
+  width: 10px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  animation: floatUp 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+  opacity: 0;
+}
+
+@keyframes floatUp {
+  0% { transform: translateY(0) scale(0.5); opacity: 0; }
+  20% { opacity: 1; }
+  80% { transform: translateY(-40px) scale(1.2); opacity: 1; }
+  100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
+}
+
+/* Water splash effect */
+.water-splash-effect {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 150px;
+  height: 20px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.water-splash-drop {
+  position: absolute;
+  bottom: 0;
+  width: 12px;
+  height: 12px;
+  background: rgba(180, 220, 255, 0.85);
+  border-radius: 50%;
+  animation: splashDrop 0.5s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+@keyframes splashDrop {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty)) scale(0);
+    opacity: 0;
+  }
 }

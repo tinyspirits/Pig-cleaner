@@ -179,25 +179,37 @@ function LightningFlash() {
 }
 
 // ─── WeatherEffects (main export) ────────────────────────────────────────────
-export default function WeatherEffects({ weather }) {
+export default function WeatherEffects({ weather, floodMode = false, snowMode = false, effectsEnabled = true }) {
   const containerRef = useRef(null)
   const [waterLevel, setWaterLevel] = useState(0)
+  const [snowLevel, setSnowLevel] = useState(0)
 
   useEffect(() => {
-    const isHeavyRain = weather?.condition === 'thunderstorm'
+    const isHeavyRain = weather?.condition === 'thunderstorm' || floodMode
     const interval = setInterval(() => {
       setWaterLevel(prev => {
         if (isHeavyRain) {
-          // Ngập dần, max 100%
-          return Math.min(100, prev + 1.5)
+          // Ngập dần, max 50%
+          return Math.min(50, prev + 1.5)
         } else {
           // Rút dần
           return Math.max(0, prev - 3)
         }
       })
+      
+      const isSnowing = weather?.condition === 'snow' || snowMode
+      setSnowLevel(prev => {
+        if (isSnowing) {
+          // Tuyết dày dần, max 1%
+          return Math.min(1, prev + 0.1)
+        } else {
+          // Tan dần
+          return Math.max(0, prev - 0.2)
+        }
+      })
     }, 1000)
     return () => clearInterval(interval)
-  }, [weather?.condition])
+  }, [weather?.condition, floodMode, snowMode])
 
   useEffect(() => {
     const handler = (e) => {
@@ -224,16 +236,16 @@ export default function WeatherEffects({ weather }) {
     return () => window.removeEventListener('pig-flying', handler)
   }, [])
 
-  if (!weather && waterLevel <= 0) return null
+  if (!weather && waterLevel <= 0 && snowLevel <= 0) return null
 
   const { condition, windForceX, windSpeed, isStorm } = weather || {}
-  const showRain = condition === 'rain' || condition === 'drizzle' || condition === 'thunderstorm'
-  const showSnow = condition === 'snow'
-  const showWind = windSpeed > 25
-  const showLightning = condition === 'thunderstorm'
+  const showRain = effectsEnabled && (condition === 'rain' || condition === 'drizzle' || condition === 'thunderstorm')
+  const showSnow = (effectsEnabled && condition === 'snow') || snowMode
+  const showWind = effectsEnabled && windSpeed > 25
+  const showLightning = effectsEnabled && condition === 'thunderstorm'
   const rainIntensity = condition === 'drizzle' ? 0.4 : condition === 'thunderstorm' ? 1.5 : 1.0
 
-  if (!showRain && !showSnow && !showWind && !showLightning && waterLevel <= 0) return null
+  if (!showRain && !showSnow && !showWind && !showLightning && waterLevel <= 0 && snowLevel <= 0) return null
 
   return (
     <div ref={containerRef} style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 50 }}>
@@ -245,9 +257,23 @@ export default function WeatherEffects({ weather }) {
           right: 0,
           height: `${waterLevel}vh`,
           backgroundColor: '#0ea5e9',
-          opacity: 0.3,
+          opacity: 0.1,
           transition: 'height 1s linear',
           zIndex: 10
+        }} />
+      )}
+      {snowLevel > 0 && (
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: `${snowLevel}vh`,
+          backgroundColor: '#ffffff',
+          opacity: 0.9,
+          transition: 'height 1s linear',
+          zIndex: 10,
+          boxShadow: '0 -2px 10px rgba(255,255,255,0.8)'
         }} />
       )}
       {showRain && <RainLayer windForceX={windForceX} intensity={Math.min(rainIntensity, 1)} />}
