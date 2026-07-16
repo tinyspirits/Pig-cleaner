@@ -41,10 +41,10 @@
   "trash": {
     "found": "ゴミ箱に{{size}}のゴミがあるよ！ 🗑️",
     "clean": "ゴミ箱はピカピカだよ！ ✨",
-    "noPermission": "豚にフルディスクアクセスの権限がありません ⚠️",
-    "empty": "あれ、ゴミがないの？ 🐷",
+    "noPermission": "{{pet}}にフルディスクアクセスの権限がありません ⚠️",
+    "empty": "あれ、ゴミがないの？ {{emoji}}",
     "remaining": "まだ{{size}}が掃除できません、ファイルが開いていますか？ 🤔",
-    "sniffing": "ゴミを探しています... 🐽",
+    "sniffing": "ゴミを探しています... {{emoji}}",
     "spotless": "ピカピカ！掃除するものがありません ✨",
     "detected": "{{size}}のゴミを検出しました！",
     "done": "掃除完了！"
@@ -62,7 +62,9 @@
     "settings": "⚙️ 設定",
     "stats": "📊 統計を見る",
     "quit": "❌ 終了",
-    "tooltip": "ゴミ食い豚 🐷"
+    "tooltip": "ゴミ食い豚 🐷",
+    "callDuck": "🦆 アヒルを家に呼ぶ",
+    "tooltipDuck": "ゴミ掃除アヒル 🦆"
   },
   "cachePanel": {
     "title": "キャッシュのクリーンアップ",
@@ -74,12 +76,12 @@
     "scanAgain": "再スキャン",
     "selectAll": "すべて選択",
     "deselectAll": "すべて選択解除",
-    "cleaning": "掃除中... 🐽",
+    "cleaning": "掃除中... {{emoji}}",
     "cleanItems": "{{count}} 個の項目を掃除",
     "saveAndClose": "保存して閉じる"
   },
   "settingsPanel": {
-    "title": "豚の設定",
+    "title": "{{pet}}の設定",
     "autoClean": "ゴミの自動クリーンアップ:",
     "never": "しない",
     "every30m": "30分ごと",
@@ -87,48 +89,45 @@
     "every2h": "2時間ごと",
     "every4h": "4時間ごと",
     "every8h": "8時間ごと",
-    "doubleClick": "ダブルクリックで掃除:",
-    "cleanAllMenu": "「すべてを掃除」メニューで掃除:",
-    "trash": "ゴミ箱",
     "displayMode": "表示モード:",
     "alwaysOnTop": "常に手前に表示",
     "desktopOnly": "デスクトップのみ (ウィンドウに隠れる)",
     "effects": "特殊効果:",
-    "freeRoam": "豚が自由に歩き回るのを許可",
-    "cameraFollow": "カメラが豚を追う",
+    "freeRoam": "{{pet}}が自由に歩き回るのを許可",
+    "cameraFollow": "カメラが{{pet}}を追う",
     "realisticWeather": "リアルな天気効果",
-    "weatherReaction": "天気の反応",
-    "location": "天気の場所:",
-    "currentLocation": "現在地 (自動)",
-    "specialMode": "特別モード (1つのみ):",
-    "normal": "通常",
+    "weatherReaction": "天気の反応（{{pet}}が話す）",
+    "currentLocation": "現在",
     "flood": "洪水",
-    "snowStorm": "大吹雪",
-    "unlimitedPigSize": "ゴミを食べると豚が無限に大きくなる",
+    "unlimitedPigSize": "ゴミを食べると{{pet}}が無限に大きくなる",
     "language": "言語 / Language:",
     "english": "English",
     "vietnamese": "Tiếng Việt",
     "japanese": "日本語",
     "cleanItemsList": "以下の項目を掃除する",
     "weatherLocation": "天気の場所",
-    "currentLocation": "現在",
     "manual": "手動",
     "autoIP": "IPで自動",
     "loading": "読み込み中...",
     "enterCity": "都市名を入力...",
     "search": "検索",
-    "useAutoLocation": "自動位置情報 (IP) を使用する"
+    "useAutoLocation": "自動位置情報 (IP) を使用する",
+    "sound": "サウンド",
+    "soundEnabled": "掃除時にサウンドを有効にする",
+    "petType": "ペットの種類",
+    "pig": "豚",
+    "duck": "アヒル"
   },
   "statsPanel": {
-    "title": "豚の統計",
+    "title": "{{pet}}の統計",
     "trashSize": "ゴミ箱のサイズ:",
     "fileCount": "ファイル数:",
     "totalEaten": "食べた総量:",
-    "pigSize": "豚のサイズ:",
+    "pigSize": "{{pet}}のサイズ:",
     "weather": "天気",
     "dirtyCache": "ダーティキャッシュ",
     "totalTrash": "総ゴミ",
-    "clickToEat": "豚をクリックしてゴミを食べる！ 🐽"
+    "clickToEat": "{{pet}}をクリックしてゴミを食べる！ {{emoji}}"
   },
   "pig": {
     "sleep1": "Zzz...",
@@ -154,7 +153,8 @@
       "ぽっちゃりしてきた！",
       "太ってきたよ！ 🐖"
     ],
-    "yummy": "美味しい！"
+    "yummy": "美味しい！",
+    "explode": "ドーン！豚が子豚の群れに分裂した！🐷💥"
   },
   "cacheCategories": {
     "trash": "🗑️ ゴミ箱",
@@ -169,5 +169,30 @@
     "docker": "🐳 Docker キャッシュ",
     "browser": "🌐 ブラウザキャッシュ",
     "temp": "🗂️ 一時ファイル"
+  },
+  "duck": {
+    "sniffQuotes": [
+      "クワッ！ゴミの匂いがする！ 🦆",
+      "何か食べるものある？",
+      "ゴミを探しているよ...",
+      "ゴミ箱に何があるかな？"
+    ],
+    "idleQuotes": [
+      "クワクワ！ 🦆",
+      "もうすぐご飯？",
+      "眠いなぁ〜",
+      "*羽ばたく*",
+      "今日はいい天気だね！"
+    ],
+    "fullQuotes": [
+      "お腹いっぱい！ 🦆",
+      "ゲップ〜 😮‍💨",
+      "満腹すぎて飛べない",
+      "くちばしがいっぱい！",
+      "お昼寝が必要だ！"
+    ],
+    "yummy": "クワッ、美味しい！",
+    "cleaning": "ゴミを食べている... 🦆",
+    "explode": "ドーン！アヒルが子アヒルの群れに分裂した！🦆💥"
   }
 }

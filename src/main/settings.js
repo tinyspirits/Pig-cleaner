@@ -30,12 +30,12 @@ const DEFAULTS = {
   weatherLocation: null,
   // flood mode
   floodMode: false,
-  // Giả lập tuyết rơi
-  snowMode: false,
   // Ngôn ngữ
   language: 'en',
   // Pet type (pig or duck)
   petType: 'pig',
+  // Follower piglets array
+  followers: [],
 }
 
 function load() {

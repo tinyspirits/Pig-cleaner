@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { usePigMovement } from '../hooks/usePigMovement'
 import SkyClouds from './SkyClouds'
 import GrassTrail from './GrassTrail'
+import ExplosionBurst from './ExplosionBurst'
 
 // ─── Sprite imports ───────────────────────────────────────────────────────────
 import idle1 from '../assets/sprites/idle.png'
@@ -51,7 +52,7 @@ import struggle3 from '../assets/sprites/struggle3.png'
 // fps: frames per second, frames: array of images, loop: boolean
 const ANIMATIONS = {
   idle: { frames: [idle1, idle1, idle1, wink, idle2, idle1, idle3], fps: 3, loop: true },
-  walking: { frames: [walk3, walk4, walk5, walk1, walk6, walk2], fps: 10, loop: true },
+  walking: { frames: [walk1, walk5, walk6, walk3, walk1, walk5, walk6, walk3], fps: 10, loop: true },
   sniffing: { frames: [sniff, idle1], fps: 2, loop: true },
   eating: { frames: [happy1, happy2, happy1, happy2], fps: 6, loop: true },
   full: { frames: [happy2, happy1], fps: 2, loop: true },
@@ -63,7 +64,7 @@ const ANIMATIONS = {
   diving_float: { frames: [diveFloat], fps: 1, loop: true }, // Nổi lơ lửng, không di chuyển
   diving_down: { frames: [diveDown1, diveDown2, diveDown3], fps: 6, loop: true }, // Đang lặn xuống
   diving_up: { frames: [diveUp], fps: 1, loop: true }, // Đang ngoi lên
-  diving_bottom: { frames: [diveBottom1, diveBottom2, diveBottom3, diveBottom4, diveBottom5], fps: 6, loop: true }, // Bơi dưới đáy nước
+  diving_bottom: { frames: [diveBottom1, diveBottom2, diveBottom3, diveBottom2, diveBottom4, diveBottom5], fps: 8, loop: true }, // Bơi dưới đáy nước
   drowning: { frames: [drown1, drown2, drown3, drown4, drown5], fps: 6, loop: true },
   drowning_sink: { frames: [struggle2], fps: 1, loop: false },
   drowning_bottom: { frames: [sleep1, sleep2, sleep3, sleep4], fps: 1.5, loop: true },
@@ -152,12 +153,66 @@ function ColdBreath() {
 export const PIG_WIDTH = 150
 export const PIG_HEIGHT = 150
 
-const isElectron = typeof window !== 'undefined' && window.pigAPI
+// Mảng lưu lịch sử trạng thái của heo mẹ để heo con theo sau
+const HISTORY_SIZE = 400
+let historyBuffer = []
 
-export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = false, isCleaning = false, cameraFollowsPig, onDoubleClick, onWakeUp, weatherData = null, floodMode = false, snowMode = false, petType = 'pig' }) {
+function FollowerPet({ index, scale }) {
+  const frameOffset = (index + 1) * 12 // Giảm nhẹ độ trễ để không bị tuột lại quá xa khi cộng thêm offset
+  const currentOffsetX = React.useRef(0)
+
+  if (historyBuffer.length <= frameOffset) return null
+
+  const state = historyBuffer[historyBuffer.length - 1 - frameOffset]
+
+  // Tính toán vị trí "sau đít": ngược hướng heo mẹ đang quay mặt
+  // Khoảng cách mỗi bé heo con là 35px
+  const distance = (index + 1) * 35
+  const targetOffsetX = -state.facing * distance
+
+  // Dùng lerp (nội suy) để heo con trượt mượt mà sang bên kia đít khi mẹ quay đầu, tránh bị giật cục (teleport)
+  currentOffsetX.current += (targetOffsetX - currentOffsetX.current) * 0.08
+
+  const containerStyle = {
+    transform: `translate(${state.x + currentOffsetX.current}px, ${state.y}px) scale(${scale})`,
+    transformOrigin: 'bottom center',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    pointerEvents: 'none', // Heo con không tương tác chuột
+    zIndex: 9, // Nằm sau heo mẹ (z-index heo mẹ = 10)
+  }
+
+  return (
+    <div
+      className={`pig-container pig-${state.displayMode} ${state.isWallHit ? 'pig-hit-wall' : ''} ${state.isFallingFast ? 'pig-meteorite' : ''} ${state.isShivering ? 'pig-shivering' : ''}`}
+      style={containerStyle}
+    >
+      <div style={{
+        transform: `scaleX(${state.facing}) skewX(${state.dragSkewX}deg) scale(${state.dragScaleX}, ${state.dragScaleY})`,
+        transformOrigin: 'bottom center',
+        display: 'flex',
+        justifyContent: 'center',
+        position: 'relative'
+      }}>
+        <img
+          src={state.sprite}
+          alt="piglet"
+          className={`pig-sprite ${state.displayMode === 'diving_float' ? 'breathing' : ''}`}
+          style={{
+            filter: state.imageFilter,
+            opacity: 0.9,
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
+export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = false, isCleaning = false, cameraFollowsPig, onDoubleClick, onWakeUp, weatherData = null, floodMode = false, petType = 'pig', explosionEvent = null, onExplosionDone, followers = [] }) {
   const { t } = useTranslation()
   const windRef = useRef(null)
-  
+
   const {
     position,
     facing,
@@ -207,11 +262,11 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
     } else if (swimAction === 'rising') {
       displayMode = 'diving_up'
     } else if (swimAction === 'bottom') {
-       if (Math.abs(dragVelocity.x) > 0.5 || Math.abs(dragVelocity.y) > 0.5) {
-          displayMode = 'diving_bottom'
-       } else {
-          displayMode = mode // idle or sniffing, etc.
-       }
+      if (Math.abs(dragVelocity.x) > 0.5 || Math.abs(dragVelocity.y) > 0.5) {
+        displayMode = 'diving_bottom'
+      } else {
+        displayMode = mode === 'walking' ? 'idle' : mode
+      }
     } else if (swimAction === 'drowning_sink' || swimAction === 'drowning_bottom') {
       displayMode = swimAction
     }
@@ -264,7 +319,7 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
   useEffect(() => {
     const isSunny = conditionStr.includes('nắng') || conditionStr.includes('quang đãng') || conditionStr.includes('clear') || conditionStr.includes('sun')
     const isCloudy = conditionStr.includes('mây') || conditionStr.includes('âm u') || conditionStr.includes('cloud') || conditionStr.includes('overcast')
-    
+
     const dryRate = isSunny ? 0.05 : (isCloudy ? 0.0125 : 0.025)
 
     const interval = setInterval(() => {
@@ -304,18 +359,18 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
     if (meteoriteHeat < 0.4) {
       // Vàng dần
       const p = meteoriteHeat / 0.4
-      imageFilter = `sepia(${p}) hue-rotate(-10deg) saturate(${1 + p*2}) brightness(${1 + p*0.3}) drop-shadow(0 0 10px rgba(255,200,0,${p}))`
+      imageFilter = `sepia(${p}) hue-rotate(-10deg) saturate(${1 + p * 2}) brightness(${1 + p * 0.3}) drop-shadow(0 0 10px rgba(255,200,0,${p}))`
     } else {
       // Bốc cháy đỏ rực
       const p = (meteoriteHeat - 0.4) / 0.3
       meteoriteRedness = p
-      imageFilter = `sepia(1) hue-rotate(${-10 - 30 * p}deg) saturate(${3 + p}) brightness(${1.3 - p*0.3}) drop-shadow(0 0 15px rgba(255,80,0,1))`
+      imageFilter = `sepia(1) hue-rotate(${-10 - 30 * p}deg) saturate(${3 + p}) brightness(${1.3 - p * 0.3}) drop-shadow(0 0 15px rgba(255,80,0,1))`
     }
   } else if (temp !== null && temp <= 0) {
     // Da đổi màu xanh lạnh (cold skin) khi nhiệt độ <= 0
     imageFilter = `drop-shadow(0 0 15px rgba(150, 220, 255, 0.6)) hue-rotate(-90deg) saturate(1.2) brightness(1.1) contrast(1.1)`
   }
-  
+
   if (paleLevel > 0 && !isCharred && meteoriteHeat === 0) {
     imageFilter += ` saturate(${1 - paleLevel}) brightness(${1 + paleLevel * 0.4}) hue-rotate(${paleLevel * 180}deg)`
   }
@@ -326,7 +381,7 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
 
   const speedX = Math.abs(dragVelocity.x)
   const speedY = Math.abs(dragVelocity.y)
-  
+
   // Tính độ co giãn
   const stretchX = 1 + Math.min(0.4, speedX / 100)
   const stretchY = 1 + Math.min(0.4, speedY / 100)
@@ -358,23 +413,54 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
   }, [])
 
   const isShivering = temp !== null && temp <= 10;
-  
+
   let trailType = 'grass'
-  if (snowMode || conditionStr.includes('snow')) {
+  if (conditionStr.includes('snow')) {
     trailType = 'footprint'
   } else if (temp !== null && temp < 0) {
     trailType = 'snow'
   }
 
+  useEffect(() => {
+    historyBuffer.push({
+      x: safeX,
+      y: safeY,
+      facing,
+      sprite: currentSprite,
+      displayMode,
+      isWallHit,
+      isFallingFast,
+      isShivering,
+      dragScaleX,
+      dragScaleY,
+      dragSkewX,
+      imageFilter
+    })
+    if (historyBuffer.length > HISTORY_SIZE) {
+      historyBuffer.shift()
+    }
+  })
+
   return (
     <>
       <SkyClouds altitude={altitude} />
       <GrassTrail x={position.x} y={position.y} isWalking={mode === 'walking'} trailType={trailType} />
+
+      {/* Render follower piglets */}
+      {followers.length > 0 && followers.map((f, i) => (
+        <FollowerPet key={f.id} index={i} scale={f.scale} />
+      ))}
+
+      {explosionEvent && (
+        <div style={{ position: 'absolute', bottom: 0, left: 0, transform: `translate(${safeX}px, ${safeY}px)`, pointerEvents: 'none' }}>
+          <ExplosionBurst petType={petType} onDone={onExplosionDone} />
+        </div>
+      )}
       <div
-      className={`pig-container pig-${displayMode} ${isWallHit ? 'pig-hit-wall' : ''} ${isFallingFast ? 'pig-meteorite' : ''} ${isShivering ? 'pig-shivering' : ''}`}
-      style={containerStyle}
-      onMouseUp={handleDragEnd}
-    >
+        className={`pig-container pig-${displayMode} ${isWallHit ? 'pig-hit-wall' : ''} ${isFallingFast ? 'pig-meteorite' : ''} ${isShivering ? 'pig-shivering' : ''}`}
+        style={containerStyle}
+        onMouseUp={handleDragEnd}
+      >
         <div ref={windRef} className="wind-lines">
           <div className="wind-line" style={{ left: '-30px', animationDelay: '0s' }} />
           <div className="wind-line" style={{ left: '-15px', animationDelay: '0.1s', height: '80px' }} />
@@ -403,84 +489,84 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
             <div className="water-bubble" style={{ left: '15px', animationDelay: '1.2s', width: '12px', height: '12px' }}></div>
           </div>
         )}
-      {/* Speech Bubble */}
-      {bubble && (
-        <div className="speech-bubble">
-          {bubble}
-        </div>
-      )}
-
-      {/* Cleaning indicator */}
-      {(isCleaning && mode === 'eating') && (
-        <div style={{
-          position: 'absolute',
-          top: -30,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: 'rgba(255,107,157,0.9)',
-          color: 'white',
-          padding: '6px 16px',
-          borderRadius: 20,
-          fontSize: 13,
-          fontFamily: '-apple-system, sans-serif',
-          fontWeight: 600,
-          pointerEvents: 'none',
-          backdropFilter: 'blur(10px)',
-          whiteSpace: 'nowrap'
-        }}>
-          {t('pig.cleaning', 'Eating trash... 🐽')}
-        </div>
-      )}
-
-      {/* ZZZ khi ngủ */}
-      {(displayMode === 'sleeping' || displayMode === 'drowning_bottom') && !isDragging && !dragState && (
-        <div className="zzz-container">
-          <div className="zzz z1">z</div>
-          <div className="zzz z2">Z</div>
-          <div className="zzz z3">Z</div>
-        </div>
-      )}
-
-      {/* Water Splashes */}
-      {splashes.map(({ id, vy }) => {
-        const isBigSplash = vy > 10;
-        const dropCount = isBigSplash ? 8 : 3;
-        const scatterX = isBigSplash ? 150 : 50;
-        const scatterY = isBigSplash ? 80 : 20;
-        const baseHeight = isBigSplash ? 30 : 10;
-        
-        return (
-          <div key={id} className="water-splash-effect">
-            {[...Array(dropCount)].map((_, i) => (
-              <div 
-                key={i} 
-                className="water-splash-drop"
-                style={{
-                  '--tx': `${(Math.random() - 0.5) * scatterX}px`,
-                  '--ty': `${-baseHeight - Math.random() * scatterY}px`,
-                  left: `${50 + (Math.random() - 0.5) * (isBigSplash ? 40 : 20)}%`,
-                  transform: isBigSplash ? 'scale(1)' : 'scale(0.6)'
-                }}
-              />
-            ))}
+        {/* Speech Bubble */}
+        {bubble && (
+          <div className="speech-bubble">
+            {bubble}
           </div>
-        );
-      })}
+        )}
 
-      {/* Sprite image */}
-      <div style={{
-        transform: `scaleX(${facing}) skewX(${dragSkewX}deg) scale(${dragScaleX}, ${dragScaleY})`,
-        transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)', // Hiệu ứng nẩy khi dừng đột ngột
-        transformOrigin: 'bottom center',
-        display: 'flex',
-        justifyContent: 'center',
-        position: 'relative'
-      }}>
-        {temp !== null && temp <= 0 && !isDragging && <ColdBreath />}
-        <img
+        {/* Cleaning indicator */}
+        {(isCleaning && mode === 'eating') && (
+          <div style={{
+            position: 'absolute',
+            top: -30,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(255,107,157,0.9)',
+            color: 'white',
+            padding: '6px 16px',
+            borderRadius: 20,
+            fontSize: 13,
+            fontFamily: '-apple-system, sans-serif',
+            fontWeight: 600,
+            pointerEvents: 'none',
+            backdropFilter: 'blur(10px)',
+            whiteSpace: 'nowrap'
+          }}>
+            {t(petType === 'duck' ? 'duck.cleaning' : 'pig.cleaning', 'Eating trash... 🐽')}
+          </div>
+        )}
+
+        {/* ZZZ khi ngủ */}
+        {(displayMode === 'sleeping' || displayMode === 'drowning_bottom') && !isDragging && !dragState && (
+          <div className="zzz-container">
+            <div className="zzz z1">z</div>
+            <div className="zzz z2">Z</div>
+            <div className="zzz z3">Z</div>
+          </div>
+        )}
+
+        {/* Water Splashes */}
+        {splashes.map(({ id, vy }) => {
+          const isBigSplash = vy > 10;
+          const dropCount = isBigSplash ? 8 : 3;
+          const scatterX = isBigSplash ? 150 : 50;
+          const scatterY = isBigSplash ? 80 : 20;
+          const baseHeight = isBigSplash ? 30 : 10;
+
+          return (
+            <div key={id} className="water-splash-effect">
+              {[...Array(dropCount)].map((_, i) => (
+                <div
+                  key={i}
+                  className="water-splash-drop"
+                  style={{
+                    '--tx': `${(Math.random() - 0.5) * scatterX}px`,
+                    '--ty': `${-baseHeight - Math.random() * scatterY}px`,
+                    left: `${50 + (Math.random() - 0.5) * (isBigSplash ? 40 : 20)}%`,
+                    transform: isBigSplash ? 'scale(1)' : 'scale(0.6)'
+                  }}
+                />
+              ))}
+            </div>
+          );
+        })}
+
+        {/* Sprite image */}
+        <div style={{
+          transform: `scaleX(${facing}) skewX(${dragSkewX}deg) scale(${dragScaleX}, ${dragScaleY})`,
+          transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)', // Hiệu ứng nẩy khi dừng đột ngột
+          transformOrigin: 'bottom center',
+          display: 'flex',
+          justifyContent: 'center',
+          position: 'relative'
+        }}>
+          {temp !== null && temp <= 0 && !isDragging && <ColdBreath />}
+          <img
             src={currentSprite}
             alt="pig pet"
-            className="pig-sprite"
+            className={`pig-sprite ${displayMode === 'diving_float' ? 'breathing' : ''}`}
             draggable="false"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
@@ -497,8 +583,8 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
               pointerEvents: 'auto',
             }}
           />
+        </div>
       </div>
-    </div>
     </>
   )
 }

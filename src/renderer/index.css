@@ -54,7 +54,8 @@ body,
   display: block;
   width: 150px;
   height: auto;
-  image-rendering: pixelated;    /* pixel-art crisp */
+  image-rendering: pixelated;
+  /* pixel-art crisp */
   image-rendering: crisp-edges;
   transform-origin: bottom center;
   transition: filter 0.3s ease;
@@ -63,11 +64,25 @@ body,
 }
 
 @keyframes pigThud {
-  0% { transform: scale(1, 1); }
-  30% { transform: scale(1.3, 0.6); }
-  60% { transform: scale(0.9, 1.15); }
-  85% { transform: scale(1.05, 0.95); }
-  100% { transform: scale(1, 1); }
+  0% {
+    transform: scale(1, 1);
+  }
+
+  30% {
+    transform: scale(1.3, 0.6);
+  }
+
+  60% {
+    transform: scale(0.9, 1.15);
+  }
+
+  85% {
+    transform: scale(1.05, 0.95);
+  }
+
+  100% {
+    transform: scale(1, 1);
+  }
 }
 
 .pig-drag_landed .pig-sprite {
@@ -79,34 +94,85 @@ body,
 }
 
 @keyframes pigScaredShake {
-  0% { transform: translateX(-3px) scaleY(0.9); }
-  100% { transform: translateX(3px) scaleY(0.85); }
+  0% {
+    transform: translateX(-3px) scaleY(0.9);
+  }
+
+  100% {
+    transform: translateX(3px) scaleY(0.85);
+  }
 }
 
 .earthquake {
-  animation: earthquakeShake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+  animation: earthquakeShake 0.5s cubic-bezier(.36, .07, .19, .97) both;
 }
 
 @keyframes earthquakeShake {
-  0% { transform: translate(0, 0) rotate(0deg); }
-  10% { transform: translate(-15px, -15px) rotate(-3deg); }
-  20% { transform: translate(15px, 15px) rotate(3deg); }
-  30% { transform: translate(-15px, 15px) rotate(-3deg); }
-  40% { transform: translate(15px, -15px) rotate(3deg); }
-  50% { transform: translate(-15px, 0px) rotate(-2deg); }
-  60% { transform: translate(15px, 0px) rotate(2deg); }
-  70% { transform: translate(-10px, 10px) rotate(-1deg); }
-  80% { transform: translate(10px, -10px) rotate(1deg); }
-  90% { transform: translate(-5px, -5px) rotate(0deg); }
-  100% { transform: translate(0, 0) rotate(0deg); }
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+
+  10% {
+    transform: translate(-15px, -15px) rotate(-3deg);
+  }
+
+  20% {
+    transform: translate(15px, 15px) rotate(3deg);
+  }
+
+  30% {
+    transform: translate(-15px, 15px) rotate(-3deg);
+  }
+
+  40% {
+    transform: translate(15px, -15px) rotate(3deg);
+  }
+
+  50% {
+    transform: translate(-15px, 0px) rotate(-2deg);
+  }
+
+  60% {
+    transform: translate(15px, 0px) rotate(2deg);
+  }
+
+  70% {
+    transform: translate(-10px, 10px) rotate(-1deg);
+  }
+
+  80% {
+    transform: translate(10px, -10px) rotate(1deg);
+  }
+
+  90% {
+    transform: translate(-5px, -5px) rotate(0deg);
+  }
+
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
 }
 
 @keyframes pigWallHit {
-  0% { transform: scale(1, 1); }
-  30% { transform: scale(0.6, 1.3); }
-  60% { transform: scale(1.15, 0.9); }
-  85% { transform: scale(0.95, 1.05); }
-  100% { transform: scale(1, 1); }
+  0% {
+    transform: scale(1, 1);
+  }
+
+  30% {
+    transform: scale(0.6, 1.3);
+  }
+
+  60% {
+    transform: scale(1.15, 0.9);
+  }
+
+  85% {
+    transform: scale(0.95, 1.05);
+  }
+
+  100% {
+    transform: scale(1, 1);
+  }
 }
 
 .pig-hit-wall .pig-sprite {
@@ -114,9 +180,17 @@ body,
 }
 
 @keyframes dangle {
-  0% { transform: rotate(-8deg); }
-  50% { transform: rotate(8deg); }
-  100% { transform: rotate(-8deg); }
+  0% {
+    transform: rotate(-8deg);
+  }
+
+  50% {
+    transform: rotate(8deg);
+  }
+
+  100% {
+    transform: rotate(-8deg);
+  }
 }
 
 /* State-specific body animations (CSS layer on top of JS frame animation) */
@@ -156,36 +230,87 @@ body,
 }
 
 @keyframes pigIdleBob {
-  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
-  50%       { transform: translateY(-5px) rotate(1.5deg); }
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1.5deg);
+  }
+
+  50% {
+    transform: translateY(-5px) rotate(1.5deg);
+  }
 }
 
 @keyframes pigWalkBounce {
-  0%, 100% { transform: translateY(0) rotate(-2deg); }
-  50%       { transform: translateY(-4px) rotate(2deg); }
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+
+  50% {
+    transform: translateY(-4px) rotate(2deg);
+  }
 }
 
 @keyframes pigSniffTilt {
-  0%, 100% { transform: rotate(-6deg) translateY(0); }
-  50%       { transform: rotate(4deg) translateY(5px); }
+
+  0%,
+  100% {
+    transform: rotate(-6deg) translateY(0);
+  }
+
+  50% {
+    transform: rotate(4deg) translateY(5px);
+  }
 }
 
 @keyframes pigEatChomp {
-  0%, 100% { transform: scale(1) translateY(0); }
-  50%       { transform: scale(1.07) translateY(-3px); }
+
+  0%,
+  100% {
+    transform: scale(1) translateY(0);
+  }
+
+  50% {
+    transform: scale(1.07) translateY(-3px);
+  }
 }
 
 @keyframes pigSleepBreathe {
-  0%, 100% { transform: scaleX(1) scaleY(1); }
-  50%       { transform: scaleX(1.04) scaleY(0.97); }
+
+  0%,
+  100% {
+    transform: scaleX(1) scaleY(1);
+  }
+
+  50% {
+    transform: scaleX(1.04) scaleY(0.97);
+  }
 }
 
 @keyframes pigFullJiggle {
-  0%, 100% { transform: scale(1) rotate(0deg); }
-  20%       { transform: scale(1.06) rotate(-4deg); }
-  40%       { transform: scale(1.06) rotate(4deg); }
-  60%       { transform: scale(1.03) rotate(-2deg); }
-  80%       { transform: scale(1.03) rotate(2deg); }
+
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+
+  20% {
+    transform: scale(1.06) rotate(-4deg);
+  }
+
+  40% {
+    transform: scale(1.06) rotate(4deg);
+  }
+
+  60% {
+    transform: scale(1.03) rotate(-2deg);
+  }
+
+  80% {
+    transform: scale(1.03) rotate(2deg);
+  }
 }
 
 /* Speech bubble */
@@ -397,23 +522,37 @@ body,
   animation: floatZzz 3s ease-in infinite;
 }
 
-.zzz.z1 { animation-delay: 0s; font-size: 14px; }
-.zzz.z2 { animation-delay: 1s; font-size: 18px; }
-.zzz.z3 { animation-delay: 2s; font-size: 24px; }
+.zzz.z1 {
+  animation-delay: 0s;
+  font-size: 14px;
+}
+
+.zzz.z2 {
+  animation-delay: 1s;
+  font-size: 18px;
+}
+
+.zzz.z3 {
+  animation-delay: 2s;
+  font-size: 24px;
+}
 
 @keyframes floatZzz {
   0% {
     opacity: 0;
     transform: translate(0, 0) scale(0.3);
   }
+
   20% {
     opacity: 1;
     transform: translate(5px, -15px) scale(0.8);
   }
+
   80% {
     opacity: 0.8;
     transform: translate(15px, -40px) scale(1.5);
   }
+
   100% {
     opacity: 0;
     transform: translate(20px, -55px) scale(2);
@@ -436,8 +575,13 @@ body,
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .cache-panel {
@@ -455,8 +599,15 @@ body,
 }
 
 @keyframes slideUp {
-  from { transform: translateY(30px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .cache-panel-header {
@@ -520,12 +671,17 @@ body,
   height: 50px;
   background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.9), transparent);
   animation: windSpeed 0.3s linear infinite;
-  filter: drop-shadow(0 0 4px rgba(255,255,255,0.8));
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8));
 }
 
 @keyframes windSpeed {
-  0% { transform: translateY(-50px); }
-  100% { transform: translateY(150px); }
+  0% {
+    transform: translateY(-50px);
+  }
+
+  100% {
+    transform: translateY(150px);
+  }
 }
 
 .cache-loading {
@@ -668,8 +824,13 @@ body,
 }
 
 @keyframes pop {
-  from { transform: scale(0); }
-  to { transform: scale(1); }
+  from {
+    transform: scale(0);
+  }
+
+  to {
+    transform: scale(1);
+  }
 }
 
 .cache-result-text {
@@ -727,46 +888,122 @@ body,
   background: #1e1226;
   color: #f0d0e0;
 }
+
 @keyframes growAndFade {
-  0% { opacity: 0; transform: scale(0.5) translateY(10px); }
-  10% { opacity: 1; transform: scale(1) translateY(0); }
-  80% { opacity: 1; transform: scale(1) translateY(0); }
-  100% { opacity: 0; transform: scale(0.8) translateY(10px); }
+  0% {
+    opacity: 0;
+    transform: scale(0.5) translateY(10px);
+  }
+
+  10% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+
+  80% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(0.8) translateY(10px);
+  }
 }
 
 /* ─── Weather Animations ──────────────────────────────────────────────────── */
 @keyframes rain-fall {
-  0%   { transform: translateY(-40px) skewX(var(--skew, 0deg)); opacity: 0; }
-  10%  { opacity: 1; }
-  90%  { opacity: 1; }
-  100% { transform: translateY(110vh) skewX(var(--skew, 0deg)); opacity: 0; }
+  0% {
+    transform: translateY(-40px) skewX(var(--skew, 0deg));
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  90% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(110vh) skewX(var(--skew, 0deg));
+    opacity: 0;
+  }
 }
 
 @keyframes snow-fall {
-  0%   { transform: translateY(-20px) translateX(0); opacity: 0; }
-  10%  { opacity: 1; }
-  90%  { opacity: 0.8; }
-  100% { transform: translateY(105vh) translateX(var(--drift, 0px)); opacity: 0; }
+  0% {
+    transform: translateY(-20px) translateX(0);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  90% {
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: translateY(105vh) translateX(var(--drift, 0px));
+    opacity: 0;
+  }
 }
 
 @keyframes wind-streak-right {
-  0%   { transform: translateX(0); opacity: 0; }
-  10%  { opacity: 1; }
-  90%  { opacity: 0.6; }
-  100% { transform: translateX(110vw); opacity: 0; }
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  90% {
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: translateX(110vw);
+    opacity: 0;
+  }
 }
 
 @keyframes wind-streak-left {
-  0%   { transform: translateX(0); opacity: 0; }
-  10%  { opacity: 1; }
-  90%  { opacity: 0.6; }
-  100% { transform: translateX(-110vw); opacity: 0; }
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  90% {
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: translateX(-110vw);
+    opacity: 0;
+  }
 }
 
 @keyframes lightning-flash {
-  0%   { opacity: 1; }
-  50%  { opacity: 0.2; }
-  100% { opacity: 0; }
+  0% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.2;
+  }
+
+  100% {
+    opacity: 0;
+  }
 }
 
 /* ─── Meteorite Sparks ────────────────────────────────────────────────────── */
@@ -792,17 +1029,45 @@ body,
   opacity: 0;
 }
 
-.spark.s1 { left: 20%; animation-delay: 0.1s; }
-.spark.s2 { left: 40%; animation-delay: 0.25s; }
-.spark.s3 { left: 60%; animation-delay: 0.05s; }
-.spark.s4 { left: 80%; animation-delay: 0.3s; }
-.spark.s5 { left: 30%; animation-delay: 0.15s; }
-.spark.s6 { left: 70%; animation-delay: 0.2s; }
+.spark.s1 {
+  left: 20%;
+  animation-delay: 0.1s;
+}
+
+.spark.s2 {
+  left: 40%;
+  animation-delay: 0.25s;
+}
+
+.spark.s3 {
+  left: 60%;
+  animation-delay: 0.05s;
+}
+
+.spark.s4 {
+  left: 80%;
+  animation-delay: 0.3s;
+}
+
+.spark.s5 {
+  left: 30%;
+  animation-delay: 0.15s;
+}
+
+.spark.s6 {
+  left: 70%;
+  animation-delay: 0.2s;
+}
 
 /* ─── Freezing & Shivering Effects ────────────────────────────────────────── */
 @keyframes pigShiver {
-  0% { transform: translateX(-2px) translateY(1px); }
-  100% { transform: translateX(2px) translateY(-1px); }
+  0% {
+    transform: translateX(-2px) translateY(1px);
+  }
+
+  100% {
+    transform: translateX(2px) translateY(-1px);
+  }
 }
 
 .pig-shivering .pig-sprite {
@@ -820,15 +1085,32 @@ body,
 }
 
 @keyframes breathFloat {
-  0% { transform: scale(0.5) translate(0, 0); opacity: 0; }
-  20% { opacity: 0.8; }
-  100% { transform: scale(2.5) translate(20px, -20px); opacity: 0; }
+  0% {
+    transform: scale(0.5) translate(0, 0);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: scale(2.5) translate(20px, -20px);
+    opacity: 0;
+  }
 }
 
 
 @keyframes sparkFly {
-  0% { transform: translateY(0) scaleY(1); opacity: 1; }
-  100% { transform: translateY(-120px) scaleY(0.3); opacity: 0; }
+  0% {
+    transform: translateY(0) scaleY(1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(-120px) scaleY(0.3);
+    opacity: 0;
+  }
 }
 
 .pig-meteorite .pig-sprite {
@@ -836,8 +1118,13 @@ body,
 }
 
 @keyframes meteoriteShake {
-  0% { transform: translateX(-2px) translateY(-1px); }
-  100% { transform: translateX(2px) translateY(1px); }
+  0% {
+    transform: translateX(-2px) translateY(-1px);
+  }
+
+  100% {
+    transform: translateX(2px) translateY(1px);
+  }
 }
 
 /* ─── Meteorite Fireball ──────────────────────────────────────────────────── */
@@ -871,8 +1158,15 @@ body,
 }
 
 @keyframes fireballFlicker {
-  0% { transform: translate(-50%, -50%) scale(0.95); opacity: 0.8; }
-  100% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+  0% {
+    transform: translate(-50%, -50%) scale(0.95);
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: translate(-50%, -50%) scale(1.1);
+    opacity: 1;
+  }
 }
 
 .water-bubbles {
@@ -899,10 +1193,24 @@ body,
 }
 
 @keyframes floatUp {
-  0% { transform: translateY(0) scale(0.5); opacity: 0; }
-  20% { opacity: 1; }
-  80% { transform: translateY(-40px) scale(1.2); opacity: 1; }
-  100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
+  0% {
+    transform: translateY(0) scale(0.5);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  80% {
+    transform: translateY(-40px) scale(1.2);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(-50px) scale(1.5);
+    opacity: 0;
+  }
 }
 
 /* Water splash effect */
@@ -933,8 +1241,43 @@ body,
     transform: translate(0, 0) scale(1);
     opacity: 1;
   }
+
   100% {
     transform: translate(var(--tx), var(--ty)) scale(0);
     opacity: 0;
   }
+}
+
+/* Nổ bùm khi heo/vịt đạt 500% kích thước — các bản sao nhỏ bắn ra rồi rơi và biến mất */
+@keyframes pig-burst-scatter {
+  0% {
+    transform: translate(-50%, 0) scale(var(--start-scale, 1)) rotate(0deg);
+    opacity: 1;
+  }
+
+  35% {
+    transform: translate(calc(-50% + var(--dx)), var(--dy)) scale(var(--start-scale, 1)) rotate(var(--rot));
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(calc(-50% + var(--dx)), calc(var(--dy) + 160px)) scale(calc(var(--start-scale, 1) * 0.3)) rotate(var(--rot));
+    opacity: 0;
+  }
+}
+
+@keyframes floatBreathing {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05, 0.95);
+  }
+}
+
+.pig-sprite.breathing {
+  animation: floatBreathing 2s ease-in-out infinite;
 }

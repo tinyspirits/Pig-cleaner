@@ -10,8 +10,10 @@ function formatBytes(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(precision)) + ' ' + sizes[i]
 }
 
-export default function StatsPanel({ trashInfo, cacheInfo = [], totalEaten, pigScale, weather, onClose }) {
+export default function StatsPanel({ trashInfo, cacheInfo = [], totalEaten, pigScale, weather, petType = 'pig', onClose }) {
   const { t } = useTranslation()
+  const petLabel = t(petType === 'duck' ? 'settingsPanel.duck' : 'settingsPanel.pig')
+  const petEmoji = petType === 'duck' ? '🦆' : '🐽'
   const totalCacheBytes = cacheInfo.reduce((s, c) => s + (c.sizeBytes || 0), 0)
   const totalRac = (trashInfo?.sizeBytes || 0) + totalCacheBytes
 
@@ -23,7 +25,7 @@ export default function StatsPanel({ trashInfo, cacheInfo = [], totalEaten, pigS
       />
       <div className="stats-panel" style={{ zIndex: 200 }}>
         <button className="close-btn" onClick={onClose}>✕</button>
-        <h3>🐷 {t('statsPanel.title')}</h3>
+        <h3>{petEmoji} {t('statsPanel.title', { pet: petLabel })}</h3>
 
         {/* Thời tiết */}
         {weather?.description && (
@@ -55,11 +57,11 @@ export default function StatsPanel({ trashInfo, cacheInfo = [], totalEaten, pigS
           </strong>
         </div>
         <div className="stats-row">
-          <span>📏 {t('statsPanel.pigSize')}</span>
+          <span>📏 {t('statsPanel.pigSize', { pet: petLabel })}</span>
           <strong>{Math.round((pigScale - 1) * 100 + 100)}%</strong>
         </div>
         <div style={{ marginTop: 10, fontSize: 11, color: '#999', textAlign: 'center' }}>
-          {t('statsPanel.clickToEat', 'Click on pig to eat trash! 🐽')}
+          {t('statsPanel.clickToEat', { pet: petLabel, emoji: petEmoji })}
         </div>
       </div>
     </>

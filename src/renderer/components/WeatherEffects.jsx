@@ -133,6 +133,8 @@ function WindStreaks({ windForceX, windSpeed }) {
 function LightningFlash() {
   const [flashData, setFlashData] = useState(null)
 
+  const timerRef = useRef(null)
+
   useEffect(() => {
     function flash() {
       setFlashData({
@@ -146,10 +148,10 @@ function LightningFlash() {
       
       setTimeout(() => setFlashData(null), 150)
       // Flash lại ngẫu nhiên sau 4-15 giây
-      setTimeout(flash, randomBetween(4000, 15000))
+      timerRef.current = setTimeout(flash, randomBetween(4000, 15000))
     }
-    const t = setTimeout(flash, randomBetween(1000, 5000))
-    return () => clearTimeout(t)
+    timerRef.current = setTimeout(flash, randomBetween(1000, 5000))
+    return () => clearTimeout(timerRef.current)
   }, [])
 
   if (!flashData) return null
@@ -179,13 +181,13 @@ function LightningFlash() {
 }
 
 // ─── WeatherEffects (main export) ────────────────────────────────────────────
-export default function WeatherEffects({ weather, floodMode = false, snowMode = false, stormMode = false, effectsEnabled = true }) {
+export default function WeatherEffects({ weather, floodMode = false, effectsEnabled = true }) {
   const containerRef = useRef(null)
   const [waterLevel, setWaterLevel] = useState(0)
   const [snowLevel, setSnowLevel] = useState(0)
 
   useEffect(() => {
-    const isHeavyRain = weather?.condition === 'thunderstorm' || floodMode || stormMode
+    const isHeavyRain = weather?.condition === 'thunderstorm' || floodMode
     const interval = setInterval(() => {
       setWaterLevel(prev => {
         if (isHeavyRain) {
@@ -197,7 +199,7 @@ export default function WeatherEffects({ weather, floodMode = false, snowMode = 
         }
       })
       
-      const isSnowing = weather?.condition === 'snow' || snowMode
+      const isSnowing = weather?.condition === 'snow'
       setSnowLevel(prev => {
         if (isSnowing) {
           // Tuyết dày dần, max 1%
@@ -209,7 +211,7 @@ export default function WeatherEffects({ weather, floodMode = false, snowMode = 
       })
     }, 1000)
     return () => clearInterval(interval)
-  }, [weather?.condition, floodMode, snowMode])
+  }, [weather?.condition, floodMode])
 
   useEffect(() => {
     const handler = (e) => {
@@ -239,11 +241,11 @@ export default function WeatherEffects({ weather, floodMode = false, snowMode = 
   if (!weather && waterLevel <= 0 && snowLevel <= 0) return null
 
   const { condition, windForceX, windSpeed, isStorm } = weather || {}
-  const showRain = effectsEnabled && (condition === 'rain' || condition === 'drizzle' || condition === 'thunderstorm') || stormMode
-  const showSnow = (effectsEnabled && condition === 'snow') || snowMode
+  const showRain = effectsEnabled && (condition === 'rain' || condition === 'drizzle' || condition === 'thunderstorm')
+  const showSnow = effectsEnabled && condition === 'snow'
   const showWind = effectsEnabled && windSpeed > 25
-  const showLightning = (effectsEnabled && condition === 'thunderstorm') || stormMode
-  const rainIntensity = (condition === 'thunderstorm' || stormMode) ? 1.5 : condition === 'drizzle' ? 0.4 : 1.0
+  const showLightning = effectsEnabled && condition === 'thunderstorm'
+  const rainIntensity = condition === 'thunderstorm' ? 1.5 : condition === 'drizzle' ? 0.4 : 1.0
 
   if (!showRain && !showSnow && !showWind && !showLightning && waterLevel <= 0 && snowLevel <= 0) return null
 
