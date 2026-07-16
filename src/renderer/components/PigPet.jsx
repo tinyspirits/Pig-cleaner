@@ -153,9 +153,54 @@ function ColdBreath() {
 export const PIG_WIDTH = 150
 export const PIG_HEIGHT = 150
 
-const isElectron = typeof window !== 'undefined' && window.pigAPI
+// Mảng lưu lịch sử trạng thái của heo mẹ để heo con theo sau
+const HISTORY_SIZE = 400
+let historyBuffer = []
 
-export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = false, isCleaning = false, cameraFollowsPig, onDoubleClick, onWakeUp, weatherData = null, floodMode = false, petType = 'pig', explosionEvent = null, onExplosionDone }) {
+function FollowerPet({ index, scale }) {
+  const frameOffset = (index + 1) * 15
+  
+  if (historyBuffer.length <= frameOffset) return null
+  
+  const state = historyBuffer[historyBuffer.length - 1 - frameOffset]
+  
+  const containerStyle = {
+    transform: `translate(${state.x}px, ${state.y}px) scale(${scale})`,
+    transformOrigin: 'bottom center',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    pointerEvents: 'none', // Heo con không tương tác chuột
+    zIndex: 9, // Nằm sau heo mẹ (z-index heo mẹ = 10)
+  }
+
+  return (
+    <div
+      className={`pig-container pig-${state.displayMode} ${state.isWallHit ? 'pig-hit-wall' : ''} ${state.isFallingFast ? 'pig-meteorite' : ''} ${state.isShivering ? 'pig-shivering' : ''}`}
+      style={containerStyle}
+    >
+      <div style={{
+        transform: `scaleX(${state.facing}) skewX(${state.dragSkewX}deg) scale(${state.dragScaleX}, ${state.dragScaleY})`,
+        transformOrigin: 'bottom center',
+        display: 'flex',
+        justifyContent: 'center',
+        position: 'relative'
+      }}>
+        <img
+          src={state.sprite}
+          alt="piglet"
+          className={`pig-sprite ${state.displayMode === 'diving_float' ? 'breathing' : ''}`}
+          style={{
+            filter: state.imageFilter,
+            opacity: 0.9,
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
+export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = false, isCleaning = false, cameraFollowsPig, onDoubleClick, onWakeUp, weatherData = null, floodMode = false, petType = 'pig', explosionEvent = null, onExplosionDone, followers = [] }) {
   const { t } = useTranslation()
   const windRef = useRef(null)
   
@@ -367,10 +412,36 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
     trailType = 'snow'
   }
 
+  useEffect(() => {
+    historyBuffer.push({
+      x: safeX,
+      y: safeY,
+      facing,
+      sprite: currentSprite,
+      displayMode,
+      isWallHit,
+      isFallingFast,
+      isShivering,
+      dragScaleX,
+      dragScaleY,
+      dragSkewX,
+      imageFilter
+    })
+    if (historyBuffer.length > HISTORY_SIZE) {
+      historyBuffer.shift()
+    }
+  })
+
   return (
     <>
       <SkyClouds altitude={altitude} />
       <GrassTrail x={position.x} y={position.y} isWalking={mode === 'walking'} trailType={trailType} />
+      
+      {/* Render follower piglets */}
+      {followers.length > 0 && followers.map((f, i) => (
+        <FollowerPet key={f.id} index={i} scale={f.scale} />
+      ))}
+
       {explosionEvent && (
         <div style={{ position: 'absolute', bottom: 0, left: 0, transform: `translate(${safeX}px, ${safeY}px)`, pointerEvents: 'none' }}>
           <ExplosionBurst petType={petType} onDone={onExplosionDone} />

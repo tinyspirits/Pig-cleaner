@@ -15,15 +15,18 @@ export function usePigState(trashInfo, petType = 'pig') {
   const [cameraFollowsPig, setCameraFollowsPig] = useState(true)
   const [unlimitedPigSize, setUnlimitedPigSize] = useState(false)
   const [explosionEvent, setExplosionEvent] = useState(null) // { id } khi vừa "nổ" tách nhỏ, null khi bình thường
+  const [followers, setFollowers] = useState([])
 
   const scaleRef = useRef(1.0)
   const eatenRef = useRef(0)
   const unlimitedRef = useRef(false)
+  const followersRef = useRef([])
 
   // Keep refs in sync
   useEffect(() => { scaleRef.current = pigScale }, [pigScale])
   useEffect(() => { eatenRef.current = totalEaten }, [totalEaten])
   useEffect(() => { unlimitedRef.current = unlimitedPigSize }, [unlimitedPigSize])
+  useEffect(() => { followersRef.current = followers }, [followers])
 
   const reloadSettings = async () => {
     if (window.pigAPI) {
@@ -32,6 +35,12 @@ export function usePigState(trashInfo, petType = 'pig') {
       if (s.totalEaten) setTotalEaten(s.totalEaten)
       if (s.cameraFollowsPig !== undefined) setCameraFollowsPig(s.cameraFollowsPig)
       if (s.unlimitedPigSize !== undefined) setUnlimitedPigSize(s.unlimitedPigSize)
+      if (s.followers) {
+        setFollowers(s.followers)
+      } else if (s.followersCount > 0) {
+        // Migrate old settings
+        setFollowers(Array.from({ length: s.followersCount }).map(() => ({ id: Math.random().toString(), scale: 0.4 })))
+      }
     }
   }
 
@@ -56,9 +65,10 @@ export function usePigState(trashInfo, petType = 'pig') {
     if (!window.pigAPI) return
     const saveInterval = setInterval(async () => {
       const s = await window.pigAPI.getSettings()
-      if (s.pigScale !== scaleRef.current || s.totalEaten !== eatenRef.current) {
+      if (s.pigScale !== scaleRef.current || s.totalEaten !== eatenRef.current || JSON.stringify(s.followers) !== JSON.stringify(followersRef.current)) {
         s.pigScale = scaleRef.current
         s.totalEaten = eatenRef.current
+        s.followers = followersRef.current
         await window.pigAPI.saveSettings(s)
       }
     }, 10000)
@@ -78,13 +88,13 @@ export function usePigState(trashInfo, petType = 'pig') {
     if (!trashInfo) return
     if (trashInfo.sizeBytes > 0) {
       setMode('sniffing')
-      
+
       const key = petType === 'duck' ? 'duck.sniffQuotes' : 'pig.sniffQuotes'
       const def = petType === 'duck' ? ['Quắc! Có rác kìa! 🦆', 'Tắm rác không ta?', 'Có gì ăn được không?'] : ['Khứu... Có mùi rác! 👃', 'Ngửi thấy rồi! 🐽', 'Rác rác... đâu đâu?', 'Hmm... thùng rác có gì?']
       let quotes = t(key, { returnObjects: true, defaultValue: def })
       if (!Array.isArray(quotes)) quotes = def
       showBubble(quotes)
-      
+
       setTimeout(() => setMode('idle'), 4000)
     }
   }, [trashInfo, petType])
@@ -153,7 +163,7 @@ export function usePigState(trashInfo, petType = 'pig') {
   // Hành động ăn — freedKB là số KB đã giải phóng
   const triggerEat = useCallback((freedKB) => {
     setMode('eating')
-    
+
     // Tăng kích thước: đảm bảo luôn có base tăng 5% (0.05) để dễ nhận thấy.
     // Trước đây cap cứng ở 0.2 khiến bất kỳ lượng rác nào từ ~30-40MB trở lên
     // đều cho growth gần như giống hệt nhau (dọn 8GB không khác gì 30MB).
@@ -169,37 +179,65 @@ export function usePigState(trashInfo, petType = 'pig') {
     // rồi quay về kích thước gốc (100%) để bắt đầu lại chu kỳ lớn lên.
     const EXPLODE_THRESHOLD = 5.0
 
-    setPigScale(prev => {
-      const next = prev + (isNaN(growth) ? 0 : growth)
-      if (unlimitedRef.current) {
-        if (isNaN(next)) return 1.0
-        if (next >= EXPLODE_THRESHOLD) {
-          setExplosionEvent({ id: Date.now() })
-          return 1.0
-        }
-        return next
+    const totalEntities = 1 + followersRef.current.length
+    let randomWeights = Array.from({ length: totalEntities }).map(() => Math.random() + 0.1) // Tránh 0
+    const weightSum = randomWeights.reduce((a, b) => a + b, 0)
+    randomWeights = randomWeights.map(w => w / weightSum)
+
+    const motherGrowth = growth * randomWeights[0]
+    const pigletGrowths = randomWeights.slice(1).map(w => growth * w)
+
+    let nextMotherScale = scaleRef.current + (isNaN(motherGrowth) ? 0 : motherGrowth)
+    let exploded = false;
+
+    if (unlimitedRef.current) {
+      if (isNaN(nextMotherScale)) nextMotherScale = 1.0;
+      if (nextMotherScale >= EXPLODE_THRESHOLD) {
+        exploded = true;
+        nextMotherScale = 1.0;
       }
-      return isNaN(next) ? 1.0 : Math.min(next, 2.5)
+    } else {
+      nextMotherScale = isNaN(nextMotherScale) ? 1.0 : Math.min(nextMotherScale, 2.5)
+    }
+
+    setPigScale(nextMotherScale)
+
+    if (exploded) {
+      setExplosionEvent({ id: Date.now() })
+    }
+
+    setFollowers(fc => {
+      let updated = fc.map((f, i) => ({
+        ...f,
+        scale: f.scale + (pigletGrowths[i] || 0)
+      }))
+
+      if (exploded) {
+        const newPiglets = Array.from({ length: 8 }).map(() => ({ id: Math.random().toString(), scale: 0.4 }))
+        updated = [...updated, ...newPiglets].slice(0, 24)
+      }
+
+      return updated.filter(f => f.scale < nextMotherScale)
     })
     setTotalEaten(prev => prev + (isNaN(freedKB) ? 0 : freedKB))
 
-    const sizeStr = freedKB < 1024 
-      ? `+${freedKB.toFixed(0)}KB` 
+    const sizeStr = freedKB < 1024
+      ? `+${freedKB.toFixed(0)}KB`
       : `+${(freedKB / 1024).toFixed(1)}MB`
-      
+
     const yummyKey = petType === 'duck' ? 'duck.yummy' : 'pig.yummy'
     const yummyDef = petType === 'duck' ? 'Quắc, ngon!' : 'Ngon quá!'
     forceBubble(`${sizeStr}! ${t(yummyKey, yummyDef)}`)
 
     setTimeout(() => {
       setMode('full')
-      
+
       const key = petType === 'duck' ? 'duck.fullQuotes' : 'pig.fullQuotes'
       const def = petType === 'duck' ? ['No ứ hự! 🦆', 'Ợ~ 😮‍💨', 'Căng mỏ rồi', 'Ăn nữa không bay nổi đâu', 'Bụng to quá!'] : ['Căng da bụng quá! 🤰', 'No rồi... ợ~ 😮‍💨', 'Ăn thêm được nữa 💪', 'Heo mập hơn rồi nè!', 'Béo ra rồi nha 🐖']
       let quotes = t(key, { returnObjects: true, defaultValue: def })
       if (!Array.isArray(quotes)) quotes = def
       showBubble(quotes)
-      
+
       setTimeout(() => setMode('idle'), 4000)
     }, 5000)
   }, [petType, t])
@@ -208,6 +246,5 @@ export function usePigState(trashInfo, petType = 'pig') {
     setTimeout(() => setBubble(null), 4000)
   }
 
-  return { mode, bubble, pigScale, totalEaten, cameraFollowsPig, reloadSettings, triggerEat, setMode, forceBubble, explosionEvent, clearExplosionEvent: () => setExplosionEvent(null) }
+  return { mode, bubble, pigScale, totalEaten, cameraFollowsPig, reloadSettings, triggerEat, setMode, forceBubble, explosionEvent, clearExplosionEvent: () => setExplosionEvent(null), followers }
 }
-

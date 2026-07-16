@@ -54,7 +54,7 @@ function App() {
   const [isSuspended, setIsSuspended] = useState(false)
   const [weatherSettings, setWeatherSettings] = useState({ weatherEffects: true, weatherAlerts: true, floodMode: false, petType: 'pig', soundEnabled: false })
 
-  const { mode, bubble, pigScale, totalEaten, cameraFollowsPig, reloadSettings, triggerEat, setMode, forceBubble, explosionEvent, clearExplosionEvent } = usePigState(trashInfo, weatherSettings.petType)
+  const { mode, bubble, pigScale, totalEaten, cameraFollowsPig, reloadSettings, triggerEat, setMode, forceBubble, explosionEvent, clearExplosionEvent, followers } = usePigState(trashInfo, weatherSettings.petType)
   const isPanelOpen = showStats || showCache || showSettings || permissionWarning
   const weather = useWeather()
   const { t, i18n } = useTranslation()
@@ -454,6 +454,7 @@ function App() {
         petType={weatherSettings.petType}
         explosionEvent={explosionEvent}
         onExplosionDone={clearExplosionEvent}
+        followers={followers}
       />
     </div>
   )

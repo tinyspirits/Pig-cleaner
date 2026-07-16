@@ -34,6 +34,8 @@ const DEFAULTS = {
   language: 'en',
   // Pet type (pig or duck)
   petType: 'pig',
+  // Follower piglets array
+  followers: [],
 }
 
 function load() {
