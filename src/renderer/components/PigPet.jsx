@@ -261,6 +261,8 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
       displayMode = 'diving_down'
     } else if (swimAction === 'rising') {
       displayMode = 'diving_up'
+    } else if (swimAction === 'hover') {
+      displayMode = (Math.abs(dragVelocity.x) > 0.5 || Math.abs(dragVelocity.y) > 0.5) ? 'diving_bottom' : 'diving_float'
     } else if (swimAction === 'bottom') {
       if (Math.abs(dragVelocity.x) > 0.5 || Math.abs(dragVelocity.y) > 0.5) {
         displayMode = 'diving_bottom'
@@ -480,7 +482,7 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
         {meteoriteHeat >= 0.7 && (
           <div className="meteorite-fireball"></div>
         )}
-        {['diving', 'bottom', 'rising', 'drowning_sink', 'drowning_bottom'].includes(swimAction) && !isAboveWater && (
+        {['diving', 'bottom', 'rising', 'hover', 'drowning_sink', 'drowning_bottom'].includes(swimAction) && !isAboveWater && (
           <div className="water-bubbles" style={swimAction === 'rising' ? { top: '30%', left: '50%' } : {}}>
             <div className="water-bubble" style={{ left: '10px', animationDelay: '0s' }}></div>
             <div className="water-bubble" style={{ left: '30px', animationDelay: '0.2s', width: '15px', height: '15px' }}></div>

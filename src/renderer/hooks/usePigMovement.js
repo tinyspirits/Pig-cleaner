@@ -28,6 +28,7 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
   const swimActionRef = useRef('none')
   const swimPhaseRef = useRef(0)
   const nextSwimChangeRef = useRef(0)
+  const hoverWanderRef = useRef(0)
   const hasImpactedRef = useRef(true)
   const lastIsDraggingRef = useRef(false)
   const floodModeRef = useRef(floodMode)
@@ -136,7 +137,7 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
         swimActionRef.current = 'none'
         setSwimAction('none')
         swimPhaseRef.current = 0 // Quên cách bơi khi cạn nước
-      } else if (isInWater && state.isDragging && state.y < floatingY && swimActionRef.current !== 'surface' && swimActionRef.current !== 'rising') {
+      } else if (isInWater && state.isDragging && state.y < floatingY && swimActionRef.current !== 'surface' && swimActionRef.current !== 'rising' && swimActionRef.current !== 'hover') {
         // Bị nhấc ra khỏi mặt nước khi đang lặn
         const nextAction = swimPhaseRef.current === 0 ? 'surface' : 'rising'
         swimActionRef.current = nextAction
@@ -205,18 +206,47 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
               }
             }
           } else {
-            // Đã biết bơi (normal cycle)
+            // Đã biết bơi: bơi tự do ở nhiều độ sâu khác nhau trong nước,
+            // chỉ khi đứng im (hover) một lúc thì mới bắt đầu chìm dần xuống đáy.
             if (now > nextSwimChangeRef.current) {
               if (swimActionRef.current === 'surface') {
+                // Nghỉ ở mặt nước xong -> chìm xuống
+                swimActionRef.current = 'diving'
+                setSwimAction('diving')
+                nextSwimChangeRef.current = now + 9999999 // chờ tới khi chạm đáy
+              } else if (swimActionRef.current === 'hover') {
+                // Đứng im giữa nước xong -> chìm tiếp xuống đáy
                 swimActionRef.current = 'diving'
                 setSwimAction('diving')
                 nextSwimChangeRef.current = now + 9999999
               } else if (swimActionRef.current === 'bottom') {
+                // Nghỉ dưới đáy xong -> bơi ngược lên, dừng ở một độ sâu ngẫu nhiên
+                // (không nhất thiết phải trồi hẳn lên mặt nước)
                 swimActionRef.current = 'rising'
                 setSwimAction('rising')
-                nextSwimChangeRef.current = now + 9999999
+                nextSwimChangeRef.current = now + 700 + Math.random() * 2200
+                // Trôi ngang một chút để trông giống đang bơi lượn chứ không chỉ trồi thẳng đứng
+                const wanderDir = Math.random() < 0.5 ? 1 : -1
+                state.facing = wanderDir
+                setFacing(wanderDir)
+                state.vx = wanderDir * (1 + Math.random() * 2.5)
+              } else if (swimActionRef.current === 'rising') {
+                // Đã bơi lên được một đoạn -> dừng lại lơ lửng giữa nước
+                swimActionRef.current = 'hover'
+                setSwimAction('hover')
+                nextSwimChangeRef.current = now + 900 + Math.random() * 1600
               }
             }
+          }
+
+          // Khi đang lơ lửng giữa nước, thỉnh thoảng bơi qua lại một chút cho sống động
+          // (thay vì đứng chết một chỗ) -> hiển thị động tác diving_bottom khi đang di chuyển
+          if (swimActionRef.current === 'hover' && now > hoverWanderRef.current) {
+            const hoverDir = Math.random() < 0.5 ? 1 : -1
+            state.facing = hoverDir
+            setFacing(hoverDir)
+            state.vx = hoverDir * (0.8 + Math.random() * 2)
+            hoverWanderRef.current = now + 400 + Math.random() * 700
           }
         }
 
@@ -233,6 +263,10 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
           } else if (swimActionRef.current === 'surface' || swimActionRef.current === 'struggling') {
             state.vy -= 1.5 * pigScaleRef.current
             state.vy *= 0.8
+          } else if (swimActionRef.current === 'hover') {
+            // Đứng im giữa nước: không tự đẩy lên, chỉ chịu trọng lực rất nhẹ (bắt đầu chìm dần)
+            state.vy += 0.15 * pigScaleRef.current
+            state.vy *= 0.85
           } else if (swimActionRef.current === 'bottom' || swimActionRef.current === 'drowning_bottom') {
             state.vy += 0.8 * pigScaleRef.current
             state.vy *= 0.9
@@ -261,7 +295,7 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
             state.vy = 0
             swimActionRef.current = 'bottom'
             setSwimAction('bottom')
-            nextSwimChangeRef.current = performance.now() + 5000 + Math.random() * 10000
+            nextSwimChangeRef.current = performance.now() + 2000 + Math.random() * 3000
           } else if (swimActionRef.current === 'drowning_sink' && state.y >= 0) {
             state.y = 0
             state.vy = 0
@@ -286,7 +320,7 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
         }
 
         // Drag state UI updates
-        const activeFloor = (swimActionRef.current === 'surface' || swimActionRef.current === 'struggling' || swimActionRef.current === 'rising') && isInWater ? floatingY : 0
+        const activeFloor = (['surface', 'struggling', 'rising', 'hover'].includes(swimActionRef.current)) && isInWater ? floatingY : 0
         if (state.y < activeFloor) {
           updateDragState('falling')
         } else {
