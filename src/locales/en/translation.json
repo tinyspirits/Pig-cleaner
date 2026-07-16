@@ -194,5 +194,8 @@
     "docker": "🐳 Docker Cache",
     "browser": "🌐 Browser Cache",
     "temp": "🗂️ Temp Files"
+  },
+  "fish": {
+    "caught": "🐟 Yum, thanks!"
   }
 }

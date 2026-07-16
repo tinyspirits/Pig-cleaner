@@ -49,7 +49,8 @@ export function usePigState(trashInfo, petType = 'pig') {
     reloadSettings()
   }, [])
 
-  // 2. Shrink pig over time (0.001 per second)
+  // 2. Heo mẹ tự giảm kích thước dần theo thời gian (0.001/giây, không dưới mức mặc định 1.0).
+  // Heo con (followers) KHÔNG bị giảm — scale của chúng chỉ tăng khi ăn (xem pigletGrowths bên dưới).
   useEffect(() => {
     const shrinkInterval = setInterval(() => {
       setPigScale(prev => {

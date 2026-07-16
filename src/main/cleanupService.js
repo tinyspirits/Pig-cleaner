@@ -16,6 +16,22 @@ function formatBytes(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
 }
 
+// Lấy dung lượng trống THỰC TẾ của ổ đĩa qua `df` (Unix) — không đi qua Finder nên
+// không bị dính bug cache "size of trash báo số ảo". Dùng để đối chiếu/kiểm chứng
+// lại con số freedBytes tính từ AppleScript, tránh trường hợp báo 0 KB dù đã dọn thật.
+async function getDiskFreeBytes() {
+  try {
+    if (process.platform === 'win32') return null // Windows đã có Clear-RecycleBin đáng tin cậy riêng
+    const { stdout } = await execAsync(`df -k "${os.homedir()}"`, { timeout: 5000 })
+    const lines = stdout.trim().split('\n')
+    const cols = lines[lines.length - 1].trim().split(/\s+/)
+    const availableKB = parseInt(cols[3], 10) // Filesystem 1024-blocks Used Available Capacity Mounted-on
+    return isNaN(availableKB) ? null : availableKB * 1024
+  } catch {
+    return null
+  }
+}
+
 async function getFolderSize(folderPath) {
   let totalSize = 0
   let fileCount = 0
@@ -421,6 +437,7 @@ async function cleanTrash() {
   }
 
   // Cách 2 (dự phòng): AppleScript — dọn sạch toàn bộ Trash trên mọi ổ đĩa.
+  const diskFreeBefore = await getDiskFreeBytes()
   try {
     await execAsync(`osascript -e 'tell application "Finder" to empty trash'`, { timeout: 60000 })
 
@@ -448,7 +465,22 @@ async function cleanTrash() {
     }
 
     const appleScriptFreed = Math.max(0, globalRemaining - finalRemaining)
-    const totalFreed = fsFreed + appleScriptFreed
+    let totalFreed = fsFreed + appleScriptFreed
+
+    // Đối chiếu với dung lượng ổ đĩa thực (không qua Finder). Nếu Finder báo cache lỗi
+    // (freed tính ra thấp hơn nhiều so với thực tế đã trống thêm trên ổ đĩa), tin theo ổ đĩa.
+    if (diskFreeBefore !== null) {
+      const diskFreeAfter = await getDiskFreeBytes()
+      if (diskFreeAfter !== null) {
+        const diskDelta = diskFreeAfter - diskFreeBefore
+        // Chỉ tin theo ổ đĩa khi chênh lệch rõ ràng hơn hẳn (>1MB) so với số đã tính,
+        // để tránh nhiễu do file khác đang được ghi/xoá song song ngoài ý muốn.
+        if (diskDelta > totalFreed + 1024 * 1024) {
+          console.warn(`[cleanupService] Finder báo freed=${formatBytes(totalFreed)} nhưng ổ đĩa trống ra thêm ${formatBytes(diskDelta)} -> dùng số liệu ổ đĩa (khả năng Finder bị cache lỗi 'size of trash').`)
+          totalFreed = Math.min(diskDelta, before)
+        }
+      }
+    }
 
     if (finalRemaining > 0) {
       console.warn(`[cleanupService] Trash vẫn còn ${formatBytes(finalRemaining)} sau khi dọn qua AppleScript (có thể do file bị khoá, cần xác nhận thủ công trong Finder, hoặc thiếu quyền Automation cho Finder trong System Settings → Privacy & Security → Automation)`)

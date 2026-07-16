@@ -185,6 +185,13 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
   const containerRef = useRef(null)
   const [waterLevel, setWaterLevel] = useState(0)
   const [snowLevel, setSnowLevel] = useState(0)
+  const waterLevelRef = useRef(0)
+  useEffect(() => { waterLevelRef.current = waterLevel }, [waterLevel])
+
+  // ─── Cá bơi ngang qua khi bật pool mode ──────────────────────────────────
+  const [fish, setFish] = useState(null)
+  const nextFishTimeRef = useRef(0)
+  const fishRef = useRef(null)
 
   useEffect(() => {
     const isHeavyRain = weather?.condition === 'thunderstorm' || poolMode
@@ -209,9 +216,41 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
           return Math.max(0, prev - 0.2)
         }
       })
+
+      // Lâu lâu có một con cá bơi ngang qua khi hồ đủ nước — người chơi click để bắt.
+      const now = Date.now()
+      setFish(prev => {
+        if (prev) return prev // đã có cá đang bơi, chờ nó xong
+        if (!poolMode || waterLevelRef.current < 15) return null
+        if (now < nextFishTimeRef.current) return null
+
+        const fromLeft = Math.random() < 0.5
+        const duration = randomBetween(6, 11)
+        const bottomVh = randomBetween(3, Math.max(6, waterLevelRef.current - 4))
+        nextFishTimeRef.current = now + duration * 1000 + randomBetween(15000, 40000)
+        return { id: now, fromLeft, duration, bottomVh, caught: false }
+      })
     }, 1000)
     return () => clearInterval(interval)
   }, [weather?.condition, poolMode])
+
+  // Tự thu cá lại: bơi hết quãng đường mà không bị bắt -> biến mất; nếu bị bắt -> biến mất sau hiệu ứng
+  useEffect(() => {
+    if (!fish) return
+    const t = setTimeout(() => {
+      setFish(prev => (prev && prev.id === fish.id ? null : prev))
+    }, fish.caught ? 500 : fish.duration * 1000 + 300)
+    return () => clearTimeout(t)
+  }, [fish])
+
+  const handleFishCatch = () => {
+    if (!fish || fish.caught) return
+    const rect = fishRef.current?.getBoundingClientRect()
+    setFish(prev => prev ? { ...prev, caught: true, frozenLeft: rect?.left, frozenTop: rect?.top } : prev)
+    // Bắt cá cho heo/vịt ăn -> tăng kích thước nhẹ (tương đương dọn vài MB rác)
+    const freedKB = randomBetween(2, 10) * 1024
+    window.dispatchEvent(new CustomEvent('fish-caught', { detail: { freedKB } }))
+  }
 
   useEffect(() => {
     const handler = (e) => {
@@ -238,7 +277,7 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
     return () => window.removeEventListener('pig-flying', handler)
   }, [])
 
-  if (!weather && waterLevel <= 0 && snowLevel <= 0) return null
+  if (!weather && waterLevel <= 0 && snowLevel <= 0 && !fish) return null
 
   const { condition, windForceX, windSpeed, isStorm } = weather || {}
   const showRain = effectsEnabled && (condition === 'rain' || condition === 'drizzle' || condition === 'thunderstorm')
@@ -247,7 +286,7 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
   const showLightning = effectsEnabled && condition === 'thunderstorm'
   const rainIntensity = condition === 'thunderstorm' ? 1.5 : condition === 'drizzle' ? 0.4 : 1.0
 
-  if (!showRain && !showSnow && !showWind && !showLightning && waterLevel <= 0 && snowLevel <= 0) return null
+  if (!showRain && !showSnow && !showWind && !showLightning && waterLevel <= 0 && snowLevel <= 0 && !fish) return null
 
   return (
     <div ref={containerRef} style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 50 }}>
@@ -282,6 +321,39 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
       {showSnow && <SnowLayer windForceX={windForceX} />}
       {showWind && <WindStreaks windForceX={windForceX} windSpeed={windSpeed} />}
       {showLightning && <LightningFlash />}
+      {fish && !fish.caught && (
+        <div
+          ref={fishRef}
+          onClick={handleFishCatch}
+          title="Bắt cá cho heo/vịt ăn"
+          style={{
+            position: 'absolute',
+            bottom: `${fish.bottomVh}vh`,
+            left: fish.fromLeft ? '-8%' : '108%',
+            fontSize: '28px',
+            zIndex: 20,
+            pointerEvents: 'auto',
+            cursor: 'pointer',
+            userSelect: 'none',
+            transform: fish.fromLeft ? 'scaleX(1)' : 'scaleX(-1)',
+            animation: `${fish.fromLeft ? 'fishSwimLTR' : 'fishSwimRTL'} ${fish.duration}s linear forwards`,
+            filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.3))',
+          }}
+        >🐟</div>
+      )}
+      {fish && fish.caught && fish.frozenLeft != null && (
+        <div
+          style={{
+            position: 'fixed',
+            left: `${fish.frozenLeft}px`,
+            top: `${fish.frozenTop}px`,
+            fontSize: '28px',
+            zIndex: 20,
+            pointerEvents: 'none',
+            animation: 'fishCaughtPop 0.5s ease-out forwards',
+          }}
+        >🐟</div>
+      )}
     </div>
   )
 }

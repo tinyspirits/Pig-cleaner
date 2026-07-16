@@ -170,6 +170,17 @@ function App() {
     return () => window.removeEventListener('earthquake', handleEarthquake)
   }, [])
 
+  // Bắt được cá trong hồ (pool mode) -> heo/vịt ăn, tăng kích thước nhẹ
+  useEffect(() => {
+    const handleFishCaught = (e) => {
+      const freedKB = e.detail?.freedKB || 5 * 1024
+      triggerEat(freedKB)
+      forceBubble(t('fish.caught') || '🐟')
+    }
+    window.addEventListener('fish-caught', handleFishCaught)
+    return () => window.removeEventListener('fish-caught', handleFishCaught)
+  }, [triggerEat, forceBubble])
+
   // Setup IPC listeners
   useEffect(() => {
     if (!isElectron) {
