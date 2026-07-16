@@ -366,7 +366,7 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
       }
 
       // Xử lý đi bộ (bơi dưới đáy)
-      const isBottomSwimming = swimActionRef.current === 'bottom' && mode !== 'sleeping'
+      const isBottomSwimming = swimActionRef.current === 'bottom' && mode === 'walking'
       if ((mode === 'walking' || isBottomSwimming) && state.y === currentFloorRef.current && !state.isDragging && dragStateRef.current !== 'landed' && Math.abs(state.vx) < 1) {
         // Vận tốc đi bộ
         const walkSpeed = 3

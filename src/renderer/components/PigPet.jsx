@@ -211,7 +211,7 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
        if (Math.abs(dragVelocity.x) > 0.5 || Math.abs(dragVelocity.y) > 0.5) {
           displayMode = 'diving_bottom'
        } else {
-          displayMode = mode // idle or sniffing, etc.
+          displayMode = mode === 'walking' ? 'idle' : mode
        }
     } else if (swimAction === 'drowning_sink' || swimAction === 'drowning_bottom') {
       displayMode = swimAction
@@ -486,7 +486,7 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
         <img
             src={currentSprite}
             alt="pig pet"
-            className="pig-sprite"
+            className={`pig-sprite ${displayMode === 'diving_float' ? 'breathing' : ''}`}
             draggable="false"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
