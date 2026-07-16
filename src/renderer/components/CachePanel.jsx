@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next'
 
 const isElectron = typeof window !== 'undefined' && window.pigAPI
 
-export default function CachePanel({ onClose, onCleaned }) {
+export default function CachePanel({ onClose, onCleaned, petType = 'pig' }) {
   const { t } = useTranslation()
+  const petEmoji = petType === 'duck' ? '🦆' : '🐽'
   const [categories, setCategories] = useState([])
   const [selected, setSelected] = useState({})
   const [loading, setLoading] = useState(true)
@@ -94,7 +95,7 @@ export default function CachePanel({ onClose, onCleaned }) {
       <div className="cache-panel" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="cache-panel-header">
-          <span>🐷 {t('cachePanel.title', 'Cache Cleanup')}</span>
+          <span>{petType === 'duck' ? '🦆' : '🐷'} {t('cachePanel.title', 'Cache Cleanup')}</span>
           <button className="cache-close-btn" onClick={onClose}>✕</button>
         </div>
 
@@ -146,7 +147,7 @@ export default function CachePanel({ onClose, onCleaned }) {
               disabled={selectedIds.length === 0 || cleaning}
               onClick={handleClean}
             >
-              {cleaning ? t('cachePanel.cleaning', 'Cleaning... 🐽') : `🧹 ${t('cachePanel.cleanItems', { count: selectedIds.length, defaultValue: 'Clean {{count}} items' })}`}
+              {cleaning ? t('cachePanel.cleaning', { emoji: petEmoji, defaultValue: 'Cleaning... 🐽' }) : `🧹 ${t('cachePanel.cleanItems', { count: selectedIds.length, defaultValue: 'Clean {{count}} items' })}`}
             </button>
           </>
         )}

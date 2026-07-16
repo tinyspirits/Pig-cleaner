@@ -22,8 +22,6 @@ export default function SettingsPanel({ onClose }) {
     weatherAlerts: true,
     weatherLocation: null,
     floodMode: false,
-    snowMode: false,
-    stormMode: false,
     soundEnabled: false,
     language: i18n.language || 'en',
   })
@@ -34,6 +32,7 @@ export default function SettingsPanel({ onClose }) {
   const [searchingLocation, setSearchingLocation] = useState(false)
   const [autoCity, setAutoCity] = useState(null)
   const [initialLanguage] = useState(i18n.language)
+  const petLabel = t(settings.petType === 'duck' ? 'settingsPanel.duck' : 'settingsPanel.pig')
 
   useEffect(() => {
     loadData()
@@ -120,7 +119,7 @@ export default function SettingsPanel({ onClose }) {
     <div className="cache-panel-overlay" onClick={handleCancel}>
       <div className="cache-panel" onClick={e => e.stopPropagation()}>
         <div className="cache-panel-header">
-          <span>{t('settingsPanel.title')}</span>
+          <span>{t('settingsPanel.title', { pet: petLabel })}</span>
           <button className="cache-close-btn" onClick={handleCancel}>✕</button>
         </div>
 
@@ -269,7 +268,7 @@ export default function SettingsPanel({ onClose }) {
                 checked={settings.cameraFollowsPig !== false}
                 onChange={e => setSettings(prev => ({ ...prev, cameraFollowsPig: e.target.checked }))}
               />
-              <span className="cache-item-label">{t('settingsPanel.cameraFollow')}</span>
+              <span className="cache-item-label">{t('settingsPanel.cameraFollow', { pet: petLabel })}</span>
             </label>
             <label className="cache-item">
               <input
@@ -285,7 +284,7 @@ export default function SettingsPanel({ onClose }) {
                 checked={settings.weatherAlerts !== false}
                 onChange={e => setSettings(prev => ({ ...prev, weatherAlerts: e.target.checked }))}
               />
-              <span className="cache-item-label">{t('settingsPanel.weatherReaction')}</span>
+              <span className="cache-item-label">{t('settingsPanel.weatherReaction', { pet: petLabel })}</span>
             </label>
             <label className="cache-item">
               <input
@@ -298,26 +297,10 @@ export default function SettingsPanel({ onClose }) {
             <label className="cache-item">
               <input
                 type="checkbox"
-                checked={settings.snowMode === true}
-                onChange={e => setSettings(prev => ({ ...prev, snowMode: e.target.checked }))}
-              />
-              <span className="cache-item-label">{t('settingsPanel.snowStorm')}</span>
-            </label>
-            <label className="cache-item">
-              <input
-                type="checkbox"
-                checked={settings.stormMode === true}
-                onChange={e => setSettings(prev => ({ ...prev, stormMode: e.target.checked }))}
-              />
-              <span className="cache-item-label">{t('settingsPanel.stormMode', 'Giả lập sấm sét (Thunderstorm)')}</span>
-            </label>
-            <label className="cache-item">
-              <input
-                type="checkbox"
                 checked={settings.unlimitedPigSize === true}
                 onChange={e => setSettings(prev => ({ ...prev, unlimitedPigSize: e.target.checked }))}
               />
-              <span className="cache-item-label">{t('settingsPanel.unlimitedPigSize', 'Pig grows unlimitedly when eating trash')}</span>
+              <span className="cache-item-label">{t('settingsPanel.unlimitedPigSize', { pet: petLabel, defaultValue: 'Pig grows unlimitedly when eating trash' })}</span>
             </label>
           </div>
         </div>

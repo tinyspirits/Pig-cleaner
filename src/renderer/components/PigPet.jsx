@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { usePigMovement } from '../hooks/usePigMovement'
 import SkyClouds from './SkyClouds'
 import GrassTrail from './GrassTrail'
+import ExplosionBurst from './ExplosionBurst'
 
 // ─── Sprite imports ───────────────────────────────────────────────────────────
 import idle1 from '../assets/sprites/idle.png'
@@ -154,7 +155,7 @@ export const PIG_HEIGHT = 150
 
 const isElectron = typeof window !== 'undefined' && window.pigAPI
 
-export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = false, isCleaning = false, cameraFollowsPig, onDoubleClick, onWakeUp, weatherData = null, floodMode = false, snowMode = false, petType = 'pig' }) {
+export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = false, isCleaning = false, cameraFollowsPig, onDoubleClick, onWakeUp, weatherData = null, floodMode = false, petType = 'pig', explosionEvent = null, onExplosionDone }) {
   const { t } = useTranslation()
   const windRef = useRef(null)
   
@@ -360,7 +361,7 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
   const isShivering = temp !== null && temp <= 10;
   
   let trailType = 'grass'
-  if (snowMode || conditionStr.includes('snow')) {
+  if (conditionStr.includes('snow')) {
     trailType = 'footprint'
   } else if (temp !== null && temp < 0) {
     trailType = 'snow'
@@ -370,6 +371,11 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
     <>
       <SkyClouds altitude={altitude} />
       <GrassTrail x={position.x} y={position.y} isWalking={mode === 'walking'} trailType={trailType} />
+      {explosionEvent && (
+        <div style={{ position: 'absolute', bottom: 0, left: 0, transform: `translate(${safeX}px, ${safeY}px)`, pointerEvents: 'none' }}>
+          <ExplosionBurst petType={petType} onDone={onExplosionDone} />
+        </div>
+      )}
       <div
       className={`pig-container pig-${displayMode} ${isWallHit ? 'pig-hit-wall' : ''} ${isFallingFast ? 'pig-meteorite' : ''} ${isShivering ? 'pig-shivering' : ''}`}
       style={containerStyle}
@@ -428,7 +434,7 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
           backdropFilter: 'blur(10px)',
           whiteSpace: 'nowrap'
         }}>
-          {t('pig.cleaning', 'Eating trash... 🐽')}
+          {t(petType === 'duck' ? 'duck.cleaning' : 'pig.cleaning', 'Eating trash... 🐽')}
         </div>
       )}
 

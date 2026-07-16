@@ -41,10 +41,10 @@
   "trash": {
     "found": "Thùng rác đang có {{size}} rác! 🗑️",
     "clean": "Thùng rác sạch bóng! ✨",
-    "noPermission": "Heo chưa được cấp quyền full access ⚠️",
-    "empty": "Ủa, không có rác à? 🐷",
+    "noPermission": "{{pet}} chưa được cấp quyền full access ⚠️",
+    "empty": "Ủa, không có rác à? {{emoji}}",
     "remaining": "Còn {{size}} chưa dọn được, có file đang mở à? 🤔",
-    "sniffing": "Đang tìm rác... 🐽",
+    "sniffing": "Đang tìm rác... {{emoji}}",
     "spotless": "Trắng bóc rồi! Không có gì để dọn ✨",
     "detected": "Phát hiện {{size}} rác!",
     "done": "Đã dọn xong!"
@@ -76,12 +76,12 @@
     "scanAgain": "Quét lại",
     "selectAll": "Chọn tất cả",
     "deselectAll": "Bỏ chọn",
-    "cleaning": "Đang dọn... 🐽",
+    "cleaning": "Đang dọn... {{emoji}}",
     "cleanItems": "Dọn {{count}} mục",
     "saveAndClose": "Lưu & Đóng"
   },
   "settingsPanel": {
-    "title": "Cài Đặt Heo",
+    "title": "Cài Đặt {{pet}}",
     "autoClean": "Tự động dọn rác:",
     "never": "Không bao giờ",
     "every30m": "Mỗi 30 phút",
@@ -89,31 +89,23 @@
     "every2h": "Mỗi 2 giờ",
     "every4h": "Mỗi 4 giờ",
     "every8h": "Mỗi 8 giờ",
-    "doubleClick": "Khi click đúp vào heo, dọn:",
-    "cleanAllMenu": "Khi click \"Dọn tất cả\" trên Menu, dọn:",
-    "trash": "Thùng rác",
     "displayMode": "Trạng thái hiển thị:",
     "alwaysOnTop": "Luôn trên cùng (Nổi trên mọi cửa sổ)",
     "desktopOnly": "Chỉ hiển thị ngoài Desktop (Bị che bởi cửa sổ khác)",
     "effects": "Các hiệu ứng đặc biệt:",
-    "freeRoam": "Cho phép Heo đi lại tự do",
-    "cameraFollow": "Camera bay theo heo lên mây",
+    "freeRoam": "Cho phép {{pet}} đi lại tự do",
+    "cameraFollow": "Camera bay theo {{pet}} lên mây",
     "realisticWeather": "Hiệu ứng thời tiết (mưa, gió, chớp sét)",
-    "weatherReaction": "Heo phản ứng thời tiết (kêu nóng, lạnh, cảnh báo)",
-    "location": "Địa điểm thời tiết:",
-    "currentLocation": "Vị trí hiện tại (Tự động)",
-    "specialMode": "Chế độ đặc biệt (Chỉ bật 1 cái):",
-    "normal": "Bình thường",
+    "weatherReaction": "{{pet}} phản ứng thời tiết (kêu nóng, lạnh, cảnh báo)",
+    "currentLocation": "Hiện tại",
     "flood": "Bật chế độ lũ lụt (Nước ngập)",
-    "snowStorm": "Giả lập tuyết rơi (Phủ tuyết màn hình)",
-    "unlimitedPigSize": "Heo ăn rác tăng kích thước không giới hạn",
+    "unlimitedPigSize": "{{pet}} ăn rác tăng kích thước không giới hạn",
     "language": "Ngôn ngữ / Language:",
     "english": "English (Tiếng Anh)",
     "vietnamese": "Tiếng Việt (Vietnamese)",
     "japanese": "日本語 (Japanese)",
     "cleanItemsList": "Dọn các mục sau",
     "weatherLocation": "Vị trí thời tiết",
-    "currentLocation": "Hiện tại",
     "manual": "tự chọn",
     "autoIP": "Tự động theo IP",
     "loading": "đang tải...",
@@ -124,19 +116,18 @@
     "soundEnabled": "Bật tiếng kêu khi dọn rác",
     "petType": "Loại thú cưng",
     "pig": "Heo",
-    "duck": "Vịt",
-    "stormMode": "Giả lập sấm sét"
+    "duck": "Vịt"
   },
   "statsPanel": {
-    "title": "Heo Thống Kê",
+    "title": "{{pet}} Thống Kê",
     "trashSize": "Số rác trong thùng:",
     "fileCount": "Số file:",
     "totalEaten": "Tổng đã ăn:",
-    "pigSize": "Kích thước heo:",
+    "pigSize": "Kích thước {{pet}}:",
     "weather": "Thời tiết",
     "dirtyCache": "Cache bẩn",
     "totalTrash": "Tổng rác",
-    "clickToEat": "Nhấp vào heo để ăn rác! 🐽"
+    "clickToEat": "Nhấp vào {{pet}} để ăn rác! {{emoji}}"
   },
   "pig": {
     "sleep1": "Zzz...",
@@ -162,7 +153,8 @@
       "Heo mập hơn rồi nè!",
       "Béo ra rồi nha 🐖"
     ],
-    "yummy": "Ngon quá!"
+    "yummy": "Ngon quá!",
+    "explode": "BÙM! Heo tách thành cả đàn heo con! 🐷💥"
   },
   "duck": {
     "sniffQuotes": [
@@ -184,7 +176,9 @@
       "Ăn nữa không bay nổi đâu",
       "Bụng to quá!"
     ],
-    "yummy": "Quắc, ngon!"
+    "yummy": "Quắc, ngon!",
+    "cleaning": "Đang ăn rác... 🦆",
+    "explode": "BÙM! Vịt tách thành cả đàn vịt con! 🦆💥"
   },
   "cacheCategories": {
     "trash": "🗑️ Thùng rác",

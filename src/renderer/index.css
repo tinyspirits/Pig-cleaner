@@ -938,3 +938,19 @@ body,
     opacity: 0;
   }
 }
+
+/* Nổ bùm khi heo/vịt đạt 500% kích thước — các bản sao nhỏ bắn ra rồi rơi và biến mất */
+@keyframes pig-burst-scatter {
+  0% {
+    transform: translate(-50%, 0) scale(var(--start-scale, 1)) rotate(0deg);
+    opacity: 1;
+  }
+  35% {
+    transform: translate(calc(-50% + var(--dx)), var(--dy)) scale(var(--start-scale, 1)) rotate(var(--rot));
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--dx)), calc(var(--dy) + 160px)) scale(calc(var(--start-scale, 1) * 0.3)) rotate(var(--rot));
+    opacity: 0;
+  }
+}

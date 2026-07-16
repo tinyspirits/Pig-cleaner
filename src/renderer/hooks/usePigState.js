@@ -14,6 +14,7 @@ export function usePigState(trashInfo, petType = 'pig') {
   const [totalEaten, setTotalEaten] = useState(0) // in KB
   const [cameraFollowsPig, setCameraFollowsPig] = useState(true)
   const [unlimitedPigSize, setUnlimitedPigSize] = useState(false)
+  const [explosionEvent, setExplosionEvent] = useState(null) // { id } khi vừa "nổ" tách nhỏ, null khi bình thường
 
   const scaleRef = useRef(1.0)
   const eatenRef = useRef(0)
@@ -153,14 +154,31 @@ export function usePigState(trashInfo, petType = 'pig') {
   const triggerEat = useCallback((freedKB) => {
     setMode('eating')
     
-    // Tăng kích thước: đảm bảo luôn có base tăng 5% (0.05) để dễ nhận thấy
+    // Tăng kích thước: đảm bảo luôn có base tăng 5% (0.05) để dễ nhận thấy.
+    // Trước đây cap cứng ở 0.2 khiến bất kỳ lượng rác nào từ ~30-40MB trở lên
+    // đều cho growth gần như giống hệt nhau (dọn 8GB không khác gì 30MB).
+    // Giờ nới rộng hệ số (0.06 thay vì 0.04) và nâng cap an toàn lên 1.5
+    // (chỉ chạm tới ở mức nhiều TB, gần như không bao giờ gặp thực tế) để
+    // độ lớn rác dọn được luôn phản ánh rõ vào độ tăng kích thước.
     const growth = freedKB > 0
-      ? 0.05 + Math.min(0.2, Math.log10(1 + freedKB) * 0.04)
+      ? 0.05 + Math.min(1.5, Math.log10(1 + freedKB) * 0.06)
       : 0
+
+    // Ngưỡng "nổ bùm": khi đạt 500% (chỉ có thể xảy ra ở chế độ unlimited,
+    // vì chế độ thường bị chặn ở 250%), heo/vịt nổ tách thành nhiều con nhỏ
+    // rồi quay về kích thước gốc (100%) để bắt đầu lại chu kỳ lớn lên.
+    const EXPLODE_THRESHOLD = 5.0
 
     setPigScale(prev => {
       const next = prev + (isNaN(growth) ? 0 : growth)
-      if (unlimitedRef.current) return isNaN(next) ? 1.0 : next
+      if (unlimitedRef.current) {
+        if (isNaN(next)) return 1.0
+        if (next >= EXPLODE_THRESHOLD) {
+          setExplosionEvent({ id: Date.now() })
+          return 1.0
+        }
+        return next
+      }
       return isNaN(next) ? 1.0 : Math.min(next, 2.5)
     })
     setTotalEaten(prev => prev + (isNaN(freedKB) ? 0 : freedKB))
@@ -190,6 +208,6 @@ export function usePigState(trashInfo, petType = 'pig') {
     setTimeout(() => setBubble(null), 4000)
   }
 
-  return { mode, bubble, pigScale, totalEaten, cameraFollowsPig, reloadSettings, triggerEat, setMode, forceBubble }
+  return { mode, bubble, pigScale, totalEaten, cameraFollowsPig, reloadSettings, triggerEat, setMode, forceBubble, explosionEvent, clearExplosionEvent: () => setExplosionEvent(null) }
 }
 

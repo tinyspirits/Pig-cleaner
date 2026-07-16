@@ -41,10 +41,10 @@
   "trash": {
     "found": "Trash bin has {{size}} of trash! 🗑️",
     "clean": "Trash bin is sparkling clean! ✨",
-    "noPermission": "Piggy doesn't have full disk access ⚠️",
-    "empty": "Huh, no trash? 🐷",
+    "noPermission": "{{pet}} doesn't have full disk access ⚠️",
+    "empty": "Huh, no trash? {{emoji}}",
     "remaining": "Still {{size}} couldn't be cleaned, is a file open? 🤔",
-    "sniffing": "Sniffing for trash... 🐽",
+    "sniffing": "Sniffing for trash... {{emoji}}",
     "spotless": "Spotless! Nothing to clean ✨",
     "detected": "Detected {{size}} of trash!",
     "done": "Cleaned up!"
@@ -76,12 +76,12 @@
     "scanAgain": "Scan Again",
     "selectAll": "Select All",
     "deselectAll": "Deselect All",
-    "cleaning": "Cleaning... 🐽",
+    "cleaning": "Cleaning... {{emoji}}",
     "cleanItems": "Clean {{count}} items",
     "saveAndClose": "Save & Close"
   },
   "settingsPanel": {
-    "title": "Pig Settings",
+    "title": "{{pet}} Settings",
     "autoClean": "Auto clean trash:",
     "never": "Never",
     "every30m": "Every 30 minutes",
@@ -89,31 +89,23 @@
     "every2h": "Every 2 hours",
     "every4h": "Every 4 hours",
     "every8h": "Every 8 hours",
-    "doubleClick": "On double click, clean:",
-    "cleanAllMenu": "On \"Clean Everything\", clean:",
-    "trash": "Trash",
     "displayMode": "Display mode:",
     "alwaysOnTop": "Always on top",
     "desktopOnly": "Desktop only (can be hidden by windows)",
     "effects": "Special Effects:",
-    "freeRoam": "Allow Piggy to roam freely",
-    "cameraFollow": "Camera follows Piggy (when off-screen)",
+    "freeRoam": "Allow {{pet}} to roam freely",
+    "cameraFollow": "Camera follows {{pet}} (when off-screen)",
     "realisticWeather": "Realistic weather effects",
-    "weatherReaction": "Weather reactions (Piggy talks)",
-    "location": "Weather location:",
-    "currentLocation": "Current location (Auto)",
-    "specialMode": "Special Mode (Toggle one):",
-    "normal": "Normal",
+    "weatherReaction": "Weather reactions ({{pet}} talks)",
+    "currentLocation": "Current",
     "flood": "Flood (Water level)",
-    "snowStorm": "Heavy Snowstorm",
-    "unlimitedPigSize": "Pig grows unlimitedly when eating trash",
+    "unlimitedPigSize": "{{pet}} grows unlimitedly when eating trash",
     "language": "Language:",
     "english": "English",
     "vietnamese": "Vietnamese",
     "japanese": "Japanese",
     "cleanItemsList": "Clean these items",
     "weatherLocation": "Weather location",
-    "currentLocation": "Current",
     "manual": "manual",
     "autoIP": "Auto by IP",
     "loading": "loading...",
@@ -124,19 +116,18 @@
     "soundEnabled": "Enable sound when cleaning",
     "petType": "Pet Type",
     "pig": "Pig",
-    "duck": "Duck",
-    "stormMode": "Thunderstorm Mode"
+    "duck": "Duck"
   },
   "statsPanel": {
-    "title": "Piggy Stats",
+    "title": "{{pet}} Stats",
     "trashSize": "Trash in bin:",
     "fileCount": "File count:",
     "totalEaten": "Total eaten:",
-    "pigSize": "Pig size:",
+    "pigSize": "{{pet}} size:",
     "weather": "Weather",
     "dirtyCache": "Dirty Cache",
     "totalTrash": "Total Trash",
-    "clickToEat": "Click on pig to eat trash! 🐽"
+    "clickToEat": "Click on {{pet}} to eat trash! {{emoji}}"
   },
   "pig": {
     "sleep1": "Zzz...",
@@ -162,7 +153,8 @@
       "Getting chubbier!",
       "I'm getting fat! 🐖"
     ],
-    "yummy": "Yummy!"
+    "yummy": "Yummy!",
+    "explode": "BOOM! The pig burst into a litter of piglets! 🐷💥"
   },
   "duck": {
     "sniffQuotes": [
@@ -185,7 +177,9 @@
       "My beak is full!",
       "I need a nap!"
     ],
-    "yummy": "Quack, delicious!"
+    "yummy": "Quack, delicious!",
+    "cleaning": "Eating trash... 🦆",
+    "explode": "BOOM! The duck burst into a brood of ducklings! 🦆💥"
   },
   "cacheCategories": {
     "trash": "🗑️ Trash",

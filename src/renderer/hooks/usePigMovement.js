@@ -43,7 +43,7 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
       const isHeavyRain = weatherRef.current?.condition === 'thunderstorm' || floodModeRef.current
       let currentFlood = floodLevelRef.current
       if (isHeavyRain) {
-        currentFlood = Math.min(50, currentFlood + 1.5)
+        currentFlood = Math.min(75, currentFlood + 1.5)
       } else {
         currentFlood = Math.max(0, currentFlood - 3)
       }
@@ -177,12 +177,12 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
           const now = performance.now()
           if (swimPhaseRef.current === 0) {
             // Phase học bơi
-            if (floodLevelRef.current < 50 && swimActionRef.current !== 'struggling' && swimActionRef.current !== 'drowning_sink' && swimActionRef.current !== 'drowning_bottom') {
+            if (floodLevelRef.current < 75 && swimActionRef.current !== 'struggling' && swimActionRef.current !== 'drowning_sink' && swimActionRef.current !== 'drowning_bottom') {
               if (swimActionRef.current !== 'surface') {
                 swimActionRef.current = 'surface'
                 setSwimAction('surface')
               }
-            } else if (floodLevelRef.current >= 50 && swimActionRef.current === 'surface') {
+            } else if (floodLevelRef.current >= 75 && swimActionRef.current === 'surface') {
               swimActionRef.current = 'struggling'
               setSwimAction('struggling')
               nextSwimChangeRef.current = now + 3000

@@ -52,12 +52,24 @@ function App() {
   const [permissionWarning, setPermissionWarning] = useState(false)
   const [isCleaning, setIsCleaning] = useState(false)
   const [isSuspended, setIsSuspended] = useState(false)
-  const [weatherSettings, setWeatherSettings] = useState({ weatherEffects: true, weatherAlerts: true, floodMode: false, snowMode: false, stormMode: false, petType: 'pig', soundEnabled: false })
+  const [weatherSettings, setWeatherSettings] = useState({ weatherEffects: true, weatherAlerts: true, floodMode: false, petType: 'pig', soundEnabled: false })
 
-  const { mode, bubble, pigScale, totalEaten, cameraFollowsPig, reloadSettings, triggerEat, setMode, forceBubble } = usePigState(trashInfo, weatherSettings.petType)
+  const { mode, bubble, pigScale, totalEaten, cameraFollowsPig, reloadSettings, triggerEat, setMode, forceBubble, explosionEvent, clearExplosionEvent } = usePigState(trashInfo, weatherSettings.petType)
   const isPanelOpen = showStats || showCache || showSettings || permissionWarning
   const weather = useWeather()
   const { t, i18n } = useTranslation()
+  const petLabel = t(weatherSettings.petType === 'duck' ? 'settingsPanel.duck' : 'settingsPanel.pig')
+  const petEmoji = weatherSettings.petType === 'duck' ? '🦆' : '🐽'
+
+  // Khi đạt 500%, hiện bong bóng ăn mừng lúc "nổ" tách nhỏ
+  useEffect(() => {
+    if (!explosionEvent) return
+    const key = weatherSettings.petType === 'duck' ? 'duck.explode' : 'pig.explode'
+    const def = weatherSettings.petType === 'duck'
+      ? 'BÙM! Vịt tách thành cả đàn vịt con! 🦆💥'
+      : 'BÙM! Heo tách thành cả đàn heo con! 🐷💥'
+    forceBubble(t(key, def))
+  }, [explosionEvent])
 
   // Load weather settings khi app khởi động
   useEffect(() => {
@@ -67,8 +79,6 @@ function App() {
           weatherEffects: s.weatherEffects !== false,
           weatherAlerts: s.weatherAlerts !== false,
           floodMode: s.floodMode === true,
-          snowMode: s.snowMode === true,
-          stormMode: s.stormMode === true,
           petType: s.petType || 'pig',
           soundEnabled: s.soundEnabled === true,
         })
@@ -88,8 +98,6 @@ function App() {
           weatherEffects: s.weatherEffects !== false,
           weatherAlerts: s.weatherAlerts !== false,
           floodMode: s.floodMode === true,
-          snowMode: s.snowMode === true,
-          stormMode: s.stormMode === true,
           petType: s.petType || 'pig',
           soundEnabled: s.soundEnabled === true,
         })
@@ -233,7 +241,7 @@ function App() {
       setIsCleaning(false)
 
       if (data.trash?.success === false) {
-        forceBubble(t('trash.noPermission'))
+        forceBubble(t('trash.noPermission', { pet: petLabel }))
         setTimeout(() => setMode('idle'), 4000)
         return
       }
@@ -248,7 +256,7 @@ function App() {
       const newInfo = await window.pigAPI.getTrashInfo()
       setTrashInfo(newInfo)
       if (data.freedBytes <= 0) {
-        forceBubble(t('trash.empty'))
+        forceBubble(t('trash.empty', { emoji: petEmoji }))
         setTimeout(() => setMode('idle'), 1500)
       } else if (data.remainingBytes > 0) {
         forceBubble(t('trash.remaining', { size: newInfo.sizeFormatted }))
@@ -308,7 +316,7 @@ function App() {
       try {
         // B1: Đổi sang mode sniffing để kiểm tra rác
         setMode('sniffing')
-        forceBubble(t('trash.sniffing'))
+        forceBubble(t('trash.sniffing', { emoji: petEmoji }))
         const currentTrash = await window.pigAPI.getTrashInfo()
         const currentCache = await window.pigAPI.getCacheTypes()
         const totalCacheBytes = currentCache.reduce((sum, c) => sum + c.sizeBytes, 0)
@@ -351,7 +359,7 @@ function App() {
         setIsCleaning(false)
 
         if (result.trash?.success === false) {
-          forceBubble(t('trash.noPermission'))
+          forceBubble(t('trash.noPermission', { pet: petLabel }))
           setTimeout(() => setMode('idle'), 4000)
           return
         }
@@ -390,13 +398,15 @@ function App() {
   return (
     <div className={`pig-wrapper ${isEarthquake ? 'earthquake' : ''}`}>
       {/* Weather visual effects (respects settings toggle) */}
-      {(weatherSettings.weatherEffects || weatherSettings.floodMode || weatherSettings.snowMode || weatherSettings.stormMode) && <WeatherEffects weather={weather} floodMode={weatherSettings.floodMode} snowMode={weatherSettings.snowMode} stormMode={weatherSettings.stormMode} effectsEnabled={weatherSettings.weatherEffects} />}
+      {(weatherSettings.weatherEffects || weatherSettings.floodMode) && <WeatherEffects weather={weather} floodMode={weatherSettings.floodMode} effectsEnabled={weatherSettings.weatherEffects} />}
       {/* Stats Panel */}
       {showStats && (
         <StatsPanel
           trashInfo={trashInfo}
           totalEaten={totalEaten}
           pigScale={pigScale}
+          petType={weatherSettings.petType}
+          weather={weather}
           onClose={() => setShowStats(false)}
         />
       )}
@@ -412,6 +422,7 @@ function App() {
       {/* Cache Panel */}
       {showCache && (
         <CachePanel
+          petType={weatherSettings.petType}
           onClose={() => setShowCache(false)}
           onCleaned={(freedBytes) => {
             triggerEat(freedBytes / 1024)
@@ -440,9 +451,9 @@ function App() {
         onWakeUp={() => setMode('idle')}
         weatherData={weatherSettings.weatherAlerts ? weather : null}
         floodMode={weatherSettings.floodMode}
-        snowMode={weatherSettings.snowMode}
-        stormMode={weatherSettings.stormMode}
         petType={weatherSettings.petType}
+        explosionEvent={explosionEvent}
+        onExplosionDone={clearExplosionEvent}
       />
     </div>
   )
