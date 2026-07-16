@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 
 // Quotes will be fetched from i18n
 
-export function usePigState(trashInfo) {
+export function usePigState(trashInfo, petType = 'pig') {
   const { t } = useTranslation()
   const [mode, setMode] = useState('idle')
   const [bubble, setBubble] = useState(null)
@@ -77,10 +77,16 @@ export function usePigState(trashInfo) {
     if (!trashInfo) return
     if (trashInfo.sizeBytes > 0) {
       setMode('sniffing')
-      showBubble(t('pig.sniffQuotes', { returnObjects: true, defaultValue: ['Khứu... Có mùi rác! 👃', 'Ngửi thấy rồi! 🐽', 'Rác rác... đâu đâu?', 'Hmm... thùng rác có gì?'] }))
+      
+      const key = petType === 'duck' ? 'duck.sniffQuotes' : 'pig.sniffQuotes'
+      const def = petType === 'duck' ? ['Quắc! Có rác kìa! 🦆', 'Tắm rác không ta?', 'Có gì ăn được không?'] : ['Khứu... Có mùi rác! 👃', 'Ngửi thấy rồi! 🐽', 'Rác rác... đâu đâu?', 'Hmm... thùng rác có gì?']
+      let quotes = t(key, { returnObjects: true, defaultValue: def })
+      if (!Array.isArray(quotes)) quotes = def
+      showBubble(quotes)
+      
       setTimeout(() => setMode('idle'), 4000)
     }
-  }, [trashInfo])
+  }, [trashInfo, petType])
 
   // Auto behavior cycle
   useEffect(() => {
@@ -132,12 +138,16 @@ export function usePigState(trashInfo) {
       setMode(next)
 
       if (next === 'idle' && Math.random() < 0.3) {
-        showBubble(t('pig.idleQuotes', { returnObjects: true, defaultValue: ['Oink oink! 🐽', 'Ăn gì chưa? 🍖', 'Buồn ngủ quá~', '*hít thở*', 'Hôm nay có rác không ta?'] }))
+        const key = petType === 'duck' ? 'duck.idleQuotes' : 'pig.idleQuotes'
+        const def = petType === 'duck' ? ['Quắc quắc! 🦆', 'Ăn gì chưa?', 'Buồn ngủ quá~', '*quạt cánh*', 'Hôm nay trời đẹp ghê'] : ['Oink oink! 🐽', 'Ăn gì chưa? 🍖', 'Buồn ngủ quá~', '*hít thở*', 'Hôm nay có rác không ta?']
+        let quotes = t(key, { returnObjects: true, defaultValue: def })
+        if (!Array.isArray(quotes)) quotes = def
+        showBubble(quotes)
       }
     }, 5000 + Math.random() * 5000)
 
     return () => clearInterval(interval)
-  }, [mode])
+  }, [mode, petType])
 
   // Hành động ăn — freedKB là số KB đã giải phóng
   const triggerEat = useCallback((freedKB) => {
@@ -159,14 +169,22 @@ export function usePigState(trashInfo) {
       ? `+${freedKB.toFixed(0)}KB` 
       : `+${(freedKB / 1024).toFixed(1)}MB`
       
-    forceBubble(`${sizeStr}! ${t('pig.yummy', 'Ngon quá!')}`)
+    const yummyKey = petType === 'duck' ? 'duck.yummy' : 'pig.yummy'
+    const yummyDef = petType === 'duck' ? 'Quắc, ngon!' : 'Ngon quá!'
+    forceBubble(`${sizeStr}! ${t(yummyKey, yummyDef)}`)
 
     setTimeout(() => {
       setMode('full')
-      showBubble(t('pig.fullQuotes', { returnObjects: true, defaultValue: ['Căng da bụng quá! 🤰', 'No rồi... ợ~ 😮‍💨', 'Ăn thêm được nữa 💪', 'Heo mập hơn rồi nè!', 'Béo ra rồi nha 🐖'] }))
+      
+      const key = petType === 'duck' ? 'duck.fullQuotes' : 'pig.fullQuotes'
+      const def = petType === 'duck' ? ['No ứ hự! 🦆', 'Ợ~ 😮‍💨', 'Căng mỏ rồi', 'Ăn nữa không bay nổi đâu', 'Bụng to quá!'] : ['Căng da bụng quá! 🤰', 'No rồi... ợ~ 😮‍💨', 'Ăn thêm được nữa 💪', 'Heo mập hơn rồi nè!', 'Béo ra rồi nha 🐖']
+      let quotes = t(key, { returnObjects: true, defaultValue: def })
+      if (!Array.isArray(quotes)) quotes = def
+      showBubble(quotes)
+      
       setTimeout(() => setMode('idle'), 4000)
     }, 5000)
-  }, [])
+  }, [petType, t])
   function forceBubble(text) {
     setBubble(text)
     setTimeout(() => setBubble(null), 4000)

@@ -55,6 +55,7 @@
   },
   "tray": {
     "callPig": "🐷 Gọi heo về góc phải",
+    "callDuck": "🦆 Gọi vịt về góc phải",
     "checkTrash": "🗑️ Kiểm tra rác ngay",
     "cleanTrash": "🧹 Dọn thùng rác",
     "cleanCache": "🗂️ Dọn Cache",
@@ -62,7 +63,8 @@
     "settings": "⚙️ Cài đặt",
     "stats": "📊 Xem thống kê",
     "quit": "❌ Thoát",
-    "tooltip": "Heo Ăn Rác 🐷"
+    "tooltip": "Heo Ăn Rác 🐷",
+    "tooltipDuck": "Vịt Dọn Rác 🦆"
   },
   "cachePanel": {
     "title": "Dọn Dẹp Bộ Nhớ Đệm (Cache)",
@@ -117,7 +119,13 @@
     "loading": "đang tải...",
     "enterCity": "Nhập tên thành phố...",
     "search": "Tìm",
-    "useAutoLocation": "Dùng lại vị trí tự động (theo IP)"
+    "useAutoLocation": "Dùng lại vị trí tự động (theo IP)",
+    "sound": "Âm thanh",
+    "soundEnabled": "Bật tiếng kêu khi dọn rác",
+    "petType": "Loại thú cưng",
+    "pig": "Heo",
+    "duck": "Vịt",
+    "stormMode": "Giả lập sấm sét"
   },
   "statsPanel": {
     "title": "Heo Thống Kê",
@@ -155,6 +163,28 @@
       "Béo ra rồi nha 🐖"
     ],
     "yummy": "Ngon quá!"
+  },
+  "duck": {
+    "sniffQuotes": [
+      "Quắc! Có rác kìa! 🦆",
+      "Tắm rác không ta?",
+      "Có gì ăn được không?"
+    ],
+    "idleQuotes": [
+      "Quắc quắc! 🦆",
+      "Ăn gì chưa?",
+      "Buồn ngủ quá~",
+      "*quạt cánh*",
+      "Hôm nay trời đẹp ghê"
+    ],
+    "fullQuotes": [
+      "No ứ hự! 🦆",
+      "Ợ~ 😮‍💨",
+      "Căng mỏ rồi",
+      "Ăn nữa không bay nổi đâu",
+      "Bụng to quá!"
+    ],
+    "yummy": "Quắc, ngon!"
   },
   "cacheCategories": {
     "trash": "🗑️ Thùng rác",

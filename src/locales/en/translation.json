@@ -55,6 +55,7 @@
   },
   "tray": {
     "callPig": "🐷 Call Piggy Home",
+    "callDuck": "🦆 Call Duck Home",
     "checkTrash": "🗑️ Check Trash Now",
     "cleanTrash": "🧹 Empty Trash",
     "cleanCache": "🗂️ Clean Cache",
@@ -62,7 +63,8 @@
     "settings": "⚙️ Settings",
     "stats": "📊 View Stats",
     "quit": "❌ Quit",
-    "tooltip": "Trash Eating Pig 🐷"
+    "tooltip": "Trash Eating Pig 🐷",
+    "tooltipDuck": "Trash Cleaning Duck 🦆"
   },
   "cachePanel": {
     "title": "Cache Cleanup",
@@ -117,7 +119,13 @@
     "loading": "loading...",
     "enterCity": "Enter city name...",
     "search": "Search",
-    "useAutoLocation": "Use automatic location (IP)"
+    "useAutoLocation": "Use automatic location (IP)",
+    "sound": "Sound",
+    "soundEnabled": "Enable sound when cleaning",
+    "petType": "Pet Type",
+    "pig": "Pig",
+    "duck": "Duck",
+    "stormMode": "Thunderstorm Mode"
   },
   "statsPanel": {
     "title": "Piggy Stats",
@@ -155,6 +163,29 @@
       "I'm getting fat! 🐖"
     ],
     "yummy": "Yummy!"
+  },
+  "duck": {
+    "sniffQuotes": [
+      "Quack! I smell trash! 🦆",
+      "Is there anything to eat?",
+      "Looking for garbage...",
+      "What's in the bin?"
+    ],
+    "idleQuotes": [
+      "Quack quack! 🦆",
+      "Are we eating soon?",
+      "So sleepy~",
+      "*flaps wings*",
+      "Nice weather today!"
+    ],
+    "fullQuotes": [
+      "I'm stuffed! 🦆",
+      "Burp~ 😮‍💨",
+      "Too full to fly",
+      "My beak is full!",
+      "I need a nap!"
+    ],
+    "yummy": "Quack, delicious!"
   },
   "cacheCategories": {
     "trash": "🗑️ Trash",

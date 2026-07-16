@@ -34,6 +34,8 @@ const DEFAULTS = {
   snowMode: false,
   // Ngôn ngữ
   language: 'en',
+  // Pet type (pig or duck)
+  petType: 'pig',
 }
 
 function load() {

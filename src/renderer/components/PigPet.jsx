@@ -70,9 +70,35 @@ const ANIMATIONS = {
   struggling: { frames: [struggle1, struggle2, struggle3], fps: 6, loop: true },
 }
 
+// ─── Duck Animations ────────────────────────────────────────────────────────
+const duckModules = import.meta.glob('../assets/duck_sprites/*.png', { eager: true, import: 'default' })
+const getDuck = (n) => duckModules[`../assets/duck_sprites/duck_${n}.png`]
+
+const DUCK_ANIMATIONS = {
+  idle: { frames: [getDuck(1), getDuck(2), getDuck(1)], fps: 2, loop: true },
+  walking: { frames: [getDuck(5), getDuck(6), getDuck(7), getDuck(8), getDuck(9)], fps: 10, loop: true },
+  sniffing: { frames: [getDuck(1), getDuck(3)], fps: 2, loop: true },
+  eating: { frames: [getDuck(10), getDuck(11), getDuck(10), getDuck(11)], fps: 6, loop: true },
+  full: { frames: [getDuck(11), getDuck(1)], fps: 2, loop: true },
+  sleeping: { frames: [getDuck(13), getDuck(14), getDuck(15)], fps: 1.5, loop: true },
+  scared: { frames: [getDuck(18)], fps: 1, loop: true },
+  drag_held: { frames: [getDuck(16)], fps: 1, loop: false },
+  drag_falling: { frames: [getDuck(17)], fps: 1, loop: false },
+  drag_landed: { frames: [getDuck(18)], fps: 1, loop: false },
+  diving_float: { frames: [getDuck(25)], fps: 1, loop: true },
+  diving_down: { frames: [getDuck(26), getDuck(27), getDuck(28)], fps: 6, loop: true },
+  diving_up: { frames: [getDuck(29)], fps: 1, loop: true },
+  diving_bottom: { frames: [getDuck(30), getDuck(31), getDuck(32)], fps: 6, loop: true },
+  drowning: { frames: [getDuck(19), getDuck(20), getDuck(21)], fps: 6, loop: true },
+  drowning_sink: { frames: [getDuck(22)], fps: 1, loop: false },
+  drowning_bottom: { frames: [getDuck(24)], fps: 1, loop: false },
+  struggling: { frames: [getDuck(19), getDuck(20), getDuck(21)], fps: 6, loop: true },
+}
+
 // ─── useSprite hook ───────────────────────────────────────────────────────────
-function useSprite(mode) {
-  const config = ANIMATIONS[mode] || ANIMATIONS.idle
+function useSprite(mode, petType = 'pig') {
+  const anims = petType === 'duck' ? DUCK_ANIMATIONS : ANIMATIONS
+  const config = anims[mode] || anims.idle
   const [frameIdx, setFrameIdx] = useState(0)
   const timerRef = useRef(null)
 
@@ -128,7 +154,7 @@ export const PIG_HEIGHT = 150
 
 const isElectron = typeof window !== 'undefined' && window.pigAPI
 
-export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = false, isCleaning = false, cameraFollowsPig, onDoubleClick, onWakeUp, weatherData = null, floodMode = false, snowMode = false }) {
+export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = false, isCleaning = false, cameraFollowsPig, onDoubleClick, onWakeUp, weatherData = null, floodMode = false, snowMode = false, petType = 'pig' }) {
   const { t } = useTranslation()
   const windRef = useRef(null)
   
@@ -194,7 +220,7 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
   } else if (mode === 'eating' || mode === 'sniffing' || mode === 'full' || mode === 'scared') {
     displayMode = mode
   }
-  const currentSprite = useSprite(displayMode)
+  const currentSprite = useSprite(displayMode, petType)
 
   const screenHeight = window.innerHeight
   const visualY = cameraFollowsPig ? Math.max(-screenHeight * 0.7, position.y) : position.y

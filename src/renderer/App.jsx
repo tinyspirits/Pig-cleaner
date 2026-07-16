@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import PigPet from './components/PigPet'
+import oinkSound from './assets/oink.mp3'
+import quackSound from './assets/quack.mp3'
 import StatsPanel from './components/StatsPanel'
 import CachePanel from './components/CachePanel'
 import SettingsPanel from './components/SettingsPanel'
@@ -50,9 +52,9 @@ function App() {
   const [permissionWarning, setPermissionWarning] = useState(false)
   const [isCleaning, setIsCleaning] = useState(false)
   const [isSuspended, setIsSuspended] = useState(false)
-  const [weatherSettings, setWeatherSettings] = useState({ weatherEffects: true, weatherAlerts: true, floodMode: false, snowMode: false })
+  const [weatherSettings, setWeatherSettings] = useState({ weatherEffects: true, weatherAlerts: true, floodMode: false, snowMode: false, stormMode: false, petType: 'pig', soundEnabled: false })
 
-  const { mode, bubble, pigScale, totalEaten, cameraFollowsPig, reloadSettings, triggerEat, setMode, forceBubble } = usePigState(trashInfo)
+  const { mode, bubble, pigScale, totalEaten, cameraFollowsPig, reloadSettings, triggerEat, setMode, forceBubble } = usePigState(trashInfo, weatherSettings.petType)
   const isPanelOpen = showStats || showCache || showSettings || permissionWarning
   const weather = useWeather()
   const { t, i18n } = useTranslation()
@@ -66,6 +68,9 @@ function App() {
           weatherAlerts: s.weatherAlerts !== false,
           floodMode: s.floodMode === true,
           snowMode: s.snowMode === true,
+          stormMode: s.stormMode === true,
+          petType: s.petType || 'pig',
+          soundEnabled: s.soundEnabled === true,
         })
         if (s.language) {
           i18n.changeLanguage(s.language)
@@ -84,6 +89,9 @@ function App() {
           weatherAlerts: s.weatherAlerts !== false,
           floodMode: s.floodMode === true,
           snowMode: s.snowMode === true,
+          stormMode: s.stormMode === true,
+          petType: s.petType || 'pig',
+          soundEnabled: s.soundEnabled === true,
         })
         if (s.language && s.language !== i18n.language) {
           i18n.changeLanguage(s.language)
@@ -284,6 +292,17 @@ function App() {
   async function handlePigDoubleClick() {
     if (isCleaning) return
     setIsCleaning(true)
+
+    // Play sound based on petType if enabled
+    if (weatherSettings.soundEnabled) {
+      try {
+        const soundSrc = weatherSettings.petType === 'duck' ? quackSound : oinkSound
+        const audio = new Audio(soundSrc)
+        audio.play().catch(e => console.log('Audio play failed:', e))
+      } catch (e) {
+        console.log('Audio error:', e)
+      }
+    }
     
     if (isElectron) {
       try {
@@ -371,7 +390,7 @@ function App() {
   return (
     <div className={`pig-wrapper ${isEarthquake ? 'earthquake' : ''}`}>
       {/* Weather visual effects (respects settings toggle) */}
-      {(weatherSettings.weatherEffects || weatherSettings.floodMode || weatherSettings.snowMode) && <WeatherEffects weather={weather} floodMode={weatherSettings.floodMode} snowMode={weatherSettings.snowMode} effectsEnabled={weatherSettings.weatherEffects} />}
+      {(weatherSettings.weatherEffects || weatherSettings.floodMode || weatherSettings.snowMode || weatherSettings.stormMode) && <WeatherEffects weather={weather} floodMode={weatherSettings.floodMode} snowMode={weatherSettings.snowMode} stormMode={weatherSettings.stormMode} effectsEnabled={weatherSettings.weatherEffects} />}
       {/* Stats Panel */}
       {showStats && (
         <StatsPanel
@@ -422,6 +441,8 @@ function App() {
         weatherData={weatherSettings.weatherAlerts ? weather : null}
         floodMode={weatherSettings.floodMode}
         snowMode={weatherSettings.snowMode}
+        stormMode={weatherSettings.stormMode}
+        petType={weatherSettings.petType}
       />
     </div>
   )
