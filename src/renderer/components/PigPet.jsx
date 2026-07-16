@@ -480,7 +480,7 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
         <img
             src={currentSprite}
             alt="pig pet"
-            className="pig-sprite"
+            className={`pig-sprite ${displayMode === 'diving_float' ? 'breathing' : ''}`}
             draggable="false"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}

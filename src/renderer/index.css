@@ -938,3 +938,13 @@ body,
     opacity: 0;
   }
 }
+
+
+@keyframes floatBreathing {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05, 0.95); }
+}
+
+.pig-sprite.breathing {
+  animation: floatBreathing 2s ease-in-out infinite;
+}
