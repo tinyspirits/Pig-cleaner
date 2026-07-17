@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
+import { getRandomHue } from '../hooks/usePigState' // Gọi hàm chung
 
-// ─── Sprite cá bơi (pool mode) ───────────────────────────────────────────
+// ─── Sprite cá bơi ───────────────────────────────────────────
 import fishFrame1 from '../assets/Fish_swim_aligned/Fish1.png'
 import fishFrame2 from '../assets/Fish_swim_aligned/Fish2.png'
 import fishFrame3 from '../assets/Fish_swim_aligned/Fish3.png'
@@ -12,7 +13,7 @@ import fishFrame8 from '../assets/Fish_swim_aligned/Fish8.png'
 
 const FISH_FRAMES = [fishFrame1, fishFrame2, fishFrame3, fishFrame4, fishFrame5, fishFrame6, fishFrame7, fishFrame8]
 
-// ─── Sprite chim săn mồi (pool mode) ───────────────────────────────────────
+// ─── Sprite chim săn mồi ───────────────────────────────────────
 const birdFramesRaw = import.meta.glob('../assets/bird_sprites/bird_fly_*.png', { eager: true, import: 'default' })
 const BIRD_FRAMES = Object.keys(birdFramesRaw).sort((a, b) => {
     const numA = parseInt(a.match(/bird_fly_(\d+)\.png/)[1], 10)
@@ -61,7 +62,7 @@ export default function Wildlife({ poolMode, waterLevel }) {
         const interval = setInterval(() => {
             const now = Date.now()
 
-            // Cá
+            // Tạo Cá
             setFish(prev => {
                 if (prev) return prev
                 if (!poolMode || waterLevelRef.current < 15) return null
@@ -72,20 +73,16 @@ export default function Wildlife({ poolMode, waterLevel }) {
                 const bottomVh = randomBetween(3, Math.max(6, waterLevelRef.current - 4))
                 nextFishTimeRef.current = now + duration * 1000 + randomBetween(15000, 40000)
 
-                const randomHue = Math.floor(Math.random() * 360)
-
-                return { id: now, fromLeft, duration, bottomVh, caught: false, hue: randomHue }
+                return { id: now, fromLeft, duration, bottomVh, caught: false, hue: getRandomHue() }
             })
 
-            // Chim
+            // Tạo Chim
             setBird(prev => {
                 if (prev) return prev
                 if (!poolMode) return null
                 if (now < nextBirdTimeRef.current) return null
                 const fromLeft = Math.random() < 0.5
                 nextBirdTimeRef.current = now + randomBetween(15000, 35000)
-
-                const randomHue = Math.floor(Math.random() * 360)
 
                 birdStateRef.current = {
                     x: fromLeft ? -150 : window.innerWidth + 150,
@@ -98,7 +95,7 @@ export default function Wildlife({ poolMode, waterLevel }) {
                     frameIdx: BIRD_PHASES.patrol.start,
                     frameTimer: 0,
                     pigletsEaten: [],
-                    hue: randomHue
+                    hue: getRandomHue() // Sử dụng random hue
                 }
                 return { id: now, caught: false }
             })
@@ -244,7 +241,11 @@ export default function Wildlife({ poolMode, waterLevel }) {
                                 if (overlap) {
                                     hitPiglet = true
                                     const pigletScale = parseFloat(el.getAttribute('data-scale') || '0.4')
-                                    st.pigletsEaten.push({ id: Math.random().toString(), scale: pigletScale })
+
+                                    // Nhớ kèm theo hue của heo con để khi nhả ra nó vẫn giữ được màu
+                                    const pigletHue = el.getAttribute('data-hue')
+                                    st.pigletsEaten.push({ id: Math.random().toString(), scale: pigletScale, hue: pigletHue ? parseInt(pigletHue, 10) : 0 })
+
                                     window.dispatchEvent(new CustomEvent('bird-caught-follower', { detail: { index: parseInt(st.targetPigletId) } }))
                                     st.scale += 0.15
                                     st.targetPigletId = undefined
@@ -329,7 +330,6 @@ export default function Wildlife({ poolMode, waterLevel }) {
 
     return (
         <>
-            {/* ─── CÁ ĐANG BƠI ─── */}
             {fish && !fish.caught && (
                 <img
                     ref={fishRef}
@@ -351,7 +351,6 @@ export default function Wildlife({ poolMode, waterLevel }) {
                     }}
                 />
             )}
-            {/* ─── CÁ BỊ NUỐT ─── */}
             {fish && fish.caught && fish.frozenLeft != null && (
                 <img
                     src={fishSprite}
@@ -372,7 +371,6 @@ export default function Wildlife({ poolMode, waterLevel }) {
                 />
             )}
 
-            {/* ─── CHIM ĐANG BAY ─── */}
             {bird && !bird.caught && (
                 <img
                     ref={birdRef}
@@ -391,7 +389,6 @@ export default function Wildlife({ poolMode, waterLevel }) {
                     }}
                 />
             )}
-            {/* ─── CHIM BỊ NUỐT ─── */}
             {bird && bird.caught && bird.frozenLeft != null && (
                 <img
                     src={BIRD_FRAMES[BIRD_PHASES.patrol.start]}
