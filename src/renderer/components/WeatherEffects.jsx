@@ -12,7 +12,7 @@ import fishFrame8 from '../assets/Fish_swim_aligned/Fish8.png'
 
 const FISH_FRAMES = [fishFrame1, fishFrame2, fishFrame3, fishFrame4, fishFrame5, fishFrame6, fishFrame7, fishFrame8]
 
-// ─── Sprite chim săn mồi (pool mode) ───────────────────────────────────────
+// ─── Sprite chim săn mồi (pool mode & foraging) ────────────────────────────
 const birdFramesRaw = import.meta.glob('../assets/bird_sprites/bird_fly_*.png', { eager: true, import: 'default' })
 const BIRD_FRAMES = Object.keys(birdFramesRaw).sort((a, b) => {
   const numA = parseInt(a.match(/bird_fly_(\d+)\.png/)[1], 10)
@@ -23,6 +23,8 @@ const BIRD_FRAMES = Object.keys(birdFramesRaw).sort((a, b) => {
 const BIRD_PHASES = {
   patrol: { start: 2, end: 5 },
   diving: { start: 6, end: 8 },
+  landing: { start: 9, end: 11 },  // MỚI: Sà cánh đáp xuống đất
+  pecking: { start: 12, end: 20 }, // MỚI: Đi lạch bạch và mổ cỏ
   catching: { start: 21, end: 22 },
   rising: { start: 23, end: 27 }
 }
@@ -199,9 +201,12 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
   const containerRef = useRef(null)
   const [waterLevel, setWaterLevel] = useState(0)
   const [snowLevel, setSnowLevel] = useState(0)
-  const waterLevelRef = useRef(0)
 
+  const waterLevelRef = useRef(0)
   useEffect(() => { waterLevelRef.current = waterLevel }, [waterLevel])
+
+  const weatherRef = useRef(weather)
+  useEffect(() => { weatherRef.current = weather }, [weather])
 
   const [bird, setBird] = useState(null)
   const nextBirdTimeRef = useRef(0)
@@ -245,13 +250,14 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
         return { id: now, fromLeft, duration, bottomVh, caught: false, hue: getRandomHue() }
       })
 
-      // Tạo chim
+      // Tạo chim (Bay ra mọi lúc, không cần poolMode nữa)
       setBird(prev => {
         if (prev) return prev
-        if (!poolMode) return null
         if (now < nextBirdTimeRef.current) return null
         const fromLeft = Math.random() < 0.5
-        nextBirdTimeRef.current = now + randomBetween(15000, 35000)
+
+        // Căn thời gian 5-15 giây để bạn dễ test
+        nextBirdTimeRef.current = now + randomBetween(5000, 15000)
 
         birdStateRef.current = {
           x: fromLeft ? -150 : window.innerWidth + 150,
@@ -259,10 +265,12 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
           vx: (fromLeft ? 1 : -1) * randomBetween(150, 220),
           vy: 0,
           phase: 'patrol',
+          behavior: poolMode ? 'hunting' : 'foraging', // Đi lặn cá hoặc đi mổ cỏ
           fromLeft,
           scale: 1.0,
           frameIdx: BIRD_PHASES.patrol.start,
           frameTimer: 0,
+          groundTimer: 0,
           pigletsEaten: [],
           hue: getRandomHue()
         }
@@ -353,8 +361,10 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
           const p = BIRD_PHASES[st.phase]
           st.frameIdx++
           if (st.frameIdx > p.end) {
-            if (st.phase === 'diving') st.frameIdx = p.end
-            else if (st.phase === 'catching') {
+            // Giữ nguyên hình cắm đầu nếu đang lặn nước hoặc sà cánh chạm đất
+            if (st.phase === 'diving' || st.phase === 'landing') {
+              st.frameIdx = p.end
+            } else if (st.phase === 'catching') {
               st.phase = 'rising'
               st.frameIdx = BIRD_PHASES.rising.start
             } else {
@@ -364,30 +374,58 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
         }
 
         if (st.phase === 'patrol') {
-          if (fishRef.current && !fish?.caught) {
-            const fishRect = fishRef.current.getBoundingClientRect()
-            if (Math.abs(st.x - (fishRect.left + fishRect.width / 2)) < 150) {
-              st.phase = 'diving'
-              st.frameIdx = BIRD_PHASES.diving.start
-              st.vy = 400
-              st.targetY = window.innerHeight * (1 - (waterLevelRef.current / 2) / 100)
-            }
-          } else {
-            const followers = document.querySelectorAll('.pig-follower')
-            for (const el of followers) {
-              const scale = parseFloat(el.getAttribute('data-scale') || '0.4')
-              if (scale <= 0.6) {
-                const rect = el.getBoundingClientRect()
-                if (Math.abs(st.x - (rect.left + rect.width / 2)) < 150) {
-                  st.phase = 'diving'
-                  st.frameIdx = BIRD_PHASES.diving.start
-                  st.vy = 400
-                  st.targetY = window.innerHeight - 50
-                  st.targetPigletId = el.getAttribute('data-index')
-                  break
+          if (st.behavior === 'hunting') {
+            // SĂN MỒI KHI CÓ HỒ BƠI
+            if (fishRef.current && !fish?.caught) {
+              const fishRect = fishRef.current.getBoundingClientRect()
+              if (Math.abs(st.x - (fishRect.left + fishRect.width / 2)) < 150) {
+                st.phase = 'diving'
+                st.frameIdx = BIRD_PHASES.diving.start
+                st.vy = 400
+                st.targetY = window.innerHeight * (1 - (waterLevelRef.current / 2) / 100)
+              }
+            } else {
+              const followers = document.querySelectorAll('.pig-follower')
+              for (const el of followers) {
+                const scale = parseFloat(el.getAttribute('data-scale') || '0.4')
+                if (scale <= 0.6) {
+                  const rect = el.getBoundingClientRect()
+                  if (Math.abs(st.x - (rect.left + rect.width / 2)) < 150) {
+                    st.phase = 'diving'
+                    st.frameIdx = BIRD_PHASES.diving.start
+                    st.vy = 400
+                    st.targetY = window.innerHeight - 50
+                    st.targetPigletId = el.getAttribute('data-index')
+                    break
+                  }
                 }
               }
             }
+          } else {
+            // MỔ CỎ DƯỚI ĐẤT KHI TRÊN CẠN
+            if (st.x > window.innerWidth * 0.2 && st.x < window.innerWidth * 0.8 && Math.random() < 0.02) {
+              st.phase = 'landing'
+              st.frameIdx = BIRD_PHASES.landing.start
+              st.vy = 250 // Bay sà xuống
+              st.vx *= 0.4 // Hãm dần tốc độ ngang
+              st.targetY = window.innerHeight - 50 // Sát mặt đất
+            }
+          }
+        } else if (st.phase === 'landing') {
+          if (st.y >= st.targetY) {
+            st.y = st.targetY
+            st.vy = 0
+            st.vx = (st.fromLeft ? 1 : -1) * 20 // Vận tốc đi bộ lạch bạch
+            st.phase = 'pecking'
+            st.frameIdx = BIRD_PHASES.pecking.start
+            st.groundTimer = performance.now() + randomBetween(4000, 8000) // Mổ cỏ 4-8 giây
+          }
+        } else if (st.phase === 'pecking') {
+          if (performance.now() > st.groundTimer) {
+            st.phase = 'rising'
+            st.frameIdx = BIRD_PHASES.rising.start
+            st.vy = -200
+            st.vx = (st.fromLeft ? 1 : -1) * randomBetween(150, 220) // Tăng tốc bay lên
           }
         } else if (st.phase === 'diving') {
           let hitFish = false
@@ -445,7 +483,14 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
           }
         }
 
-        st.x += st.vx * dt
+        // TÍNH TOÁN LỰC GIÓ ĐẨY CHIM
+        let windEffectX = 0;
+        const wx = weatherRef.current;
+        if (wx && wx.windSpeed > 10 && st.phase !== 'diving' && st.phase !== 'landing' && st.phase !== 'pecking') {
+          windEffectX = wx.windForceX * (wx.windSpeed * 1.5);
+        }
+
+        st.x += (st.vx + windEffectX) * dt
         st.y += st.vy * dt
 
         if ((st.vx > 0 && st.x > window.innerWidth + 200) || (st.vx < 0 && st.x < -200)) {
@@ -470,6 +515,7 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
             const dy = birdCenterY - pigCenterY;
             const distance = Math.sqrt(dx * dx + dy * dy);
 
+            // Chim hoảng sợ né tránh heo mẹ (bất kể đang lặn, mổ cỏ hay tuần tra)
             if (distance < 220) {
               st.phase = 'rising';
               st.frameIdx = BIRD_PHASES.rising.start;
@@ -537,7 +583,7 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
   const showLightning = effectsEnabled && condition === 'thunderstorm'
   const rainIntensity = condition === 'thunderstorm' ? 1.5 : condition === 'drizzle' ? 0.4 : 1.0
 
-  if (!showRain && !showSnow && !showWind && !showLightning && waterLevel <= 0 && snowLevel <= 0 && !poolMode) return null
+  if (!showRain && !showSnow && !showWind && !showLightning && waterLevel <= 0 && snowLevel <= 0 && !poolMode && !bird) return null
 
   return (
     <div ref={containerRef} style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 50 }}>
