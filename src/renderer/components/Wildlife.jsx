@@ -43,11 +43,11 @@ const BIRD_PECK_FRAMES = Object.keys(birdPeckFramesRaw).sort((a, b) => {
     return numA - numB
 }).map(key => birdPeckFramesRaw[key])
 
-// 'flyaway': dùng khi chim KHÔNG bắt được gì (trượt mồi, hoặc mổ thóc xong) -> đi bộ rồi cất cánh
-// 'foraging': cúi đầu mổ thóc dưới đất, lặp lại cho tới khi hết giờ
+// Phases dưới mặt đất dùng sprite sheets riêng
 const BIRD_GROUND_PHASES = {
-    flyaway: { start: 0, end: BIRD_WALK_FRAMES.length - 1 },
-    foraging: { start: 0, end: BIRD_PECK_FRAMES.length - 1 },
+    flyaway: { start: 0, end: BIRD_WALK_FRAMES.length - 1 }, // Đi bộ rồi cất cánh
+    foraging: { start: 0, end: BIRD_PECK_FRAMES.length - 1 }, // Mổ thóc lặp lại
+    scared: { start: 4, end: 4 }, // Dùng bird_walk_05 khi bị doạ bay lên
 }
 
 function useFishFrame(fps = 9) {
@@ -203,13 +203,16 @@ export default function Wildlife({ poolMode, waterLevel }) {
                 if (st.frameTimer > 1 / 12) {
                     st.frameTimer -= 1 / 12
 
-                    if (st.phase === 'flyaway' || st.phase === 'foraging') {
+                    if (st.phase === 'flyaway' || st.phase === 'foraging' || st.phase === 'scared') {
                         const p = BIRD_GROUND_PHASES[st.phase]
                         st.frameIdx++
                         if (st.frameIdx > p.end) {
                             if (st.phase === 'foraging') {
                                 // Mổ thóc lặp lại cho tới khi hết giờ (forageUntil)
                                 st.frameIdx = p.start
+                            } else if (st.phase === 'scared') {
+                                // Giữ nguyên frame bird_walk_05 khi bay lên vì sợ
+                                st.frameIdx = p.end
                             } else {
                                 // flyaway: chạy hết 1 lượt đi bộ -> cất cánh rồi quay lại tuần tra
                                 st.frameIdx = p.end
@@ -364,7 +367,7 @@ export default function Wildlife({ poolMode, waterLevel }) {
                         st.phase = 'flyaway'
                         st.frameIdx = BIRD_GROUND_PHASES.flyaway.start
                     }
-                } else if (st.phase === 'rising') {
+                } else if (st.phase === 'rising' || st.phase === 'scared') {
                     st.vy = -150
                     if (st.y < 50) {
                         st.vy = 0
@@ -392,7 +395,7 @@ export default function Wildlife({ poolMode, waterLevel }) {
                 if ((st.vx > 0 && st.x > window.innerWidth + 200) || (st.vx < 0 && st.x < -200)) {
                     setBird(null)
                 } else {
-                    const frameSet = st.phase === 'flyaway' ? BIRD_WALK_FRAMES
+                    const frameSet = (st.phase === 'flyaway' || st.phase === 'scared') ? BIRD_WALK_FRAMES
                         : st.phase === 'foraging' ? BIRD_PECK_FRAMES
                             : BIRD_FRAMES
                     birdRef.current.src = frameSet[st.frameIdx] || frameSet[0]
@@ -405,7 +408,7 @@ export default function Wildlife({ poolMode, waterLevel }) {
 
                     if (overlap) {
                         catchPrey(bird, setBird, birdRef, 'bird')
-                    } else if (st.phase !== 'rising' && !bird.caught) {
+                    } else if (st.phase !== 'rising' && st.phase !== 'flyaway' && st.phase !== 'scared' && !bird.caught) {
                         const birdCenterX = birdRect.left + birdRect.width / 2;
                         const birdCenterY = birdRect.top + birdRect.height / 2;
                         const pigCenterX = pigRect.left + pigRect.width / 2;
@@ -415,8 +418,8 @@ export default function Wildlife({ poolMode, waterLevel }) {
                         const distance = Math.sqrt(dx * dx + dy * dy);
 
                         if (distance < 220) {
-                            st.phase = 'rising';
-                            st.frameIdx = BIRD_PHASES.rising.start;
+                            st.phase = 'scared';
+                            st.frameIdx = BIRD_GROUND_PHASES.scared.start;
                             st.vy = -350;
                             st.vx = (dx > 0 ? 1 : -1) * (200 + Math.random() * 100);
                             st.fromLeft = st.vx > 0;
