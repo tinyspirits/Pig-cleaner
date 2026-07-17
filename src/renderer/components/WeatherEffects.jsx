@@ -217,7 +217,8 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
         }
       })
 
-      // Lâu lâu có một con cá bơi ngang qua khi hồ đủ nước — người chơi click để bắt.
+      // Lâu lâu có một con cá bơi ngang qua khi hồ đủ nước — người chơi click để bắt,
+      // hoặc kéo heo/vịt chạm vào cá cũng bắt được (xem vòng lặp va chạm bên dưới).
       const now = Date.now()
       setFish(prev => {
         if (prev) return prev // đã có cá đang bơi, chờ nó xong
@@ -234,23 +235,77 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
     return () => clearInterval(interval)
   }, [weather?.condition, poolMode])
 
-  // Tự thu cá lại: bơi hết quãng đường mà không bị bắt -> biến mất; nếu bị bắt -> biến mất sau hiệu ứng
+  // Tự thu cá lại: bơi hết quãng đường mà không bị bắt -> biến mất; nếu bị bắt -> biến mất sau hiệu ứng nuốt
   useEffect(() => {
     if (!fish) return
     const t = setTimeout(() => {
       setFish(prev => (prev && prev.id === fish.id ? null : prev))
-    }, fish.caught ? 500 : fish.duration * 1000 + 300)
+    }, fish.caught ? 650 : fish.duration * 1000 + 300)
     return () => clearTimeout(t)
   }, [fish])
 
-  const handleFishCatch = () => {
-    if (!fish || fish.caught) return
-    const rect = fishRef.current?.getBoundingClientRect()
-    setFish(prev => prev ? { ...prev, caught: true, frozenLeft: rect?.left, frozenTop: rect?.top } : prev)
+  // Bắt cá: cá quay đầu bơi ngược lại phía heo/vịt (giống cá lớn nuốt cá bé) rồi biến mất.
+  const catchFish = (predatorRect) => {
+    setFish(prev => {
+      if (!prev || prev.caught) return prev
+      const rect = fishRef.current?.getBoundingClientRect()
+      if (!rect) return prev
+      const target = predatorRect || document.querySelector('.pig-container')?.getBoundingClientRect()
+      return {
+        ...prev,
+        caught: true,
+        swallowing: false,
+        frozenLeft: rect.left,
+        frozenTop: rect.top,
+        targetLeft: target ? target.left + target.width / 2 : rect.left,
+        targetTop: target ? target.top + target.height / 2 : rect.top,
+      }
+    })
     // Bắt cá cho heo/vịt ăn -> tăng kích thước nhẹ (tương đương dọn vài MB rác)
     const freedKB = randomBetween(2, 10) * 1024
     window.dispatchEvent(new CustomEvent('fish-caught', { detail: { freedKB } }))
   }
+
+  const handleFishCatch = () => catchFish()
+
+  // Bắt đầu hiệu ứng "bơi ngược vào miệng" ngay sau khi vị trí đóng băng đã render 1 frame,
+  // để CSS transition có điểm xuất phát rõ ràng trước khi chạy tới đích.
+  useEffect(() => {
+    if (!fish || !fish.caught || fish.swallowing) return
+    const raf = requestAnimationFrame(() => {
+      setFish(prev => (prev && prev.id === fish.id ? { ...prev, swallowing: true } : prev))
+    })
+    return () => cancelAnimationFrame(raf)
+  }, [fish?.caught])
+
+  // Heo/vịt chạm trúng cá là tự nhai nuốt luôn — dù đang đứng yên (cá tự bơi vào miệng)
+  // hay đang bị kéo (kéo heo trúng cá), không cần click.
+  useEffect(() => {
+    if (!fish || fish.caught) return
+    let rafId
+    const checkCollision = () => {
+      if (fishRef.current) {
+        const pigEl = document.querySelector('.pig-container')
+        const fishRect = fishRef.current.getBoundingClientRect()
+        const pigRect = pigEl?.getBoundingClientRect()
+        if (pigRect) {
+          const overlap = !(
+            fishRect.right < pigRect.left ||
+            fishRect.left > pigRect.right ||
+            fishRect.bottom < pigRect.top ||
+            fishRect.top > pigRect.bottom
+          )
+          if (overlap) {
+            catchFish(pigRect)
+            return
+          }
+        }
+      }
+      rafId = requestAnimationFrame(checkCollision)
+    }
+    rafId = requestAnimationFrame(checkCollision)
+    return () => cancelAnimationFrame(rafId)
+  }, [fish])
 
   useEffect(() => {
     const handler = (e) => {
@@ -345,12 +400,14 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
         <div
           style={{
             position: 'fixed',
-            left: `${fish.frozenLeft}px`,
-            top: `${fish.frozenTop}px`,
+            left: `${fish.swallowing ? fish.targetLeft : fish.frozenLeft}px`,
+            top: `${fish.swallowing ? fish.targetTop : fish.frozenTop}px`,
             fontSize: '28px',
             zIndex: 20,
             pointerEvents: 'none',
-            animation: 'fishCaughtPop 0.5s ease-out forwards',
+            transform: `scaleX(-1) scale(${fish.swallowing ? 0.15 : 1})`,
+            opacity: fish.swallowing ? 0 : 1,
+            transition: 'left 0.45s ease-in, top 0.45s ease-in, transform 0.45s ease-in, opacity 0.45s ease-in 0.15s',
           }}
         >🐟</div>
       )}
