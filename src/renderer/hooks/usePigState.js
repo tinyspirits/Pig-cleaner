@@ -76,6 +76,18 @@ export function usePigState(trashInfo, petType = 'pig') {
     return () => clearInterval(saveInterval)
   }, [])
 
+  // Xử lý khi chim bắt heo con
+  useEffect(() => {
+    const handleBirdCaught = (e) => {
+      const idx = e.detail?.index
+      if (idx !== undefined) {
+        setFollowers(prev => prev.filter((_, i) => i !== idx))
+      }
+    }
+    window.addEventListener('bird-caught-follower', handleBirdCaught)
+    return () => window.removeEventListener('bird-caught-follower', handleBirdCaught)
+  }, [])
+
   // Hiện speech bubble với timeout
   function showBubble(quotes, duration = 3000) {
     if (!quotes) return

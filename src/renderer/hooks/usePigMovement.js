@@ -365,7 +365,7 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
       // Phát sự kiện bay để hiệu ứng thời tiết bắt tốc độ
       const isFlying = state.isDragging || state.y < 0
       const currentVy = state.isDragging ? dragVy : state.vy
-      window.dispatchEvent(new CustomEvent('pig-flying', { detail: { isFlying, vy: currentVy } }))
+      window.dispatchEvent(new CustomEvent('pig-flying', { detail: { isFlying, vy: currentVy, y: state.y } }))
 
       // Áp dụng quán tính (vx) khi ở trên không hoặc trượt trên đất
       if (!state.isDragging && Math.abs(state.vx) > 0.1) {

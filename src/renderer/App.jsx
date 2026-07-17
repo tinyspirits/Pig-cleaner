@@ -409,7 +409,7 @@ function App() {
   return (
     <div className={`pig-wrapper ${isEarthquake ? 'earthquake' : ''}`}>
       {/* Weather visual effects (respects settings toggle) */}
-      {(weatherSettings.weatherEffects || weatherSettings.poolMode) && <WeatherEffects weather={weather} poolMode={weatherSettings.poolMode} effectsEnabled={weatherSettings.weatherEffects} />}
+      {(weatherSettings.weatherEffects || weatherSettings.poolMode) && <WeatherEffects weather={weather} poolMode={weatherSettings.poolMode} effectsEnabled={weatherSettings.weatherEffects} cameraFollowsPig={cameraFollowsPig} />}
       {/* Stats Panel */}
       {showStats && (
         <StatsPanel

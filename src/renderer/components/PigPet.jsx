@@ -185,8 +185,10 @@ function FollowerPet({ index, scale }) {
 
   return (
     <div
-      className={`pig-container pig-${state.displayMode} ${state.isWallHit ? 'pig-hit-wall' : ''} ${state.isFallingFast ? 'pig-meteorite' : ''} ${state.isShivering ? 'pig-shivering' : ''}`}
+      className={`pig-container pig-follower pig-${state.displayMode} ${state.isWallHit ? 'pig-hit-wall' : ''} ${state.isFallingFast ? 'pig-meteorite' : ''} ${state.isShivering ? 'pig-shivering' : ''}`}
       style={containerStyle}
+      data-index={index}
+      data-scale={scale}
     >
       <div style={{
         transform: `scaleX(${state.facing}) skewX(${state.dragSkewX}deg) scale(${state.dragScaleX}, ${state.dragScaleY})`,

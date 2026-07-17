@@ -84,44 +84,6 @@ function RainLayer({ windForceX, intensity = 1 }) {
           animation: `rain-fall ${d.duration}s ${d.delay}s linear infinite`,
         }} />
       ))}
-    {bird && !bird.caught && (
-        <img
-          ref={birdRef}
-          onClick={handleBirdCatch}
-          title="Bắt chim cho heo/vịt ăn"
-          draggable={false}
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            width: '64px',
-            height: 'auto',
-            zIndex: 21,
-            pointerEvents: 'auto',
-            cursor: 'pointer',
-            userSelect: 'none',
-            filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))'
-          }}
-        />
-      )}
-      {bird && bird.caught && bird.frozenLeft != null && (
-        <img
-          src={BIRD_FRAMES[BIRD_PHASES.patrol.start]}
-          draggable={false}
-          style={{
-            position: 'fixed',
-            left: `${bird.swallowing ? bird.targetLeft : bird.frozenLeft}px`,
-            top: `${bird.swallowing ? bird.targetTop : bird.frozenTop}px`,
-            width: '64px',
-            height: 'auto',
-            zIndex: 21,
-            pointerEvents: 'none',
-            transform: `${birdStateRef.current?.fromLeft ? 'scaleX(-1)' : 'scaleX(1)'} scale(${bird.swallowing ? 0.15 : birdStateRef.current?.scale || 1})`,
-            opacity: bird.swallowing ? 0 : 1,
-            transition: 'left 0.45s ease-in, top 0.45s ease-in, transform 0.45s ease-in, opacity 0.45s ease-in 0.15s',
-          }}
-        />
-      )}
     </div>
   )
 }
@@ -162,44 +124,6 @@ function SnowLayer({ windForceX }) {
           '--drift': `${drift}px`,
         }} />
       ))}
-    {bird && !bird.caught && (
-        <img
-          ref={birdRef}
-          onClick={handleBirdCatch}
-          title="Bắt chim cho heo/vịt ăn"
-          draggable={false}
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            width: '64px',
-            height: 'auto',
-            zIndex: 21,
-            pointerEvents: 'auto',
-            cursor: 'pointer',
-            userSelect: 'none',
-            filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))'
-          }}
-        />
-      )}
-      {bird && bird.caught && bird.frozenLeft != null && (
-        <img
-          src={BIRD_FRAMES[BIRD_PHASES.patrol.start]}
-          draggable={false}
-          style={{
-            position: 'fixed',
-            left: `${bird.swallowing ? bird.targetLeft : bird.frozenLeft}px`,
-            top: `${bird.swallowing ? bird.targetTop : bird.frozenTop}px`,
-            width: '64px',
-            height: 'auto',
-            zIndex: 21,
-            pointerEvents: 'none',
-            transform: `${birdStateRef.current?.fromLeft ? 'scaleX(-1)' : 'scaleX(1)'} scale(${bird.swallowing ? 0.15 : birdStateRef.current?.scale || 1})`,
-            opacity: bird.swallowing ? 0 : 1,
-            transition: 'left 0.45s ease-in, top 0.45s ease-in, transform 0.45s ease-in, opacity 0.45s ease-in 0.15s',
-          }}
-        />
-      )}
     </div>
   )
 }
@@ -240,44 +164,6 @@ function WindStreaks({ windForceX, windSpeed }) {
           animation: `wind-streak-${dir > 0 ? 'right' : 'left'} ${s.duration}s ${s.delay}s linear infinite`,
         }} />
       ))}
-    {bird && !bird.caught && (
-        <img
-          ref={birdRef}
-          onClick={handleBirdCatch}
-          title="Bắt chim cho heo/vịt ăn"
-          draggable={false}
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            width: '64px',
-            height: 'auto',
-            zIndex: 21,
-            pointerEvents: 'auto',
-            cursor: 'pointer',
-            userSelect: 'none',
-            filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))'
-          }}
-        />
-      )}
-      {bird && bird.caught && bird.frozenLeft != null && (
-        <img
-          src={BIRD_FRAMES[BIRD_PHASES.patrol.start]}
-          draggable={false}
-          style={{
-            position: 'fixed',
-            left: `${bird.swallowing ? bird.targetLeft : bird.frozenLeft}px`,
-            top: `${bird.swallowing ? bird.targetTop : bird.frozenTop}px`,
-            width: '64px',
-            height: 'auto',
-            zIndex: 21,
-            pointerEvents: 'none',
-            transform: `${birdStateRef.current?.fromLeft ? 'scaleX(-1)' : 'scaleX(1)'} scale(${bird.swallowing ? 0.15 : birdStateRef.current?.scale || 1})`,
-            opacity: bird.swallowing ? 0 : 1,
-            transition: 'left 0.45s ease-in, top 0.45s ease-in, transform 0.45s ease-in, opacity 0.45s ease-in 0.15s',
-          }}
-        />
-      )}
     </div>
   )
 }
@@ -334,7 +220,7 @@ function LightningFlash() {
 }
 
 // ─── WeatherEffects (main export) ────────────────────────────────────────────
-export default function WeatherEffects({ weather, poolMode = false, effectsEnabled = true, cameraFollowsPig = true }) {
+export default function WeatherEffects({ weather, poolMode = false, effectsEnabled = true }) {
   const containerRef = useRef(null)
   const [waterLevel, setWaterLevel] = useState(0)
   const [snowLevel, setSnowLevel] = useState(0)
@@ -342,13 +228,6 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
   useEffect(() => { waterLevelRef.current = waterLevel }, [waterLevel])
 
   // ─── Cá bơi ngang qua khi bật pool mode ──────────────────────────────────
-
-  // ─── Chim săn mồi ──────────────────────────────────────────────────────────
-  const [bird, setBird] = useState(null)
-  const nextBirdTimeRef = useRef(0)
-  const birdRef = useRef(null)
-  const birdStateRef = useRef(null)
-
   const [fish, setFish] = useState(null)
   const nextFishTimeRef = useRef(0)
   const fishRef = useRef(null)
@@ -392,29 +271,6 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
         nextFishTimeRef.current = now + duration * 1000 + randomBetween(15000, 40000)
         return { id: now, fromLeft, duration, bottomVh, caught: false }
       })
-
-      // Chim tuần tra ngẫu nhiên
-      setBird(prev => {
-        if (prev) return prev
-        if (!poolMode) return null
-        if (now < nextBirdTimeRef.current) return null
-        const fromLeft = Math.random() < 0.5
-        nextBirdTimeRef.current = now + randomBetween(15000, 35000)
-        
-        birdStateRef.current = {
-          x: fromLeft ? -150 : window.innerWidth + 150,
-          y: randomBetween(80, 180), // Hạ thấp chim xuống một chút
-          vx: (fromLeft ? 1 : -1) * randomBetween(150, 220),
-          vy: 0,
-          phase: 'patrol',
-          fromLeft,
-          scale: 1.0,
-          frameIdx: 0,
-          frameTimer: 0
-        }
-        return { id: now, caught: false }
-      })
-
     }, 1000)
     return () => clearInterval(interval)
   }, [weather?.condition, poolMode])
@@ -428,10 +284,11 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
     return () => clearTimeout(t)
   }, [fish])
 
-  const catchPrey = (setPrey, preyRef, predatorRect, type = 'fish') => {
-    setPrey(prev => {
+  // Bắt cá: cá quay đầu bơi ngược lại phía heo/vịt (giống cá lớn nuốt cá bé) rồi biến mất.
+  const catchFish = (predatorRect) => {
+    setFish(prev => {
       if (!prev || prev.caught) return prev
-      const rect = preyRef.current?.getBoundingClientRect()
+      const rect = fishRef.current?.getBoundingClientRect()
       if (!rect) return prev
       const target = predatorRect || document.querySelector('.pig-container')?.getBoundingClientRect()
       return {
@@ -444,15 +301,12 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
         targetTop: target ? target.top + target.height / 2 : rect.top,
       }
     })
-    const freedKB = type === 'bird' ? randomBetween(20, 50) * 1024 : randomBetween(2, 10) * 1024
-    window.dispatchEvent(new CustomEvent('fish-caught', { detail: { freedKB } })) // use same event to grow pig
+    // Bắt cá cho heo/vịt ăn -> tăng kích thước nhẹ (tương đương dọn vài MB rác)
+    const freedKB = randomBetween(2, 10) * 1024
+    window.dispatchEvent(new CustomEvent('fish-caught', { detail: { freedKB } }))
   }
 
-  const catchFish = (predatorRect) => catchPrey(setFish, fishRef, predatorRect, 'fish')
-  const catchBird = (predatorRect) => catchPrey(setBird, birdRef, predatorRect, 'bird')
-
   const handleFishCatch = () => catchFish()
-  const handleBirdCatch = () => catchBird()
 
   // Bắt đầu hiệu ứng "bơi ngược vào miệng" ngay sau khi vị trí đóng băng đã render 1 frame,
   // để CSS transition có điểm xuất phát rõ ràng trước khi chạy tới đích.
@@ -464,182 +318,17 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
     return () => cancelAnimationFrame(raf)
   }, [fish?.caught])
 
+  // Heo/vịt chạm trúng cá là tự nhai nuốt luôn — dù đang đứng yên (cá tự bơi vào miệng)
+  // hay đang bị kéo (kéo heo trúng cá), không cần click.
   useEffect(() => {
-    if (!bird || !bird.caught || bird.swallowing) return
-    const raf = requestAnimationFrame(() => {
-      setBird(prev => (prev && prev.id === bird.id ? { ...prev, swallowing: true } : prev))
-    })
-    return () => cancelAnimationFrame(raf)
-  }, [bird?.caught])
-
-  // Tự thu chim lại sau hiệu ứng nuốt
-  useEffect(() => {
-    if (!bird) return
-    if (bird.caught) {
-      const t = setTimeout(() => setBird(null), 650)
-      return () => clearTimeout(t)
-    }
-  }, [bird?.caught])
-
-  // Vòng lặp chuyển động của chim và va chạm chung
-  useEffect(() => {
+    if (!fish || fish.caught) return
     let rafId
-    let lastTime = performance.now()
-
-    const loop = (time) => {
-      rafId = requestAnimationFrame(loop)
-      const dt = (time - lastTime) / 1000
-      lastTime = time
-      if (dt > 0.1) return // skip frame if lag
-
-      const pigEl = document.querySelector('.pig-container')
-      const pigRect = pigEl?.getBoundingClientRect()
-
-      // 1. Chuyển động và logic của Chim
-      const st = birdStateRef.current
-      if (bird && !bird.caught && st && birdRef.current) {
-        // Animation frames
-        st.frameTimer += dt
-        if (st.frameTimer > 1/12) {
-          st.frameTimer -= 1/12
-          const p = BIRD_PHASES[st.phase]
-          st.frameIdx++
-          if (st.frameIdx > p.end) {
-            if (st.phase === 'diving') st.frameIdx = p.end // hold dive
-            else if (st.phase === 'catching') {
-              st.phase = 'rising'
-              st.frameIdx = BIRD_PHASES.rising.start
-            } else {
-              st.frameIdx = p.start
-            }
-          }
-        }
-
-        // Logic trạng thái
-        if (st.phase === 'patrol') {
-          // Ngẫu nhiên lặn bắt cá
-          if (fishRef.current && !fish?.caught) {
-            const fishRect = fishRef.current.getBoundingClientRect()
-            if (Math.abs(st.x - (fishRect.left + fishRect.width/2)) < 150) {
-              st.phase = 'diving'
-              st.frameIdx = BIRD_PHASES.diving.start
-              st.vy = 400 // dive speed
-              // Lặn sâu xuống nửa cái hồ
-              st.targetY = window.innerHeight * (1 - (waterLevelRef.current / 2) / 100)
-            }
-          } else {
-            // Tìm kiếm heo con (baby size < 1.0)
-            const followers = document.querySelectorAll('.pig-follower')
-            for (const el of followers) {
-              const scale = parseFloat(el.getAttribute('data-scale') || '1')
-              if (scale < 1.0) {
-                const rect = el.getBoundingClientRect()
-                if (Math.abs(st.x - (rect.left + rect.width / 2)) < 150) {
-                  st.phase = 'diving'
-                  st.frameIdx = BIRD_PHASES.diving.start
-                  st.vy = 400
-                  st.targetY = window.innerHeight + 200 // Lặn xuống sâu tận đáy
-                  st.targetPigletId = el.getAttribute('data-index')
-                  break
-                }
-              }
-            }
-          }
-        } else if (st.phase === 'diving') {
-          let hitFish = false
-          let hitPiglet = false
-          
-          if (fishRef.current && !fish?.caught) {
-            const bRect = birdRef.current.getBoundingClientRect()
-            const fRect = fishRef.current.getBoundingClientRect()
-            const overlap = !(
-              bRect.right < fRect.left ||
-              bRect.left > fRect.right ||
-              bRect.bottom < fRect.top ||
-              bRect.top > fRect.bottom
-            )
-            if (overlap) {
-              hitFish = true
-              catchFish(bRect)
-              st.scale += 0.15
-            }
-          } else if (st.targetPigletId !== undefined) {
-             const followers = document.querySelectorAll('.pig-follower')
-             for (const el of followers) {
-               if (el.getAttribute('data-index') === st.targetPigletId) {
-                 const rect = el.getBoundingClientRect()
-                 const bRect = birdRef.current.getBoundingClientRect()
-                 const overlap = !(
-                   bRect.right < rect.left ||
-                   bRect.left > rect.right ||
-                   bRect.bottom < rect.top ||
-                   bRect.top > rect.bottom
-                 )
-                 if (overlap) {
-                   hitPiglet = true
-                   window.dispatchEvent(new CustomEvent('bird-caught-follower', { detail: { index: parseInt(st.targetPigletId) } }))
-                   st.scale += 0.15
-                   st.targetPigletId = undefined
-                 }
-                 break
-               }
-             }
-          }
-          
-          if (hitFish || hitPiglet) {
-            st.vy = 0
-            st.vx *= 0.5
-            st.phase = 'catching'
-            st.frameIdx = BIRD_PHASES.catching.start
-          } else if (st.y >= st.targetY) {
-            // Đến đáy mà không trúng cá thì bay thẳng lên luôn
-            st.y = st.targetY
-            st.vy = 0
-            st.vx *= 0.5
-            st.phase = 'rising'
-            st.frameIdx = BIRD_PHASES.rising.start
-          }
-        } else if (st.phase === 'rising') {
-          st.vy = -150
-          if (st.y < 50) {
-            st.vy = 0
-            st.phase = 'patrol'
-            st.frameIdx = BIRD_PHASES.patrol.start
-          }
-        }
-
-        // Di chuyển
-        st.x += st.vx * dt
-        st.y += st.vy * dt
-
-        // Xóa chim nếu bay khỏi màn hình
-        if ((st.vx > 0 && st.x > window.innerWidth + 200) || (st.vx < 0 && st.x < -200)) {
-          setBird(null)
-        } else {
-          // Render
-          birdRef.current.src = BIRD_FRAMES[st.frameIdx]
-          birdRef.current.style.transform = `translate(${st.x}px, ${st.y}px) scaleX(${st.fromLeft ? 1 : -1}) scale(${st.scale})`
-        }
-
-        // Va chạm heo ăn chim
+    const checkCollision = () => {
+      if (fishRef.current) {
+        const pigEl = document.querySelector('.pig-container')
+        const fishRect = fishRef.current.getBoundingClientRect()
+        const pigRect = pigEl?.getBoundingClientRect()
         if (pigRect) {
-          const birdRect = birdRef.current.getBoundingClientRect()
-          const overlap = !(
-            birdRect.right < pigRect.left ||
-            birdRect.left > pigRect.right ||
-            birdRect.bottom < pigRect.top ||
-            birdRect.top > pigRect.bottom
-          )
-          if (overlap) {
-            catchBird(pigRect)
-          }
-        }
-      }
-
-      // 2. Va chạm heo ăn cá
-      if (fish && !fish.caught && fishRef.current) {
-        if (pigRect) {
-          const fishRect = fishRef.current.getBoundingClientRect()
           const overlap = !(
             fishRect.right < pigRect.left ||
             fishRect.left > pigRect.right ||
@@ -648,14 +337,15 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
           )
           if (overlap) {
             catchFish(pigRect)
+            return
           }
         }
       }
+      rafId = requestAnimationFrame(checkCollision)
     }
-
-    rafId = requestAnimationFrame(loop)
+    rafId = requestAnimationFrame(checkCollision)
     return () => cancelAnimationFrame(rafId)
-  }, [bird, fish])
+  }, [fish])
 
   useEffect(() => {
     const handler = (e) => {
@@ -677,19 +367,10 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
           anim.playbackRate = rate
         }
       }
-
-      // Xử lý di chuyển camera theo heo
-      const pigY = e.detail?.y || 0
-      if (cameraFollowsPig) {
-        const altitude = Math.max(0, -pigY - window.innerHeight * 0.7)
-        containerRef.current.style.transform = `translateY(${altitude}px)`
-      } else {
-        containerRef.current.style.transform = `translateY(0px)`
-      }
     }
     window.addEventListener('pig-flying', handler)
     return () => window.removeEventListener('pig-flying', handler)
-  }, [cameraFollowsPig])
+  }, [])
 
   if (!weather && waterLevel <= 0 && snowLevel <= 0 && !fish) return null
 
@@ -773,44 +454,6 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
             // Quay đầu bơi ngược lại đúng hướng đối lập với lúc đang bơi tới (fromLeft)
             transform: `${fish.fromLeft ? 'scaleX(-1)' : 'scaleX(1)'} scale(${fish.swallowing ? 0.15 : 1})`,
             opacity: fish.swallowing ? 0 : 1,
-            transition: 'left 0.45s ease-in, top 0.45s ease-in, transform 0.45s ease-in, opacity 0.45s ease-in 0.15s',
-          }}
-        />
-      )}
-    {bird && !bird.caught && (
-        <img
-          ref={birdRef}
-          onClick={handleBirdCatch}
-          title="Bắt chim cho heo/vịt ăn"
-          draggable={false}
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            width: '64px',
-            height: 'auto',
-            zIndex: 21,
-            pointerEvents: 'auto',
-            cursor: 'pointer',
-            userSelect: 'none',
-            filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))'
-          }}
-        />
-      )}
-      {bird && bird.caught && bird.frozenLeft != null && (
-        <img
-          src={BIRD_FRAMES[BIRD_PHASES.patrol.start]}
-          draggable={false}
-          style={{
-            position: 'fixed',
-            left: `${bird.swallowing ? bird.targetLeft : bird.frozenLeft}px`,
-            top: `${bird.swallowing ? bird.targetTop : bird.frozenTop}px`,
-            width: '64px',
-            height: 'auto',
-            zIndex: 21,
-            pointerEvents: 'none',
-            transform: `${birdStateRef.current?.fromLeft ? 'scaleX(-1)' : 'scaleX(1)'} scale(${bird.swallowing ? 0.15 : birdStateRef.current?.scale || 1})`,
-            opacity: bird.swallowing ? 0 : 1,
             transition: 'left 0.45s ease-in, top 0.45s ease-in, transform 0.45s ease-in, opacity 0.45s ease-in 0.15s',
           }}
         />
