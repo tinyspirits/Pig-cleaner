@@ -20,13 +20,33 @@ const BIRD_FRAMES = Object.keys(birdFramesRaw).sort((a, b) => {
   return numA - numB
 }).map(key => birdFramesRaw[key])
 
+// Frames mới: đi bộ & mổ thóc dưới đất
+const birdWalkFramesRaw = import.meta.glob('../assets/bird_walk_aligned/bird_walk_*.png', { eager: true, import: 'default' })
+const BIRD_WALK_FRAMES = Object.keys(birdWalkFramesRaw).sort((a, b) => {
+  const numA = parseInt(a.match(/bird_walk_(\d+)\.png/)[1], 10)
+  const numB = parseInt(b.match(/bird_walk_(\d+)\.png/)[1], 10)
+  return numA - numB
+}).map(key => birdWalkFramesRaw[key])
+
+const birdPeckFramesRaw = import.meta.glob('../assets/bird_walk_aligned/bird_peck_*.png', { eager: true, import: 'default' })
+const BIRD_PECK_FRAMES = Object.keys(birdPeckFramesRaw).sort((a, b) => {
+  const numA = parseInt(a.match(/bird_peck_(\d+)\.png/)[1], 10)
+  const numB = parseInt(b.match(/bird_peck_(\d+)\.png/)[1], 10)
+  return numA - numB
+}).map(key => birdPeckFramesRaw[key])
+
 const BIRD_PHASES = {
   patrol: { start: 2, end: 5 },
   diving: { start: 6, end: 8 },
-  landing: { start: 9, end: 11 },  // MỚI: Sà cánh đáp xuống đất
-  pecking: { start: 12, end: 20 }, // MỚI: Đi lạch bạch và mổ cỏ
   catching: { start: 21, end: 22 },
-  rising: { start: 23, end: 27 }
+  rising: { start: 23, end: 27 }   // Chỉ dùng khi bắt heo/cá, KHÔNG dùng sau mổ thóc
+}
+
+// Phases dưới mặt đất dùng sprite sheets riêng
+const BIRD_GROUND_PHASES = {
+  flyaway: { start: 0, end: BIRD_WALK_FRAMES.length - 1 }, // Đi bộ rồi cất cánh
+  foraging: { start: 0, end: BIRD_PECK_FRAMES.length - 1 }, // Mổ thóc lặp lại
+  scared: { start: 4, end: 4 }, // Dùng bird_walk_05 khi bị doạ bay lên
 }
 
 function useFishFrame(fps = 9) {
@@ -270,7 +290,8 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
           scale: 1.0,
           frameIdx: BIRD_PHASES.patrol.start,
           frameTimer: 0,
-          groundTimer: 0,
+          targetGrain: false,
+          forageUntil: 0,
           pigletsEaten: [],
           hue: getRandomHue()
         }
@@ -358,19 +379,45 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
         st.frameTimer += dt
         if (st.frameTimer > 1 / 12) {
           st.frameTimer -= 1 / 12
-          const p = BIRD_PHASES[st.phase]
-          st.frameIdx++
-          if (st.frameIdx > p.end) {
-            // Giữ nguyên hình cắm đầu nếu đang lặn nước hoặc sà cánh chạm đất
-            if (st.phase === 'diving' || st.phase === 'landing') {
-              st.frameIdx = p.end
-            } else if (st.phase === 'catching') {
-              st.phase = 'rising'
-              st.frameIdx = BIRD_PHASES.rising.start
-            } else {
-              st.frameIdx = p.start
+
+          if (st.phase === 'flyaway' || st.phase === 'foraging' || st.phase === 'scared') {
+            // Dùng ground frame sets riêng
+            const p = BIRD_GROUND_PHASES[st.phase]
+            st.frameIdx++
+            if (st.frameIdx > p.end) {
+              if (st.phase === 'foraging') {
+                // Mổ thóc lặp lại cho tới khi hết giờ
+                st.frameIdx = p.start
+              } else if (st.phase === 'scared') {
+                // Giữ nguyên frame bird_walk_05 khi đang bay lên vì sợ
+                st.frameIdx = p.end
+              } else {
+                // flyaway: chạy hết 1 lượt đi bộ -> cất cánh quay lại patrol
+                st.phase = 'patrol'
+                st.frameIdx = BIRD_PHASES.patrol.start
+              }
+            }
+          } else {
+            const p = BIRD_PHASES[st.phase]
+            st.frameIdx++
+            if (st.frameIdx > p.end) {
+              // Giữ nguyên frame cuối khi đang lặn
+              if (st.phase === 'diving') {
+                st.frameIdx = p.end
+              } else if (st.phase === 'catching') {
+                st.phase = 'rising'
+                st.frameIdx = BIRD_PHASES.rising.start
+              } else {
+                st.frameIdx = p.start
+              }
             }
           }
+        }
+
+        // Mổ thóc xong: chuyển sang flyaway (đi bộ rồi cất cánh)
+        if (st.phase === 'foraging' && Date.now() > (st.forageUntil || 0)) {
+          st.phase = 'flyaway'
+          st.frameIdx = BIRD_GROUND_PHASES.flyaway.start
         }
 
         if (st.phase === 'patrol') {
@@ -383,6 +430,7 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
                 st.frameIdx = BIRD_PHASES.diving.start
                 st.vy = 400
                 st.targetY = window.innerHeight * (1 - (waterLevelRef.current / 2) / 100)
+                st.targetGrain = false
               }
             } else {
               const followers = document.querySelectorAll('.pig-follower')
@@ -396,42 +444,42 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
                     st.vy = 400
                     st.targetY = window.innerHeight - 50
                     st.targetPigletId = el.getAttribute('data-index')
+                    st.targetGrain = false
                     break
                   }
                 }
               }
             }
           } else {
-            // MỔ CỎ DƯỚI ĐẤT KHI TRÊN CẠN
+            // MỔ THÓC DƯỚI ĐẤT KHI TRÊN CẠN
             if (st.x > window.innerWidth * 0.2 && st.x < window.innerWidth * 0.8 && Math.random() < 0.02) {
-              st.phase = 'landing'
-              st.frameIdx = BIRD_PHASES.landing.start
+              st.phase = 'diving'
+              st.frameIdx = BIRD_PHASES.diving.start
               st.vy = 250 // Bay sà xuống
               st.vx *= 0.4 // Hãm dần tốc độ ngang
               st.targetY = window.innerHeight - 50 // Sát mặt đất
+              st.targetGrain = true // Đánh dấu đây là xuống mổ thóc
+              st.targetPigletId = undefined
             }
           }
-        } else if (st.phase === 'landing') {
-          if (st.y >= st.targetY) {
-            st.y = st.targetY
+        } else if (st.phase === 'flyaway') {
+          // Đi bộ rồi cất cánh (dùng walk frames) -> bay lên lại độ cao tuần tra
+          st.vy = -140
+          st.vx = (st.fromLeft ? 1 : -1) * randomBetween(80, 120)
+          if (st.y < 80) {
             st.vy = 0
-            st.vx = (st.fromLeft ? 1 : -1) * 20 // Vận tốc đi bộ lạch bạch
-            st.phase = 'pecking'
-            st.frameIdx = BIRD_PHASES.pecking.start
-            st.groundTimer = performance.now() + randomBetween(4000, 8000) // Mổ cỏ 4-8 giây
+            st.phase = 'patrol'
+            st.frameIdx = BIRD_PHASES.patrol.start
           }
-        } else if (st.phase === 'pecking') {
-          if (performance.now() > st.groundTimer) {
-            st.phase = 'rising'
-            st.frameIdx = BIRD_PHASES.rising.start
-            st.vy = -200
-            st.vx = (st.fromLeft ? 1 : -1) * randomBetween(150, 220) // Tăng tốc bay lên
-          }
+        } else if (st.phase === 'foraging') {
+          // Đứng im mổ thóc, phase chuyển bởi khối forageUntil ở trên
+          st.vy = 0
+          st.vx = 0
         } else if (st.phase === 'diving') {
           let hitFish = false
           let hitPiglet = false
 
-          if (fishRef.current && !fish?.caught) {
+          if (!st.targetGrain && fishRef.current && !fish?.caught) {
             const bRect = birdRef.current.getBoundingClientRect()
             const fRect = fishRef.current.getBoundingClientRect()
             const overlap = !(bRect.right < fRect.left || bRect.left > fRect.right || bRect.bottom < fRect.top || bRect.top > fRect.bottom)
@@ -467,14 +515,26 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
             st.vx *= 0.5
             st.phase = 'catching'
             st.frameIdx = BIRD_PHASES.catching.start
+          } else if (st.targetGrain && st.y >= st.targetY) {
+            // Chạm đất để mổ thóc: dùng frames peck mới, KHÔNG dùng rising
+            st.y = st.targetY
+            st.vy = 0
+            st.vx = 0
+            st.targetGrain = false
+            st.phase = 'foraging'
+            st.frameIdx = BIRD_GROUND_PHASES.foraging.start
+            st.forageUntil = Date.now() + randomBetween(4000, 8000)
           } else if (st.y >= st.targetY) {
+            // Trượt mồi (không targetGrain, không bắt được gì) -> flyaway
             st.y = st.targetY
             st.vy = 0
             st.vx *= 0.5
-            st.phase = 'rising'
-            st.frameIdx = BIRD_PHASES.rising.start
+            st.targetPigletId = undefined
+            st.phase = 'flyaway'
+            st.frameIdx = BIRD_GROUND_PHASES.flyaway.start
           }
-        } else if (st.phase === 'rising') {
+        } else if (st.phase === 'rising' || st.phase === 'scared') {
+          // rising (bắt heo/cá) hoặc scared (bị doạ, dùng bird_walk_05)
           st.vy = -150
           if (st.y < 50) {
             st.vy = 0
@@ -496,7 +556,11 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
         if ((st.vx > 0 && st.x > window.innerWidth + 200) || (st.vx < 0 && st.x < -200)) {
           setBird(null)
         } else {
-          birdRef.current.src = BIRD_FRAMES[st.frameIdx]
+          // Chọn đúng frame set theo phase
+          const frameSet = (st.phase === 'flyaway' || st.phase === 'scared') ? BIRD_WALK_FRAMES
+            : st.phase === 'foraging' ? BIRD_PECK_FRAMES
+            : BIRD_FRAMES
+          birdRef.current.src = frameSet[st.frameIdx] || frameSet[0]
           birdRef.current.style.transform = `translate(${st.x}px, ${st.y}px) scaleX(${st.fromLeft ? 1 : -1}) scale(${st.scale})`
         }
 
@@ -506,7 +570,7 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
 
           if (overlap) {
             catchPrey(bird, setBird, birdRef, 'bird')
-          } else if (st.phase !== 'rising' && !bird.caught) {
+          } else if (st.phase !== 'rising' && st.phase !== 'flyaway' && st.phase !== 'scared' && !bird.caught) {
             const birdCenterX = birdRect.left + birdRect.width / 2;
             const birdCenterY = birdRect.top + birdRect.height / 2;
             const pigCenterX = pigRect.left + pigRect.width / 2;
@@ -515,14 +579,15 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
             const dy = birdCenterY - pigCenterY;
             const distance = Math.sqrt(dx * dx + dy * dy);
 
-            // Chim hoảng sợ né tránh heo mẹ (bất kể đang lặn, mổ cỏ hay tuần tra)
+            // Chim hoảng sợ né tránh heo mẹ -> dùng frame scared (bird_walk_05)
             if (distance < 220) {
-              st.phase = 'rising';
-              st.frameIdx = BIRD_PHASES.rising.start;
+              st.phase = 'scared';
+              st.frameIdx = BIRD_GROUND_PHASES.scared.start;
               st.vy = -350;
               st.vx = (dx > 0 ? 1 : -1) * (200 + Math.random() * 100);
               st.fromLeft = st.vx > 0;
               st.targetPigletId = undefined;
+              st.targetGrain = false;
             }
           }
         }
