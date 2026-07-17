@@ -839,6 +839,17 @@ body,
   color: rgba(255, 180, 210, 0.7);
 }
 
+/* ─── Cá bơi trong hồ (pool mode) ────────────────────────────────────────── */
+@keyframes fishSwimLTR {
+  from { left: -8%; }
+  to { left: 108%; }
+}
+
+@keyframes fishSwimRTL {
+  from { left: 108%; }
+  to { left: -8%; }
+}
+
 .cache-result-size {
   font-family: -apple-system, sans-serif;
   font-size: 28px;

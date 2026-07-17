@@ -170,6 +170,17 @@ function App() {
     return () => window.removeEventListener('earthquake', handleEarthquake)
   }, [])
 
+  // Bắt được cá trong hồ (pool mode) -> heo/vịt ăn, tăng kích thước nhẹ
+  useEffect(() => {
+    const handleFishCaught = (e) => {
+      const freedKB = e.detail?.freedKB || 5 * 1024
+      triggerEat(freedKB)
+      forceBubble(t('fish.caught') || '🐟')
+    }
+    window.addEventListener('fish-caught', handleFishCaught)
+    return () => window.removeEventListener('fish-caught', handleFishCaught)
+  }, [triggerEat, forceBubble])
+
   // Setup IPC listeners
   useEffect(() => {
     if (!isElectron) {
@@ -398,7 +409,7 @@ function App() {
   return (
     <div className={`pig-wrapper ${isEarthquake ? 'earthquake' : ''}`}>
       {/* Weather visual effects (respects settings toggle) */}
-      {(weatherSettings.weatherEffects || weatherSettings.poolMode) && <WeatherEffects weather={weather} poolMode={weatherSettings.poolMode} effectsEnabled={weatherSettings.weatherEffects} />}
+      {(weatherSettings.weatherEffects || weatherSettings.poolMode) && <WeatherEffects weather={weather} poolMode={weatherSettings.poolMode} effectsEnabled={weatherSettings.weatherEffects} cameraFollowsPig={cameraFollowsPig} />}
       {/* Stats Panel */}
       {showStats && (
         <StatsPanel

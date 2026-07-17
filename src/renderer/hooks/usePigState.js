@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 
+// Hàm tiện ích: Tạo màu ngẫu nhiên (từ 0 đến 360 độ)
+export const getRandomHue = () => Math.floor(Math.random() * 360)
+
 // Trạng thái: idle → walking → sniffing → eating → sleeping → full
 // Cycle ngẫu nhiên dựa trên context
-
-// Quotes will be fetched from i18n
 
 export function usePigState(trashInfo, petType = 'pig') {
   const { t } = useTranslation()
@@ -36,10 +37,15 @@ export function usePigState(trashInfo, petType = 'pig') {
       if (s.cameraFollowsPig !== undefined) setCameraFollowsPig(s.cameraFollowsPig)
       if (s.unlimitedPigSize !== undefined) setUnlimitedPigSize(s.unlimitedPigSize)
       if (s.followers) {
-        setFollowers(s.followers)
+        // Cấp màu ngẫu nhiên cho heo cũ nếu chưa có thuộc tính hue
+        setFollowers(s.followers.map(f => ({ ...f, hue: f.hue ?? getRandomHue() })))
       } else if (s.followersCount > 0) {
         // Migrate old settings
-        setFollowers(Array.from({ length: s.followersCount }).map(() => ({ id: Math.random().toString(), scale: 0.4 })))
+        setFollowers(Array.from({ length: s.followersCount }).map(() => ({
+          id: Math.random().toString(),
+          scale: 0.4,
+          hue: getRandomHue()
+        })))
       }
     }
   }
@@ -49,7 +55,8 @@ export function usePigState(trashInfo, petType = 'pig') {
     reloadSettings()
   }, [])
 
-  // 2. Shrink pig over time (0.001 per second)
+  // 2. Heo mẹ tự giảm kích thước dần theo thời gian (0.001/giây, không dưới mức mặc định 1.0).
+  // Heo con (followers) KHÔNG bị giảm — scale của chúng chỉ tăng khi ăn (xem pigletGrowths bên dưới).
   useEffect(() => {
     const shrinkInterval = setInterval(() => {
       setPigScale(prev => {
@@ -74,6 +81,37 @@ export function usePigState(trashInfo, petType = 'pig') {
     }, 10000)
     return () => clearInterval(saveInterval)
   }, [])
+
+  // Xử lý khi chim bắt heo con
+  useEffect(() => {
+    const handleBirdCaught = (e) => {
+      const idx = e.detail?.index
+      if (idx !== undefined) {
+        setFollowers(prev => prev.filter((_, i) => i !== idx))
+      }
+    }
+    window.addEventListener('bird-caught-follower', handleBirdCaught)
+    return () => window.removeEventListener('bird-caught-follower', handleBirdCaught)
+  }, [])
+
+  // Xử lý giải cứu heo con khi heo mẹ ăn chim
+  useEffect(() => {
+    const handleRescue = (e) => {
+      const rescued = e.detail?.piglets
+      if (rescued && rescued.length > 0) {
+        setFollowers(prev => [...prev, ...rescued])
+
+        // Hiện bong bóng thoại tức giận
+        const msg = petType === 'duck'
+          ? 'Quắc! Nhả con ta ra! 🦆😡'
+          : 'Oink! Dám bắt con ta à! 🐽😡'
+        setBubble(msg)
+        setTimeout(() => setBubble(null), 4000)
+      }
+    }
+    window.addEventListener('rescue-piglets', handleRescue)
+    return () => window.removeEventListener('rescue-piglets', handleRescue)
+  }, [petType])
 
   // Hiện speech bubble với timeout
   function showBubble(quotes, duration = 3000) {
@@ -111,21 +149,21 @@ export function usePigState(trashInfo, petType = 'pig') {
           { mode: 'idle', weight: 10 },
           { mode: 'walking', weight: 5 },
           { mode: 'sniffing', weight: 5 },
-          { mode: 'sleeping', weight: 80 }, // Ban đêm ngủ rất nhiều
+          { mode: 'sleeping', weight: 80 },
         ]
       } else if (isEvening) {
         return [
           { mode: 'idle', weight: 30 },
           { mode: 'walking', weight: 20 },
           { mode: 'sniffing', weight: 15 },
-          { mode: 'sleeping', weight: 35 }, // Chiều tối hay ngáp ngủ
+          { mode: 'sleeping', weight: 35 },
         ]
       } else {
         return [
           { mode: 'idle', weight: 40 },
           { mode: 'walking', weight: 30 },
           { mode: 'sniffing', weight: 15 },
-          { mode: 'sleeping', weight: 10 }, // Ban ngày lanh lợi
+          { mode: 'sleeping', weight: 10 },
         ]
       }
     }
@@ -142,7 +180,6 @@ export function usePigState(trashInfo, petType = 'pig') {
     }
 
     const interval = setInterval(() => {
-      // Chỉ thay đổi nếu không đang eating/full
       if (mode === 'eating' || mode === 'full') return
 
       const next = randomBehavior()
@@ -160,27 +197,18 @@ export function usePigState(trashInfo, petType = 'pig') {
     return () => clearInterval(interval)
   }, [mode, petType])
 
-  // Hành động ăn — freedKB là số KB đã giải phóng
+  // Hành động ăn
   const triggerEat = useCallback((freedKB) => {
     setMode('eating')
 
-    // Tăng kích thước: đảm bảo luôn có base tăng 5% (0.05) để dễ nhận thấy.
-    // Trước đây cap cứng ở 0.2 khiến bất kỳ lượng rác nào từ ~30-40MB trở lên
-    // đều cho growth gần như giống hệt nhau (dọn 8GB không khác gì 30MB).
-    // Giờ nới rộng hệ số (0.06 thay vì 0.04) và nâng cap an toàn lên 1.5
-    // (chỉ chạm tới ở mức nhiều TB, gần như không bao giờ gặp thực tế) để
-    // độ lớn rác dọn được luôn phản ánh rõ vào độ tăng kích thước.
     const growth = freedKB > 0
       ? 0.05 + Math.min(1.5, Math.log10(1 + freedKB) * 0.06)
       : 0
 
-    // Ngưỡng "nổ bùm": khi đạt 500% (chỉ có thể xảy ra ở chế độ unlimited,
-    // vì chế độ thường bị chặn ở 250%), heo/vịt nổ tách thành nhiều con nhỏ
-    // rồi quay về kích thước gốc (100%) để bắt đầu lại chu kỳ lớn lên.
     const EXPLODE_THRESHOLD = 5.0
 
     const totalEntities = 1 + followersRef.current.length
-    let randomWeights = Array.from({ length: totalEntities }).map(() => Math.random() + 0.1) // Tránh 0
+    let randomWeights = Array.from({ length: totalEntities }).map(() => Math.random() + 0.1)
     const weightSum = randomWeights.reduce((a, b) => a + b, 0)
     randomWeights = randomWeights.map(w => w / weightSum)
 
@@ -213,11 +241,31 @@ export function usePigState(trashInfo, petType = 'pig') {
       }))
 
       if (exploded) {
-        const newPiglets = Array.from({ length: 8 }).map(() => ({ id: Math.random().toString(), scale: 0.4 }))
+        // Sinh heo con mới kèm màu ngẫu nhiên
+        const newPiglets = Array.from({ length: 8 }).map(() => ({
+          id: Math.random().toString(),
+          scale: 0.4,
+          hue: getRandomHue()
+        }))
         updated = [...updated, ...newPiglets].slice(0, 24)
       }
 
-      return updated.filter(f => f.scale < nextMotherScale)
+      // Tách đàn: Heo nhỏ ở lại, heo lớn (>= nextMotherScale) rời đi
+      const remaining = []
+      const departing = []
+      updated.forEach(f => {
+        if (f.scale >= nextMotherScale) {
+          departing.push(f)
+        } else {
+          remaining.push(f)
+        }
+      })
+
+      if (departing.length > 0) {
+        window.dispatchEvent(new CustomEvent('piglets-departing', { detail: { piglets: departing } }))
+      }
+
+      return remaining
     })
     setTotalEaten(prev => prev + (isNaN(freedKB) ? 0 : freedKB))
 
@@ -241,6 +289,7 @@ export function usePigState(trashInfo, petType = 'pig') {
       setTimeout(() => setMode('idle'), 4000)
     }, 5000)
   }, [petType, t])
+
   function forceBubble(text) {
     setBubble(text)
     setTimeout(() => setBubble(null), 4000)
