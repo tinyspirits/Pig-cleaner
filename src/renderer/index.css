@@ -850,17 +850,6 @@ body,
   to { left: -8%; }
 }
 
-@keyframes fishCaughtPop {
-  0% {
-    transform: scale(1) rotate(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1.8) rotate(25deg);
-    opacity: 0;
-  }
-}
-
 .cache-result-size {
   font-family: -apple-system, sans-serif;
   font-size: 28px;

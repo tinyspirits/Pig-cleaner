@@ -1,5 +1,29 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react'
 
+// ─── Sprite cá bơi (pool mode) ───────────────────────────────────────────
+import fishFrame1 from '../assets/Fish_swim_aligned/Fish1.png'
+import fishFrame2 from '../assets/Fish_swim_aligned/Fish2.png'
+import fishFrame3 from '../assets/Fish_swim_aligned/Fish3.png'
+import fishFrame4 from '../assets/Fish_swim_aligned/Fish4.png'
+import fishFrame5 from '../assets/Fish_swim_aligned/Fish5.png'
+import fishFrame6 from '../assets/Fish_swim_aligned/Fish6.png'
+import fishFrame7 from '../assets/Fish_swim_aligned/Fish7.png'
+import fishFrame8 from '../assets/Fish_swim_aligned/Fish8.png'
+
+const FISH_FRAMES = [fishFrame1, fishFrame2, fishFrame3, fishFrame4, fishFrame5, fishFrame6, fishFrame7, fishFrame8]
+
+// Cycling qua 8 frame cá bơi, giống cách PigPet.jsx cycling sprite heo/vịt (useSprite)
+function useFishFrame(fps = 9) {
+  const [frameIdx, setFrameIdx] = useState(0)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFrameIdx(prev => (prev + 1) % FISH_FRAMES.length)
+    }, 1000 / fps)
+    return () => clearInterval(interval)
+  }, [fps])
+  return FISH_FRAMES[frameIdx]
+}
+
 // Số lượng hạt tối đa — giữ thấp để không lag
 const MAX_RAIN = 40
 const MAX_SNOW = 25
@@ -192,6 +216,7 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
   const [fish, setFish] = useState(null)
   const nextFishTimeRef = useRef(0)
   const fishRef = useRef(null)
+  const fishSprite = useFishFrame(9)
 
   useEffect(() => {
     const isHeavyRain = weather?.condition === 'thunderstorm' || poolMode
@@ -377,15 +402,18 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
       {showWind && <WindStreaks windForceX={windForceX} windSpeed={windSpeed} />}
       {showLightning && <LightningFlash />}
       {fish && !fish.caught && (
-        <div
+        <img
           ref={fishRef}
+          src={fishSprite}
           onClick={handleFishCatch}
           title="Bắt cá cho heo/vịt ăn"
+          draggable={false}
           style={{
             position: 'absolute',
             bottom: `${fish.bottomVh}vh`,
             left: fish.fromLeft ? '-8%' : '108%',
-            fontSize: '28px',
+            width: '46px',
+            height: 'auto',
             zIndex: 20,
             pointerEvents: 'auto',
             cursor: 'pointer',
@@ -394,22 +422,26 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
             animation: `${fish.fromLeft ? 'fishSwimLTR' : 'fishSwimRTL'} ${fish.duration}s linear forwards`,
             filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.3))',
           }}
-        >🐟</div>
+        />
       )}
       {fish && fish.caught && fish.frozenLeft != null && (
-        <div
+        <img
+          src={fishSprite}
+          draggable={false}
           style={{
             position: 'fixed',
             left: `${fish.swallowing ? fish.targetLeft : fish.frozenLeft}px`,
             top: `${fish.swallowing ? fish.targetTop : fish.frozenTop}px`,
-            fontSize: '28px',
+            width: '46px',
+            height: 'auto',
             zIndex: 20,
             pointerEvents: 'none',
-            transform: `scaleX(-1) scale(${fish.swallowing ? 0.15 : 1})`,
+            // Quay đầu bơi ngược lại đúng hướng đối lập với lúc đang bơi tới (fromLeft)
+            transform: `${fish.fromLeft ? 'scaleX(-1)' : 'scaleX(1)'} scale(${fish.swallowing ? 0.15 : 1})`,
             opacity: fish.swallowing ? 0 : 1,
             transition: 'left 0.45s ease-in, top 0.45s ease-in, transform 0.45s ease-in, opacity 0.45s ease-in 0.15s',
           }}
-        >🐟</div>
+        />
       )}
     </div>
   )
