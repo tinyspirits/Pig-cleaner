@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { usePigMovement } from '../hooks/usePigMovement'
 import SkyClouds from './SkyClouds'
@@ -219,9 +219,18 @@ function DepartingPiglet({ piglet, onDone, petType }) {
     return () => clearTimeout(tId)
   }, [])
 
+  // Dùng ref để giữ tham chiếu onDone mới nhất, KHÔNG đưa onDone vào dependency
+  // array của effect bên dưới. Nếu không, chỉ cần component cha (PigPet) re-render
+  // (xảy ra mỗi frame vì vị trí heo cập nhật liên tục) và tạo ra một hàm onDone mới,
+  // effect sẽ bị huỷ + khởi động lại liên tục TRƯỚC KHI KỊP CHẠY 1 FRAME NÀO -> heo/vịt
+  // con đứng khựng, kẹt trên màn hình. Cách này an toàn dù cha có nhớ memoize hay không.
+  const onDoneRef = useRef(onDone)
+  useEffect(() => { onDoneRef.current = onDone }, [onDone])
+
   useEffect(() => {
     let rafId
     let lastTime = performance.now()
+    let finished = false
     const speed = 70 // Tốc độ bước đi ra lề
 
     const loop = (time) => {
@@ -231,17 +240,21 @@ function DepartingPiglet({ piglet, onDone, petType }) {
 
       setPos(prev => {
         const nextX = prev.x + (piglet.facing * speed * dt)
-        if (piglet.facing === 1 && nextX > window.innerWidth + 200) {
-          onDone(piglet.departId)
-        } else if (piglet.facing === -1 && nextX < -200) {
-          onDone(piglet.departId)
+        if (!finished) {
+          if (piglet.facing === 1 && nextX > window.innerWidth + 200) {
+            finished = true
+            onDoneRef.current(piglet.departId)
+          } else if (piglet.facing === -1 && nextX < -200) {
+            finished = true
+            onDoneRef.current(piglet.departId)
+          }
         }
         return { x: nextX, y: prev.y }
       })
     }
     rafId = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(rafId)
-  }, [piglet.facing, piglet.departId, onDone])
+  }, [piglet.facing, piglet.departId])
 
   const colorFilter = piglet.hue !== undefined ? ` hue-rotate(${piglet.hue}deg)` : ''
 
@@ -296,6 +309,10 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
   useEffect(() => { posRef.current = position }, [position])
 
   const [departingList, setDepartingList] = useState([])
+
+  const handleDepartDone = useCallback((id) => {
+    setDepartingList(prev => prev.filter(x => x.departId !== id))
+  }, [])
 
   useEffect(() => {
     const handleDeparting = (e) => {
@@ -518,9 +535,7 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
 
       {/* Render heo con ĐÃ LỚN VÀ RỜI ĐI */}
       {departingList.map(p => (
-        <DepartingPiglet key={p.departId} piglet={p} petType={petType} onDone={(id) => {
-          setDepartingList(prev => prev.filter(x => x.departId !== id))
-        }} />
+        <DepartingPiglet key={p.departId} piglet={p} petType={petType} onDone={handleDepartDone} />
       ))}
 
       {explosionEvent && (

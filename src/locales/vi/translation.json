@@ -116,7 +116,9 @@
     "soundEnabled": "Bật tiếng kêu khi dọn rác",
     "petType": "Loại thú cưng",
     "pig": "Heo",
-    "duck": "Vịt"
+    "duck": "Vịt",
+    "startup": "Khởi động",
+    "openAtLogin": "Tự khởi động khi đăng nhập máy (Windows/macOS)"
   },
   "statsPanel": {
     "title": "{{pet}} Thống Kê",
@@ -196,5 +198,8 @@
   },
   "fish": {
     "caught": "🐟 Ngon quá, cảm ơn nha!"
+  },
+  "bird": {
+    "revenge": "🐦 Dám bắt heo con của tao à? Trả thù cho con!"
   }
 }

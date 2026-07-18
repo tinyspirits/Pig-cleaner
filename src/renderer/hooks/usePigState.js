@@ -250,11 +250,12 @@ export function usePigState(trashInfo, petType = 'pig') {
         updated = [...updated, ...newPiglets].slice(0, 24)
       }
 
-      // Tách đàn: Heo nhỏ ở lại, heo lớn (>= nextMotherScale) rời đi
+      // Tách đàn: Heo nhỏ ở lại, heo đã đạt kích thước trưởng thành (scale >= 1.0) rời đi
+      const ADULT_SCALE = 1.0
       const remaining = []
       const departing = []
       updated.forEach(f => {
-        if (f.scale >= nextMotherScale) {
+        if (f.scale >= ADULT_SCALE) {
           departing.push(f)
         } else {
           remaining.push(f)

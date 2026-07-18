@@ -36,6 +36,8 @@ const DEFAULTS = {
   petType: 'pig',
   // Follower piglets array
   followers: [],
+  // Tự khởi động cùng hệ điều hành (Windows/macOS)
+  openAtLogin: false,
 }
 
 function load() {

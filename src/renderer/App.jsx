@@ -170,12 +170,17 @@ function App() {
     return () => window.removeEventListener('earthquake', handleEarthquake)
   }, [])
 
-  // Bắt được cá trong hồ (pool mode) -> heo/vịt ăn, tăng kích thước nhẹ
+  // Bắt được cá/chim trong hồ (pool mode) -> heo/vịt ăn, tăng kích thước
   useEffect(() => {
     const handleFishCaught = (e) => {
       const freedKB = e.detail?.freedKB || 5 * 1024
+      const type = e.detail?.type
       triggerEat(freedKB)
-      forceBubble(t('fish.caught') || '🐟')
+      if (type === 'bird') {
+        forceBubble(t('bird.revenge') || '🐦 Trả thù cho heo con!')
+      } else {
+        forceBubble(t('fish.caught') || '🐟')
+      }
     }
     window.addEventListener('fish-caught', handleFishCaught)
     return () => window.removeEventListener('fish-caught', handleFishCaught)

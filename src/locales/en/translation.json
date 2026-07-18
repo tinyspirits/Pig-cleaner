@@ -116,7 +116,9 @@
     "soundEnabled": "Enable sound when cleaning",
     "petType": "Pet Type",
     "pig": "Pig",
-    "duck": "Duck"
+    "duck": "Duck",
+    "startup": "Startup",
+    "openAtLogin": "Start automatically when you log in (Windows/macOS)"
   },
   "statsPanel": {
     "title": "{{pet}} Stats",
@@ -197,5 +199,8 @@
   },
   "fish": {
     "caught": "🐟 Yum, thanks!"
+  },
+  "bird": {
+    "revenge": "🐦 You dared take my piglet? Revenge!"
   }
 }

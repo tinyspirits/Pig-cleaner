@@ -116,7 +116,9 @@
     "soundEnabled": "掃除時にサウンドを有効にする",
     "petType": "ペットの種類",
     "pig": "豚",
-    "duck": "アヒル"
+    "duck": "アヒル",
+    "startup": "起動",
+    "openAtLogin": "ログイン時に自動起動する（Windows/macOS）"
   },
   "statsPanel": {
     "title": "{{pet}}の統計",
@@ -197,5 +199,8 @@
   },
   "fish": {
     "caught": "🐟 おいしい、ありがとう！"
+  },
+  "bird": {
+    "revenge": "🐦 子豚を取ったな？仕返しだ！"
   }
 }

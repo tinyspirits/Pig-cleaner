@@ -313,6 +313,14 @@ ipcMain.handle('save-settings', (_, newSettings) => {
       mainWindow.setAlwaysOnTop(true, 'floating')
     }
   }
+
+  // Bật/tắt khởi động cùng hệ điều hành (macOS/Windows)
+  if (newSettings.openAtLogin !== undefined && newSettings.openAtLogin !== prev.openAtLogin) {
+    try {
+      app.setLoginItemSettings({ openAtLogin: !!newSettings.openAtLogin })
+    } catch { /* Linux hoặc môi trường không hỗ trợ - bỏ qua */ }
+  }
+
   return true
 })
 
@@ -344,6 +352,11 @@ if (!gotTheLock) {
     if (savedSettingsInit.language) {
       i18n.changeLanguage(savedSettingsInit.language)
     }
+
+    // Áp dụng cài đặt khởi động cùng hệ điều hành (macOS/Windows) đã lưu trước đó
+    try {
+      app.setLoginItemSettings({ openAtLogin: !!savedSettingsInit.openAtLogin })
+    } catch { /* Linux hoặc môi trường không hỗ trợ - bỏ qua */ }
 
     createWindow()
     createTray()

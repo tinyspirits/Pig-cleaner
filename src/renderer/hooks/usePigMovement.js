@@ -29,6 +29,8 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
   const swimPhaseRef = useRef(0)
   const nextSwimChangeRef = useRef(0)
   const hoverWanderRef = useRef(0)
+  const submergedTimeRef = useRef(0)
+  const isSuffocatingRef = useRef(false)
   const hasImpactedRef = useRef(true)
   const lastIsDraggingRef = useRef(false)
   const poolModeRef = useRef(poolMode)
@@ -137,6 +139,7 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
         swimActionRef.current = 'none'
         setSwimAction('none')
         swimPhaseRef.current = 0 // Quên cách bơi khi cạn nước
+        isSuffocatingRef.current = false
       } else if (isInWater && state.isDragging) {
         // Cập nhật trạng thái ngay khi bị người chơi kéo chìm xuống hoặc nhấc lên
         if (state.y > floatingY + 10 && ['surface', 'rising', 'hover', 'struggling'].includes(swimActionRef.current)) {
@@ -146,10 +149,36 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
           const nextAction = swimPhaseRef.current === 0 ? 'surface' : 'rising'
           swimActionRef.current = nextAction
           setSwimAction(nextAction)
+          isSuffocatingRef.current = false // Được kéo lên giữa chừng lúc đang ngất -> coi như đã cứu, huỷ trạng thái ngạt
         }
       }
 
       currentFloorRef.current = !isInWater || swimActionRef.current === 'bottom' || swimActionRef.current === 'diving' ? 0 : floatingY
+
+      // ─── Ngạt nước nếu ở dưới nước quá lâu (kể cả khi bị người chơi giữ/kéo chìm) ───
+      // Chỉ áp dụng khi ĐÃ biết bơi (swimPhaseRef === 1); giai đoạn học bơi ban đầu đã có
+      // kịch bản chết đuối riêng (struggling -> drowning_sink -> drowning_bottom) ở trên.
+      if (isInWater && state.y > floatingY + 20) {
+        submergedTimeRef.current += intervalMs
+      } else {
+        submergedTimeRef.current = 0
+      }
+
+      const SUFFOCATE_MS = 16000 // ~16 giây liên tục dưới nước sẽ bắt đầu ngạt
+      if (
+        !isSuffocatingRef.current &&
+        swimPhaseRef.current === 1 &&
+        submergedTimeRef.current > SUFFOCATE_MS &&
+        swimActionRef.current !== 'struggling' &&
+        swimActionRef.current !== 'drowning_sink' &&
+        swimActionRef.current !== 'drowning_bottom'
+      ) {
+        isSuffocatingRef.current = true
+        swimActionRef.current = 'struggling'
+        setSwimAction('struggling')
+        nextSwimChangeRef.current = performance.now() + 2000
+        submergedTimeRef.current = 0
+      }
 
       if (state.isDragging && !lastIsDraggingRef.current) {
         hasImpactedRef.current = false
@@ -184,7 +213,26 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
         // AI quyết định lặn/ngoi
         if (isInWater) {
           const now = performance.now()
-          if (swimPhaseRef.current === 0) {
+          if (isSuffocatingRef.current) {
+            // Đang ngạt: vùng vẫy -> chìm dần -> ngất nằm ở đáy -> tỉnh lại bơi lên
+            if (now > nextSwimChangeRef.current) {
+              if (swimActionRef.current === 'struggling') {
+                swimActionRef.current = 'drowning_sink'
+                setSwimAction('drowning_sink')
+                nextSwimChangeRef.current = now + 2500
+              } else if (swimActionRef.current === 'drowning_sink') {
+                swimActionRef.current = 'drowning_bottom'
+                setSwimAction('drowning_bottom')
+                nextSwimChangeRef.current = now + 4000 + Math.random() * 2000 // nằm ngất một lúc
+              } else if (swimActionRef.current === 'drowning_bottom') {
+                // Tỉnh lại, bơi ngược lên mặt nước
+                isSuffocatingRef.current = false
+                swimActionRef.current = 'rising'
+                setSwimAction('rising')
+                nextSwimChangeRef.current = now + 900 + Math.random() * 1600
+              }
+            }
+          } else if (swimPhaseRef.current === 0) {
             // Phase học bơi
             if (floodLevelRef.current < 50 && swimActionRef.current !== 'struggling' && swimActionRef.current !== 'drowning_sink' && swimActionRef.current !== 'drowning_bottom') {
               if (swimActionRef.current !== 'surface') {

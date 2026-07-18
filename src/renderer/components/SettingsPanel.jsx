@@ -24,6 +24,7 @@ export default function SettingsPanel({ onClose }) {
     poolMode: false,
     soundEnabled: false,
     language: i18n.language || 'en',
+    openAtLogin: false,
   })
   const [categories, setCategories] = useState([])
   const [saving, setSaving] = useState(false)
@@ -192,6 +193,22 @@ export default function SettingsPanel({ onClose }) {
               <option value="desktop">{t('settingsPanel.desktopOnly')}</option>
             </select>
           </div>
+
+          {isElectron && (
+            <div className="settings-section">
+              <div className="settings-section-title">🚀 {t('settingsPanel.startup')}</div>
+              <label className="cache-item">
+                <input
+                  type="checkbox"
+                  checked={settings.openAtLogin === true}
+                  onChange={e => setSettings(prev => ({ ...prev, openAtLogin: e.target.checked }))}
+                />
+                <span className="cache-item-label">
+                  {t('settingsPanel.openAtLogin')}
+                </span>
+              </label>
+            </div>
+          )}
 
           <div className="settings-section">
             <div className="settings-section-title">🗂️ {t('settingsPanel.cleanItemsList', 'Clean these items')}</div>
