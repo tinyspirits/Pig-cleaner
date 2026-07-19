@@ -164,10 +164,9 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
         submergedTimeRef.current = 0
       }
 
-      const SUFFOCATE_MS = 16000 // ~16 giây liên tục dưới nước sẽ bắt đầu ngạt
+      const SUFFOCATE_MS = 10000 // ~10 giây liên tục dưới nước sẽ bắt đầu ngạt
       if (
         !isSuffocatingRef.current &&
-        swimPhaseRef.current === 1 &&
         submergedTimeRef.current > SUFFOCATE_MS &&
         swimActionRef.current !== 'struggling' &&
         swimActionRef.current !== 'drowning_sink' &&

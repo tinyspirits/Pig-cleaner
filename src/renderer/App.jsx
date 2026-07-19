@@ -177,14 +177,18 @@ function App() {
       const type = e.detail?.type
       triggerEat(freedKB)
       if (type === 'bird') {
-        forceBubble(t('bird.revenge') || '🐦 Trả thù cho heo con!')
+        const key = weatherSettings.petType === 'duck' ? 'duck.revenge' : 'pig.revenge'
+        const def = weatherSettings.petType === 'duck'
+          ? '🐦 Dám bắt vịt con của tao à? Trả thù cho con!'
+          : '🐦 Dám bắt heo con của tao à? Trả thù cho con!'
+        forceBubble(t(key, def))
       } else {
         forceBubble(t('fish.caught') || '🐟')
       }
     }
     window.addEventListener('fish-caught', handleFishCaught)
     return () => window.removeEventListener('fish-caught', handleFishCaught)
-  }, [triggerEat, forceBubble])
+  }, [triggerEat, forceBubble, weatherSettings.petType])
 
   // Setup IPC listeners
   useEffect(() => {

@@ -260,7 +260,7 @@ function DepartingPiglet({ piglet, onDone, petType }) {
 
   return (
     <div style={{
-      position: 'absolute', bottom: 0, left: 0, pointerEvents: 'none', zIndex: 8,
+      position: 'absolute', bottom: 0, left: 0, pointerEvents: 'none', zIndex: 25,
       transform: `translate(${pos.x}px, ${pos.y}px) scale(${piglet.scale})`
     }}>
       {bubble && (

@@ -311,23 +311,36 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
     return () => clearTimeout(t)
   }, [fish])
 
-  // Hàm xử lý chung khi bị nuốt
-  const catchPrey = (currentPrey, setPrey, preyRef, type = 'fish') => {
+  // Hàm xử lý chung khi bị nuốt. predatorEl PHẢI được truyền tường minh (heo mẹ HOẶC
+  // chim) - trước đây hàm này luôn tự query heo mẹ bất kể ai gọi, khiến cá bị chim bắt
+  // vẫn "chui vào mồm heo" (bug đã báo).
+  const catchPrey = (currentPrey, setPrey, preyRef, type = 'fish', predatorEl = null) => {
     if (!currentPrey || currentPrey.caught) return;
     const rect = preyRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    const target = document.querySelector('.pig-container:not(.pig-follower)')?.getBoundingClientRect();
+    const target = (predatorEl || document.querySelector('.pig-container:not(.pig-follower)'))?.getBoundingClientRect();
 
-    setPrey({
-      ...currentPrey,
-      caught: true,
-      swallowing: false,
-      frozenLeft: rect.left,
-      frozenTop: rect.top,
-      targetLeft: target ? target.left + target.width / 2 : rect.left,
-      targetTop: target ? target.top + target.height / 2 : rect.top,
+    let actuallyCaught = false
+    setPrey(prev => {
+      // Functional update: chống trường hợp heo VÀ chim cùng chạm con mồi trong cùng
+      // 1 frame (vd chim vừa bắt cá xong, ngay sau đó code kiểm tra heo-vs-cá trong
+      // cùng tick cũng chạy với closure `fish` cũ chưa kịp cập nhật) - chỉ người gọi
+      // ĐẦU TIÊN mới thực sự "thắng", các lần gọi sau trong cùng frame sẽ bị bỏ qua.
+      if (!prev || prev.caught) return prev
+      actuallyCaught = true
+      return {
+        ...prev,
+        caught: true,
+        swallowing: false,
+        frozenLeft: rect.left,
+        frozenTop: rect.top,
+        targetLeft: target ? target.left + target.width / 2 : rect.left,
+        targetTop: target ? target.top + target.height / 2 : rect.top,
+      }
     });
+
+    if (!actuallyCaught) return
 
     const freedKB = type === 'bird' ? randomBetween(20, 50) * 1024 : randomBetween(2, 10) * 1024;
     window.dispatchEvent(new CustomEvent('fish-caught', { detail: { freedKB, type } }));
@@ -398,11 +411,15 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
               }
             }
           } else {
-            const p = BIRD_PHASES[st.phase]
+            const isHostagePatrol = st.phase === 'patrol' && st.pigletsEaten.length > 0
+            const p = isHostagePatrol ? BIRD_PHASES.rising : BIRD_PHASES[st.phase]
             st.frameIdx++
             if (st.frameIdx > p.end) {
-              // Giữ nguyên frame cuối khi đang lặn
-              if (st.phase === 'diving') {
+              if (isHostagePatrol) {
+                // Đang giữ con tin -> lặp lại trong khoảng frame tha mồi (rising)
+                st.frameIdx = p.start
+              } else if (st.phase === 'diving') {
+                // Giữ nguyên frame cuối khi đang lặn
                 st.frameIdx = p.end
               } else if (st.phase === 'catching') {
                 st.phase = 'rising'
@@ -421,8 +438,11 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
         }
 
         if (st.phase === 'patrol') {
-          // Luôn ưu tiên cá trước (nếu đang có cá bơi, bất kể trước đó chim "định" làm gì)
-          if (fishRef.current && !fish?.caught) {
+          if (st.pigletsEaten.length > 0) {
+            // ĐANG GIỮ CON TIN (đã bắt heo/vịt con) -> không đi săn/mổ thóc gì thêm nữa,
+            // chỉ bay vòng vòng tha mồi trong mỏ, cho heo/vịt mẹ cơ hội đuổi theo cứu con.
+          } else if (fishRef.current && !fish?.caught) {
+            // Luôn ưu tiên cá trước (nếu đang có cá bơi, bất kể trước đó chim "định" làm gì)
             const fishRect = fishRef.current.getBoundingClientRect()
             if (Math.abs(st.x - (fishRect.left + fishRect.width / 2)) < 150) {
               st.phase = 'diving'
@@ -450,7 +470,9 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
               st.phase = 'diving'
               st.frameIdx = BIRD_PHASES.diving.start
               st.vy = 400
-              st.targetY = window.innerHeight - 50
+              // Điểm đáp: trên mặt đất, hoặc trên mặt nước nếu đang ngập (tránh "chìm tỏm"
+              // xuống dưới nước khi lao xuống mổ thóc/bắt heo con lúc pool mode đang ngập cao)
+              st.targetY = window.innerHeight - 50 - (waterLevelRef.current / 100) * window.innerHeight
               if (Math.random() < 0.65) {
                 st.targetGrain = false
                 st.targetPigletId = targetPigletEl.getAttribute('data-index')
@@ -462,7 +484,7 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
               st.phase = 'diving'
               st.frameIdx = BIRD_PHASES.diving.start
               st.vy = 400
-              st.targetY = window.innerHeight - 50
+              st.targetY = window.innerHeight - 50 - (waterLevelRef.current / 100) * window.innerHeight
               st.targetGrain = true
               st.targetPigletId = undefined
               st.nextGrainTime = Date.now() + randomBetween(10000, 20000)
@@ -496,7 +518,7 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
             const overlap = !(bRect.right < fRect.left || bRect.left > fRect.right || bRect.bottom < fRect.top || bRect.top > fRect.bottom)
             if (overlap) {
               hitFish = true
-              catchPrey(fish, setFish, fishRef, 'fish')
+              catchPrey(fish, setFish, fishRef, 'fish', birdRef.current)
               st.scale += 0.15
             }
           } else if (st.targetPigletId !== undefined) {
@@ -528,7 +550,11 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
 
           if (hitFish || hitPiglet) {
             st.vy = 0
-            st.vx *= 0.5
+            // Giữ nguyên hướng đang bám đuổi lúc bắt được (đã đúng hướng thực tế vừa di
+            // chuyển tới), chỉ chuẩn hoá lại cường độ + đồng bộ fromLeft để hình không bị
+            // lật ngược chiều đang bay (bug "bay ngược" đã báo).
+            st.vx = Math.sign(st.vx || 1) * randomBetween(150, 200)
+            st.fromLeft = st.vx > 0
             st.phase = 'catching'
             st.frameIdx = BIRD_PHASES.catching.start
           } else if (st.targetGrain && st.y >= st.targetY) {
@@ -555,7 +581,9 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
           if (st.y < 50) {
             st.vy = 0
             st.phase = 'patrol'
-            st.frameIdx = BIRD_PHASES.patrol.start
+            // Nếu vẫn đang giữ con tin, giữ nguyên frame tha mồi (rising) thay vì
+            // nhảy về frame patrol trống miệng
+            st.frameIdx = st.pigletsEaten.length > 0 ? BIRD_PHASES.rising.start : BIRD_PHASES.patrol.start
           }
         }
 

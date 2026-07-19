@@ -156,7 +156,8 @@
       "I'm getting fat! 🐖"
     ],
     "yummy": "Yummy!",
-    "explode": "BOOM! The pig burst into a litter of piglets! 🐷💥"
+    "explode": "BOOM! The pig burst into a litter of piglets! 🐷💥",
+    "revenge": "🐦 You dared take my piglet? Revenge!"
   },
   "duck": {
     "sniffQuotes": [
@@ -181,7 +182,8 @@
     ],
     "yummy": "Quack, delicious!",
     "cleaning": "Eating trash... 🦆",
-    "explode": "BOOM! The duck burst into a brood of ducklings! 🦆💥"
+    "explode": "BOOM! The duck burst into a brood of ducklings! 🦆💥",
+    "revenge": "🐦 You dared take my duckling? Revenge!"
   },
   "cacheCategories": {
     "trash": "🗑️ Trash",
@@ -199,8 +201,5 @@
   },
   "fish": {
     "caught": "🐟 Yum, thanks!"
-  },
-  "bird": {
-    "revenge": "🐦 You dared take my piglet? Revenge!"
   }
 }

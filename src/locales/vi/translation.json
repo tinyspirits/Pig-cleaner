@@ -156,7 +156,8 @@
       "Béo ra rồi nha 🐖"
     ],
     "yummy": "Ngon quá!",
-    "explode": "BÙM! Heo tách thành cả đàn heo con! 🐷💥"
+    "explode": "BÙM! Heo tách thành cả đàn heo con! 🐷💥",
+    "revenge": "🐦 Dám bắt heo con của tao à? Trả thù cho con!"
   },
   "duck": {
     "sniffQuotes": [
@@ -180,7 +181,8 @@
     ],
     "yummy": "Quắc, ngon!",
     "cleaning": "Đang ăn rác... 🦆",
-    "explode": "BÙM! Vịt tách thành cả đàn vịt con! 🦆💥"
+    "explode": "BÙM! Vịt tách thành cả đàn vịt con! 🦆💥",
+    "revenge": "🐦 Dám bắt vịt con của tao à? Trả thù cho con!"
   },
   "cacheCategories": {
     "trash": "🗑️ Thùng rác",
@@ -198,8 +200,5 @@
   },
   "fish": {
     "caught": "🐟 Ngon quá, cảm ơn nha!"
-  },
-  "bird": {
-    "revenge": "🐦 Dám bắt heo con của tao à? Trả thù cho con!"
   }
 }
