@@ -118,7 +118,9 @@
     "pig": "Heo",
     "duck": "Vịt",
     "startup": "Khởi động",
-    "openAtLogin": "Tự khởi động khi đăng nhập máy (Windows/macOS)"
+    "openAtLogin": "Tự khởi động khi đăng nhập máy (Windows/macOS)",
+    "pigSize": "Kích thước",
+    "pigSizeHint": "chỉ có thể thu nhỏ, không thể vượt quá kích thước hiện tại"
   },
   "statsPanel": {
     "title": "{{pet}} Thống Kê",

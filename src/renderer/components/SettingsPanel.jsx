@@ -11,8 +11,12 @@ const INTERVAL_OPTIONS = [
   { value: 360, label: '6 tiếng' },
 ]
 
-export default function SettingsPanel({ onClose }) {
+export default function SettingsPanel({ onClose, pigScale = 1.0, onChangePigScale }) {
   const { t, i18n } = useTranslation()
+  // Chốt lại mốc tối đa NGAY LÚC MỞ panel - kéo chỉ được nhỏ hơn/bằng size hiện tại
+  // lúc mở, không cho kéo vượt quá (tránh dùng thanh trượt để "gian lận" làm to thêm).
+  const [maxScale] = useState(() => Math.max(pigScale, 0.01))
+  const [scaleInput, setScaleInput] = useState(pigScale)
   const [settings, setSettings] = useState({
     autoCleanInterval: 0,
     autoCleanCategories: ['trash', 'temp'],
@@ -180,6 +184,28 @@ export default function SettingsPanel({ onClose }) {
               <option value={240}>{t('settingsPanel.every4h')}</option>
               <option value={480}>{t('settingsPanel.every8h')}</option>
             </select>
+          </div>
+
+          <div className="settings-section">
+            <div className="settings-section-title">📏 {t('settingsPanel.pigSize', 'Kích thước')}</div>
+            <input
+              type="range"
+              className="settings-select"
+              min={0}
+              max={maxScale}
+              step={0.01}
+              value={Math.min(scaleInput, maxScale)}
+              onChange={e => {
+                const val = parseFloat(e.target.value)
+                setScaleInput(val)
+                onChangePigScale?.(val)
+              }}
+              style={{ width: '100%' }}
+            />
+            <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px', textAlign: 'center' }}>
+              {Math.round((Math.min(scaleInput, maxScale) / maxScale) * 100)}%
+              {' '}({t('settingsPanel.pigSizeHint', 'chỉ có thể thu nhỏ, không thể vượt quá kích thước hiện tại')})
+            </div>
           </div>
 
           <div className="settings-section">

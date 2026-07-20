@@ -118,7 +118,9 @@
     "pig": "豚",
     "duck": "アヒル",
     "startup": "起動",
-    "openAtLogin": "ログイン時に自動起動する（Windows/macOS）"
+    "openAtLogin": "ログイン時に自動起動する（Windows/macOS）",
+    "pigSize": "サイズ",
+    "pigSizeHint": "縮小のみ可能で、現在のサイズを超えることはできません"
   },
   "statsPanel": {
     "title": "{{pet}}の統計",

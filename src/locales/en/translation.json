@@ -118,7 +118,9 @@
     "pig": "Pig",
     "duck": "Duck",
     "startup": "Startup",
-    "openAtLogin": "Start automatically when you log in (Windows/macOS)"
+    "openAtLogin": "Start automatically when you log in (Windows/macOS)",
+    "pigSize": "Size",
+    "pigSizeHint": "can only shrink, cannot exceed current size"
   },
   "statsPanel": {
     "title": "{{pet}} Stats",

@@ -296,5 +296,17 @@ export function usePigState(trashInfo, petType = 'pig') {
     setTimeout(() => setBubble(null), 4000)
   }
 
-  return { mode, bubble, pigScale, totalEaten, cameraFollowsPig, reloadSettings, triggerEat, setMode, forceBubble, explosionEvent, clearExplosionEvent: () => setExplosionEvent(null), followers }
+  // Cập nhật pigScale VÀ lưu ngay xuống settings (không đợi auto-save mỗi 10s),
+  // để tránh trường hợp người dùng kéo thanh trượt kích thước trong Settings rồi
+  // đóng panel ngay -> reloadSettings() đọc lại giá trị cũ chưa kịp lưu, ghi đè mất.
+  const setPigScaleAndSave = async (newScale) => {
+    setPigScale(newScale)
+    if (window.pigAPI) {
+      const s = await window.pigAPI.getSettings()
+      s.pigScale = newScale
+      await window.pigAPI.saveSettings(s)
+    }
+  }
+
+  return { mode, bubble, pigScale, setPigScale: setPigScaleAndSave, totalEaten, cameraFollowsPig, reloadSettings, triggerEat, setMode, forceBubble, explosionEvent, clearExplosionEvent: () => setExplosionEvent(null), followers }
 }
