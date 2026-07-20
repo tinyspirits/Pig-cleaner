@@ -32,7 +32,7 @@ export function usePigState(trashInfo, petType = 'pig') {
   const reloadSettings = async () => {
     if (window.pigAPI) {
       const s = await window.pigAPI.getSettings()
-      if (s.pigScale) setPigScale(s.pigScale)
+      if (s.pigScale !== undefined && s.pigScale !== null) setPigScale(s.pigScale)
       if (s.totalEaten) setTotalEaten(s.totalEaten)
       if (s.cameraFollowsPig !== undefined) setCameraFollowsPig(s.cameraFollowsPig)
       if (s.unlimitedPigSize !== undefined) setUnlimitedPigSize(s.unlimitedPigSize)
@@ -55,13 +55,17 @@ export function usePigState(trashInfo, petType = 'pig') {
     reloadSettings()
   }, [])
 
-  // 2. Heo mẹ tự giảm kích thước dần theo thời gian (0.001/giây, không dưới mức mặc định 1.0).
+  // 2. Heo mẹ tự giảm kích thước dần theo thời gian (0.001/giây).
   // Heo con (followers) KHÔNG bị giảm — scale của chúng chỉ tăng khi ăn (xem pigletGrowths bên dưới).
+  // Sàn chỉ là 0.05 (an toàn, tránh về 0/âm) - KHÔNG cố định ở 1.0 nữa, vì nếu người chơi
+  // chủ động kéo kích thước xuống dưới 1.0 bằng slider trong Settings, cơ chế tự giảm này
+  // (chạy mỗi giây) sẽ ngay lập tức đẩy nó bật ngược lên 1.0, khiến slider trông như "không
+  // có tác dụng" (bug đã báo: kéo xong lưu nhưng heo vẫn cố định kích thước).
   useEffect(() => {
     const shrinkInterval = setInterval(() => {
       setPigScale(prev => {
         if (isNaN(prev)) return 1.0;
-        return Math.max(1.0, prev - 0.001)
+        return Math.max(0.05, prev - 0.001)
       })
     }, 1000)
     return () => clearInterval(shrinkInterval)
@@ -217,11 +221,13 @@ export function usePigState(trashInfo, petType = 'pig') {
 
     let nextMotherScale = scaleRef.current + (isNaN(motherGrowth) ? 0 : motherGrowth)
     let exploded = false;
+    let motherScaleAtBirth = nextMotherScale // Kích thước heo mẹ NGAY TRƯỚC khi nổ (dùng để tính size heo con mới)
 
     if (unlimitedRef.current) {
       if (isNaN(nextMotherScale)) nextMotherScale = 1.0;
       if (nextMotherScale >= EXPLODE_THRESHOLD) {
         exploded = true;
+        motherScaleAtBirth = nextMotherScale
         nextMotherScale = 1.0;
       }
     } else {
@@ -241,10 +247,13 @@ export function usePigState(trashInfo, petType = 'pig') {
       }))
 
       if (exploded) {
-        // Sinh heo con mới kèm màu ngẫu nhiên
+        // Sinh heo con mới kèm màu ngẫu nhiên. Kích thước ban đầu TỈ LỆ THEO kích thước
+        // heo mẹ lúc sinh (thay vì luôn cố định 0.4 bất kể mẹ to hay nhỏ) - heo mẹ càng
+        // to thì đàn con sinh ra càng to, mẹ nhỏ (vd bị kéo nhỏ qua Settings) thì con nhỏ.
+        const babyScale = Math.max(0.1, motherScaleAtBirth * 0.4)
         const newPiglets = Array.from({ length: 8 }).map(() => ({
           id: Math.random().toString(),
-          scale: 0.4,
+          scale: babyScale,
           hue: getRandomHue()
         }))
         updated = [...updated, ...newPiglets].slice(0, 24)

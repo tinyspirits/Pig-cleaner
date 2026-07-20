@@ -75,14 +75,13 @@ function buildTrayMenu() {
   const isDuck = settings.petType === 'duck'
   const weatherLabel = w.description || i18n.t('weather.loading')
   const tempLabel = w.temperature !== null && w.temperature !== undefined ? ` (${Math.round(w.temperature)}°C)` : ''
-  const upcomingLabel = w.upcomingCondition ? `${i18n.t('weather.upcoming')}${
-    {
-      rain: i18n.t('weather.rainShort'),
-      thunderstorm: i18n.t('weather.stormShort'),
-      drizzle: i18n.t('weather.drizzleShort'),
-      snow: i18n.t('weather.snowShort')
-    }[w.upcomingCondition] || ''
-  }` : ''
+  const upcomingLabel = w.upcomingCondition ? `${i18n.t('weather.upcoming')}${{
+    rain: i18n.t('weather.rainShort'),
+    thunderstorm: i18n.t('weather.stormShort'),
+    drizzle: i18n.t('weather.drizzleShort'),
+    snow: i18n.t('weather.snowShort')
+  }[w.upcomingCondition] || ''
+    }` : ''
 
   const cityLabel = w.city ? ` (${w.city})` : ''
   const contextMenu = Menu.buildFromTemplate([
@@ -163,7 +162,7 @@ function buildTrayMenu() {
 function createTray() {
   const settings = settingsStore.load()
   const isDuck = settings.petType === 'duck'
-  
+
   const iconName = isDuck ? 'duck-tray-icon.png' : 'tray-icon.png'
   const iconPath = isDev
     ? path.join(__dirname, `../../src/renderer/assets/${iconName}`)
@@ -172,7 +171,7 @@ function createTray() {
   let image = nativeImage.createFromPath(iconPath)
   // Resize to standard macOS tray height (18px) and preserve aspect ratio
   image = image.resize({ height: 18 })
-  
+
   tray = new Tray(image)
   buildTrayMenu()
 }
@@ -211,6 +210,10 @@ ipcMain.handle('set-ignore-mouse', (_, ignore) => {
   if (mainWindow) {
     mainWindow.setIgnoreMouseEvents(ignore, { forward: true })
   }
+})
+
+ipcMain.on('test-log', (event, message) => {
+  console.log('\n🚀 [LOG TỪ REACT]:', message, '\n')
 })
 
 ipcMain.handle('get-screen-size', () => {
@@ -278,7 +281,7 @@ ipcMain.handle('save-settings', (_, newSettings) => {
   if (newSettings.language && newSettings.language !== prev.language) {
     i18n.changeLanguage(newSettings.language)
   }
-  
+
   // Update tray if language or petType changed
   if ((newSettings.language !== prev.language) || (newSettings.petType !== prev.petType)) {
     if (tray && !tray.isDestroyed()) {
@@ -287,11 +290,11 @@ ipcMain.handle('save-settings', (_, newSettings) => {
       const iconPath = isDev
         ? path.join(__dirname, `../../src/renderer/assets/${iconName}`)
         : path.join(process.resourcesPath, `assets/${iconName}`)
-      
+
       let image = nativeImage.createFromPath(iconPath)
       image = image.resize({ height: 18 })
       tray.setImage(image)
-      
+
       buildTrayMenu()
     }
   }
@@ -362,58 +365,58 @@ if (!gotTheLock) {
     createTray()
     setupAutoClean()
 
-  // Tự động thay đổi kích thước cửa sổ khi thanh Dock thay đổi trạng thái (hiện/ẩn)
-  screen.on('display-metrics-changed', (event, display, changedMetrics) => {
-    if (mainWindow && !mainWindow.isDestroyed() && changedMetrics.includes('workArea')) {
-      const { width, height, x, y } = display.workArea
-      mainWindow.setBounds({ width, height, x, y })
+    // Tự động thay đổi kích thước cửa sổ khi thanh Dock thay đổi trạng thái (hiện/ẩn)
+    screen.on('display-metrics-changed', (event, display, changedMetrics) => {
+      if (mainWindow && !mainWindow.isDestroyed() && changedMetrics.includes('workArea')) {
+        const { width, height, x, y } = display.workArea
+        mainWindow.setBounds({ width, height, x, y })
+      }
+    })
+
+    // Áp dụng vị trí thời tiết đã lưu (nếu có) trước khi bắt đầu weather service
+    const savedSettings = settingsStore.load()
+    if (savedSettings.weatherLocation) {
+      weatherService.setManualLocation(savedSettings.weatherLocation)
+    }
+
+    // Khởi động weather service
+    weatherService.start((weatherData) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('weather-update', weatherData)
+      }
+      // Cập nhật tray menu với thời tiết mới
+      if (tray && !tray.isDestroyed()) buildTrayMenu()
+    })
+
+    // Kiểm tra permissions sau khi window tạo
+    setTimeout(async () => {
+      const hasPermission = await permissions.checkFullDiskAccess()
+      if (mainWindow) {
+        mainWindow.webContents.send('permission-status', hasPermission)
+      }
+    }, 2000)
+
+    powerMonitor.on('suspend', () => {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('app-suspend')
+    })
+    powerMonitor.on('resume', () => {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('app-resume')
+    })
+    powerMonitor.on('lock-screen', () => {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('app-suspend')
+    })
+    powerMonitor.on('unlock-screen', () => {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('app-resume')
+    })
+  })
+
+  app.on('window-all-closed', () => {
+    // Không thoát khi đóng window — app chạy nền qua Tray
+  })
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow()
     }
   })
-
-  // Áp dụng vị trí thời tiết đã lưu (nếu có) trước khi bắt đầu weather service
-  const savedSettings = settingsStore.load()
-  if (savedSettings.weatherLocation) {
-    weatherService.setManualLocation(savedSettings.weatherLocation)
-  }
-
-  // Khởi động weather service
-  weatherService.start((weatherData) => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('weather-update', weatherData)
-    }
-    // Cập nhật tray menu với thời tiết mới
-    if (tray && !tray.isDestroyed()) buildTrayMenu()
-  })
-
-  // Kiểm tra permissions sau khi window tạo
-  setTimeout(async () => {
-    const hasPermission = await permissions.checkFullDiskAccess()
-    if (mainWindow) {
-      mainWindow.webContents.send('permission-status', hasPermission)
-    }
-  }, 2000)
-
-  powerMonitor.on('suspend', () => {
-    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('app-suspend')
-  })
-  powerMonitor.on('resume', () => {
-    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('app-resume')
-  })
-  powerMonitor.on('lock-screen', () => {
-    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('app-suspend')
-  })
-  powerMonitor.on('unlock-screen', () => {
-    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('app-resume')
-  })
-})
-
-app.on('window-all-closed', () => {
-  // Không thoát khi đóng window — app chạy nền qua Tray
-})
-
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow()
-  }
-})
 } // Close else block for single instance lock

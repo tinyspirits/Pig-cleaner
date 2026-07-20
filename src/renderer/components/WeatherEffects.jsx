@@ -36,17 +36,17 @@ const BIRD_PECK_FRAMES = Object.keys(birdPeckFramesRaw).sort((a, b) => {
 }).map(key => birdPeckFramesRaw[key])
 
 const BIRD_PHASES = {
-  patrol: { start: 2, end: 5 },
+  swim: { start: 28, end: 30 },
+  patrol: { start: 3, end: 7 },
   diving: { start: 6, end: 8 },
   catching: { start: 21, end: 22 },
-  rising: { start: 23, end: 27 }   // Chỉ dùng khi bắt heo/cá, KHÔNG dùng sau mổ thóc
+  rising: { start: 23, end: 27 }
 }
 
-// Phases dưới mặt đất dùng sprite sheets riêng
 const BIRD_GROUND_PHASES = {
-  flyaway: { start: 0, end: BIRD_WALK_FRAMES.length - 1 }, // Đi bộ rồi cất cánh
-  foraging: { start: 0, end: BIRD_PECK_FRAMES.length - 1 }, // Mổ thóc lặp lại
-  scared: { start: 4, end: 4 }, // Dùng bird_walk_05 khi bị doạ bay lên
+  flyaway: { start: 0, end: BIRD_WALK_FRAMES.length - 1 },
+  foraging: { start: 0, end: BIRD_PECK_FRAMES.length - 1 },
+  scared: { start: 4, end: 6 },
 }
 
 function useFishFrame(fps = 9) {
@@ -64,12 +64,10 @@ function randomBetween(a, b) {
   return a + Math.random() * (b - a)
 }
 
-// Hàm dùng để lấy màu ngẫu nhiên (chỉ dùng nội bộ trong file này)
 function getRandomHue() {
   return Math.floor(Math.random() * 360)
 }
 
-// ─── Mưa ────────────────────────────────────────────────────────────────────
 function RainLayer({ windForceX, intensity = 1 }) {
   const drops = useMemo(() => {
     return Array.from({ length: Math.round(40 * intensity) }, (_, i) => ({
@@ -104,7 +102,6 @@ function RainLayer({ windForceX, intensity = 1 }) {
   )
 }
 
-// ─── Tuyết ───────────────────────────────────────────────────────────────────
 function SnowLayer({ windForceX }) {
   const flakes = useMemo(() => {
     return Array.from({ length: 25 }, (_, i) => ({
@@ -140,7 +137,6 @@ function SnowLayer({ windForceX }) {
   )
 }
 
-// ─── Gió mạnh ────────────────────────────────────────────────────────────────
 function WindStreaks({ windForceX, windSpeed }) {
   const streaks = useMemo(() => {
     return Array.from({ length: 8 }, (_, i) => ({
@@ -175,7 +171,6 @@ function WindStreaks({ windForceX, windSpeed }) {
   )
 }
 
-// ─── Chớp sét ────────────────────────────────────────────────────────────────
 function LightningFlash() {
   const [flashData, setFlashData] = useState(null)
   const timerRef = useRef(null)
@@ -216,7 +211,15 @@ function LightningFlash() {
   )
 }
 
-// ─── WeatherEffects (main export) CHỨA CẢ WILDLIFE ───────────────────────────
+// Helper function để ghi log an toàn
+const safeLog = (message) => {
+  if (window.electronAPI && window.electronAPI.logToTerminal) {
+    window.electronAPI.logToTerminal(message);
+  } else {
+    console.log(message);
+  }
+}
+
 export default function WeatherEffects({ weather, poolMode = false, effectsEnabled = true, cameraFollowsPig = true }) {
   const containerRef = useRef(null)
   const [waterLevel, setWaterLevel] = useState(0)
@@ -238,13 +241,11 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
   const fishRef = useRef(null)
   const fishSprite = useFishFrame(9)
 
-  // Xử lý thay đổi mực nước, tuyết và tạo ra Cá/Chim
   useEffect(() => {
     const isHeavyRain = weather?.condition === 'thunderstorm' || poolMode
     const isSnowing = weather?.condition === 'snow'
 
     const interval = setInterval(() => {
-      // Cập nhật nước / tuyết
       setWaterLevel(prev => {
         if (isHeavyRain) return Math.min(50, prev + 1.5)
         return Math.max(0, prev - 3)
@@ -256,7 +257,6 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
 
       const now = Date.now()
 
-      // Tạo cá
       setFish(prev => {
         if (prev) return prev
         if (!poolMode || waterLevelRef.current < 15) return null
@@ -270,14 +270,14 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
         return { id: now, fromLeft, duration, bottomVh, caught: false, hue: getRandomHue() }
       })
 
-      // Tạo chim (Bay ra mọi lúc, không cần poolMode nữa)
       setBird(prev => {
         if (prev) return prev
         if (now < nextBirdTimeRef.current) return null
         const fromLeft = Math.random() < 0.5
 
-        // Căn thời gian 5-15 giây để bạn dễ test
         nextBirdTimeRef.current = now + randomBetween(5000, 15000)
+
+        safeLog(`[Bird Spawned] Xuất hiện từ bên ${fromLeft ? 'TRÁI' : 'PHẢI'}`);
 
         birdStateRef.current = {
           x: fromLeft ? -150 : window.innerWidth + 150,
@@ -290,8 +290,9 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
           frameIdx: BIRD_PHASES.patrol.start,
           frameTimer: 0,
           targetGrain: false,
+          targetWater: false,
           forageUntil: 0,
-          nextGrainTime: now + randomBetween(6000, 14000),
+          nextGrainTime: now + randomBetween(2000, 5000),
           pigletsEaten: [],
           hue: getRandomHue()
         }
@@ -302,7 +303,6 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
     return () => clearInterval(interval)
   }, [weather?.condition, poolMode])
 
-  // Thu dọn cá
   useEffect(() => {
     if (!fish) return
     const t = setTimeout(() => {
@@ -311,9 +311,6 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
     return () => clearTimeout(t)
   }, [fish])
 
-  // Hàm xử lý chung khi bị nuốt. predatorEl PHẢI được truyền tường minh (heo mẹ HOẶC
-  // chim) - trước đây hàm này luôn tự query heo mẹ bất kể ai gọi, khiến cá bị chim bắt
-  // vẫn "chui vào mồm heo" (bug đã báo).
   const catchPrey = (currentPrey, setPrey, preyRef, type = 'fish', predatorEl = null) => {
     if (!currentPrey || currentPrey.caught) return;
     const rect = preyRef.current?.getBoundingClientRect();
@@ -323,10 +320,6 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
 
     let actuallyCaught = false
     setPrey(prev => {
-      // Functional update: chống trường hợp heo VÀ chim cùng chạm con mồi trong cùng
-      // 1 frame (vd chim vừa bắt cá xong, ngay sau đó code kiểm tra heo-vs-cá trong
-      // cùng tick cũng chạy với closure `fish` cũ chưa kịp cập nhật) - chỉ người gọi
-      // ĐẦU TIÊN mới thực sự "thắng", các lần gọi sau trong cùng frame sẽ bị bỏ qua.
       if (!prev || prev.caught) return prev
       actuallyCaught = true
       return {
@@ -342,16 +335,18 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
 
     if (!actuallyCaught) return
 
-    const freedKB = type === 'bird' ? randomBetween(20, 50) * 1024 : randomBetween(2, 10) * 1024;
-    window.dispatchEvent(new CustomEvent('fish-caught', { detail: { freedKB, type } }));
+    const isPig = !predatorEl || predatorEl.classList.contains('pig-container');
+    if (isPig) {
+      const freedKB = type === 'bird' ? randomBetween(20, 50) * 1024 : randomBetween(2, 10) * 1024;
+      window.dispatchEvent(new CustomEvent('fish-caught', { detail: { freedKB, type } }));
 
-    if (type === 'bird' && birdStateRef.current?.pigletsEaten?.length > 0) {
-      window.dispatchEvent(new CustomEvent('rescue-piglets', { detail: { piglets: birdStateRef.current.pigletsEaten } }));
-      birdStateRef.current.pigletsEaten = [];
+      if (type === 'bird' && birdStateRef.current?.pigletsEaten?.length > 0) {
+        window.dispatchEvent(new CustomEvent('rescue-piglets', { detail: { piglets: birdStateRef.current.pigletsEaten } }));
+        birdStateRef.current.pigletsEaten = [];
+      }
     }
   }
 
-  // Bật animation nuốt
   useEffect(() => {
     if (!fish || !fish.caught || fish.swallowing) return
     const raf = requestAnimationFrame(() => setFish(prev => (prev && prev.id === fish.id ? { ...prev, swallowing: true } : prev)))
@@ -364,7 +359,6 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
     return () => cancelAnimationFrame(raf)
   }, [bird?.caught])
 
-  // Thu dọn chim
   useEffect(() => {
     if (!bird) return
     if (bird.caught) {
@@ -373,7 +367,6 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
     }
   }, [bird?.caught])
 
-  // Vòng lặp vật lý và AI của Chim/Cá
   useEffect(() => {
     let rafId
     let lastTime = performance.now()
@@ -389,26 +382,20 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
 
       const st = birdStateRef.current
       if (bird && !bird.caught && st && birdRef.current) {
+
+        // [LOG]: Lấy trạng thái hiện tại trước khi xử lý frame
+        const previousPhase = st.phase;
+
         st.frameTimer += dt
         if (st.frameTimer > 1 / 12) {
           st.frameTimer -= 1 / 12
 
           if (st.phase === 'flyaway' || st.phase === 'foraging' || st.phase === 'scared') {
-            // Dùng ground frame sets riêng
             const p = BIRD_GROUND_PHASES[st.phase]
             st.frameIdx++
+            // SỬA Ở ĐÂY: Cứ chạy lố frame cuối thì quay lại frame đầu, áp dụng cho cả 3 phase
             if (st.frameIdx > p.end) {
-              if (st.phase === 'foraging') {
-                // Mổ thóc lặp lại cho tới khi hết giờ
-                st.frameIdx = p.start
-              } else if (st.phase === 'scared') {
-                // Giữ nguyên frame bird_walk_05 khi đang bay lên vì sợ
-                st.frameIdx = p.end
-              } else {
-                // flyaway: chạy hết 1 lượt đi bộ -> cất cánh quay lại patrol
-                st.phase = 'patrol'
-                st.frameIdx = BIRD_PHASES.patrol.start
-              }
+              st.frameIdx = p.start
             }
           } else {
             const isHostagePatrol = st.phase === 'patrol' && st.pigletsEaten.length > 0
@@ -416,10 +403,8 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
             st.frameIdx++
             if (st.frameIdx > p.end) {
               if (isHostagePatrol) {
-                // Đang giữ con tin -> lặp lại trong khoảng frame tha mồi (rising)
                 st.frameIdx = p.start
               } else if (st.phase === 'diving') {
-                // Giữ nguyên frame cuối khi đang lặn
                 st.frameIdx = p.end
               } else if (st.phase === 'catching') {
                 st.phase = 'rising'
@@ -431,18 +416,17 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
           }
         }
 
-        // Mổ thóc xong: chuyển sang flyaway (đi bộ rồi cất cánh)
-        if (st.phase === 'foraging' && Date.now() > (st.forageUntil || 0)) {
+        // [KIỂM TRA LOGIC]: Cắt logic timeout ở đây để log lại
+        if ((st.phase === 'foraging' || st.phase === 'swim') && Date.now() > (st.forageUntil || 0)) {
+          safeLog(`[Bird AI] ⚠️ BỘ ĐẾM GIỜ ĐÃ KÍCH HOẠT: Hành động hiện tại là "${st.phase}" đã hết thời gian (forageUntil). ÉP CHUYỂN SANG FLYAWAY!`);
           st.phase = 'flyaway'
           st.frameIdx = BIRD_GROUND_PHASES.flyaway.start
         }
 
         if (st.phase === 'patrol') {
           if (st.pigletsEaten.length > 0) {
-            // ĐANG GIỮ CON TIN (đã bắt heo/vịt con) -> không đi săn/mổ thóc gì thêm nữa,
-            // chỉ bay vòng vòng tha mồi trong mỏ, cho heo/vịt mẹ cơ hội đuổi theo cứu con.
+            // ĐANG GIỮ CON TIN
           } else if (fishRef.current && !fish?.caught) {
-            // Luôn ưu tiên cá trước (nếu đang có cá bơi, bất kể trước đó chim "định" làm gì)
             const fishRect = fishRef.current.getBoundingClientRect()
             if (Math.abs(st.x - (fishRect.left + fishRect.width / 2)) < 150) {
               st.phase = 'diving'
@@ -450,7 +434,9 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
               st.vy = 400
               st.targetY = window.innerHeight * (1 - (waterLevelRef.current / 2) / 100)
               st.targetGrain = false
+              st.targetWater = false
               st.targetPigletId = undefined
+              safeLog(`[Bird AI] Bắt đầu lao xuống bắt cá!`);
             }
           } else {
             let targetPigletEl = null
@@ -470,28 +456,39 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
               st.phase = 'diving'
               st.frameIdx = BIRD_PHASES.diving.start
               st.vy = 400
-              // Điểm đáp: trên mặt đất, hoặc trên mặt nước nếu đang ngập (tránh "chìm tỏm"
-              // xuống dưới nước khi lao xuống mổ thóc/bắt heo con lúc pool mode đang ngập cao)
-              st.targetY = window.innerHeight - 50 - (waterLevelRef.current / 100) * window.innerHeight
               if (Math.random() < 0.65) {
                 st.targetGrain = false
+                st.targetWater = false
                 st.targetPigletId = targetPigletEl.getAttribute('data-index')
+                safeLog(`[Bird AI] Lao xuống bắt heo con!`);
               } else {
                 st.targetPigletId = undefined
                 st.targetGrain = true
+                st.targetWater = false
+                safeLog(`[Bird AI] Bỏ qua heo con, chọn mổ thóc.`);
               }
             } else if (Date.now() > (st.nextGrainTime || 0)) {
               st.phase = 'diving'
               st.frameIdx = BIRD_PHASES.diving.start
               st.vy = 400
-              st.targetY = window.innerHeight - 50 - (waterLevelRef.current / 100) * window.innerHeight
-              st.targetGrain = true
               st.targetPigletId = undefined
-              st.nextGrainTime = Date.now() + randomBetween(10000, 20000)
+
+              if (poolMode && waterLevelRef.current > 0) {
+                st.targetY = window.innerHeight - 50 - (waterLevelRef.current / 100) * window.innerHeight
+                st.targetWater = true
+                st.targetGrain = false
+                safeLog(`[Bird AI] Đã đến giờ kiếm ăn: Quyết định ĐÁP XUỐNG MẶT NƯỚC.`);
+              } else {
+                st.targetY = window.innerHeight - 50
+                st.targetGrain = true
+                st.targetWater = false
+                safeLog(`[Bird AI] Đã đến giờ kiếm ăn: Quyết định ĐÁP XUỐNG ĐẤT mổ thóc.`);
+              }
+
+              st.nextGrainTime = Date.now() + randomBetween(4000, 8000)
             }
           }
         } else if (st.phase === 'flyaway') {
-          // Đi bộ rồi cất cánh (dùng walk frames) -> bay lên lại độ cao tuần tra
           st.vy = -140
           st.vx = (st.fromLeft ? 1 : -1) * randomBetween(80, 120)
           if (st.y < 80) {
@@ -500,14 +497,15 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
             st.frameIdx = BIRD_PHASES.patrol.start
           }
         } else if (st.phase === 'foraging') {
-          // Đứng im mổ thóc, phase chuyển bởi khối forageUntil ở trên
           st.vy = 0
           st.vx = 0
+        } else if (st.phase === 'swim') {
+          st.vy = 0
         } else if (st.phase === 'diving') {
           let hitFish = false
           let hitPiglet = false
 
-          if (!st.targetGrain && fishRef.current && !fish?.caught) {
+          if (!st.targetGrain && !st.targetWater && fishRef.current && !fish?.caught) {
             const bRect = birdRef.current.getBoundingClientRect()
             const fRect = fishRef.current.getBoundingClientRect()
             const fCenterX = fRect.left + fRect.width / 2
@@ -550,15 +548,12 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
 
           if (hitFish || hitPiglet) {
             st.vy = 0
-            // Giữ nguyên hướng đang bám đuổi lúc bắt được (đã đúng hướng thực tế vừa di
-            // chuyển tới), chỉ chuẩn hoá lại cường độ + đồng bộ fromLeft để hình không bị
-            // lật ngược chiều đang bay (bug "bay ngược" đã báo).
             st.vx = Math.sign(st.vx || 1) * randomBetween(150, 200)
             st.fromLeft = st.vx > 0
             st.phase = 'catching'
             st.frameIdx = BIRD_PHASES.catching.start
-          } else if (st.targetGrain && st.y >= st.targetY) {
-            // Chạm đất để mổ thóc: dùng frames peck mới, KHÔNG dùng rising
+            safeLog(`[Bird AI] Vừa bắt trúng mồi (Heo/Cá)!`);
+          } else if (st.targetGrain && st.y >= st.targetY && poolMode === false) {
             st.y = st.targetY
             st.vy = 0
             st.vx = 0
@@ -566,31 +561,43 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
             st.phase = 'foraging'
             st.frameIdx = BIRD_GROUND_PHASES.foraging.start
             st.forageUntil = Date.now() + randomBetween(4000, 8000)
+            safeLog(`[Bird AI] Chạm đất -> Chuyển sang MỔ THÓC.`);
+          } else if (st.targetWater && st.y >= st.targetY) {
+            st.y = st.targetY + 10
+            st.vy = 0
+            st.vx = (st.fromLeft ? 1 : -1) * randomBetween(30, 60)
+            st.targetWater = false
+            st.phase = 'swim'
+            st.frameIdx = BIRD_PHASES.swim.start
+            st.forageUntil = Date.now() + randomBetween(4000, 8000)
+            safeLog(`[Bird AI] Chạm mặt nước -> Chuyển sang BƠI (Swim).`);
           } else if (st.y >= st.targetY) {
-            // Trượt mồi (không targetGrain, không bắt được gì) -> flyaway
             st.y = st.targetY
             st.vy = 0
             st.vx *= 0.5
             st.targetPigletId = undefined
             st.phase = 'flyaway'
             st.frameIdx = BIRD_GROUND_PHASES.flyaway.start
+            safeLog(`[Bird AI] Bay trượt mục tiêu -> Hủy bỏ, chuẩn bị bay lên (Flyaway).`);
           }
         } else if (st.phase === 'rising' || st.phase === 'scared') {
-          // rising (bắt heo/cá) hoặc scared (bị doạ, dùng bird_walk_05)
           st.vy = -150
           if (st.y < 50) {
             st.vy = 0
             st.phase = 'patrol'
-            // Nếu vẫn đang giữ con tin, giữ nguyên frame tha mồi (rising) thay vì
-            // nhảy về frame patrol trống miệng
             st.frameIdx = st.pigletsEaten.length > 0 ? BIRD_PHASES.rising.start : BIRD_PHASES.patrol.start
           }
         }
 
-        // TÍNH TOÁN LỰC GIÓ ĐẨY CHIM
+        // [LOG CUỐI]: Nếu vòng lặp này thay đổi trạng thái, báo cáo ra terminal
+        if (st.phase !== previousPhase) {
+          safeLog(`[Bird AI] 🔄 Đổi trạng thái: [${previousPhase}] ---> [${st.phase}]`);
+        }
+
+        // Lực gió đẩy
         let windEffectX = 0;
         const wx = weatherRef.current;
-        if (wx && wx.windSpeed > 10 && st.phase !== 'diving' && st.phase !== 'foraging' && st.phase !== 'flyaway') {
+        if (wx && wx.windSpeed > 10 && st.phase !== 'diving' && st.phase !== 'foraging' && st.phase !== 'flyaway' && st.phase !== 'swim') {
           windEffectX = wx.windForceX * (wx.windSpeed * 1.5);
         }
 
@@ -598,12 +605,12 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
         st.y += st.vy * dt
 
         if ((st.vx > 0 && st.x > window.innerWidth + 200) || (st.vx < 0 && st.x < -200)) {
+          safeLog(`[Bird AI] Đã bay khỏi màn hình. Hủy đối tượng chim.`);
           setBird(null)
         } else {
-          // Chọn đúng frame set theo phase
           const frameSet = (st.phase === 'flyaway' || st.phase === 'scared') ? BIRD_WALK_FRAMES
             : st.phase === 'foraging' ? BIRD_PECK_FRAMES
-            : BIRD_FRAMES
+              : BIRD_FRAMES
           birdRef.current.src = frameSet[st.frameIdx] || frameSet[0]
           birdRef.current.style.transform = `translate(${st.x}px, ${st.y}px) scaleX(${st.fromLeft ? 1 : -1}) scale(${st.scale})`
         }
@@ -623,7 +630,6 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
             const dy = birdCenterY - pigCenterY;
             const distance = Math.sqrt(dx * dx + dy * dy);
 
-            // Chim hoảng sợ né tránh heo mẹ -> dùng frame scared (bird_walk_05)
             if (distance < 140) {
               st.phase = 'scared';
               st.frameIdx = BIRD_GROUND_PHASES.scared.start;
@@ -632,6 +638,8 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
               st.fromLeft = st.vx > 0;
               st.targetPigletId = undefined;
               st.targetGrain = false;
+              st.targetWater = false;
+              safeLog(`[Bird AI] Bị dọa! Heo đến quá gần, bỏ chạy!`);
             }
           }
         }
