@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron')
 
 // Expose safe API sang Renderer process
 contextBridge.exposeInMainWorld('pigAPI', {
+  logToTerminal: (message) => ipcRenderer.send('test-log', message),
   // Mouse events
   setIgnoreMouse: (ignore) => ipcRenderer.invoke('set-ignore-mouse', ignore),
 

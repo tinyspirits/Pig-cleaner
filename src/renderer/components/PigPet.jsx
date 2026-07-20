@@ -207,62 +207,108 @@ function FollowerPet({ id, index, scale, hue }) {
   )
 }
 
-// COMPONENT HEO CON TÁCH BẦY (ĐI KHỎI MÀN HÌNH)
+// COMPONENT HEO CON TÁCH BẦY (ĐI KHỎI MÀN HÌNH VÀ MỜ DẦN)
 function DepartingPiglet({ piglet, onDone, petType }) {
-  const [pos, setPos] = useState({ x: piglet.x, y: piglet.y })
   const sprite = useSprite('walking', petType)
-
   const [bubble, setBubble] = useState(petType === 'duck' ? "Quắc! Con đi đây! 👋" : "Oink! Con tự lập rồi! 👋")
+
+  const containerRef = useRef(null)
 
   useEffect(() => {
     const tId = setTimeout(() => setBubble(null), 3000)
     return () => clearTimeout(tId)
   }, [])
 
-  // Dùng ref để giữ tham chiếu onDone mới nhất, KHÔNG đưa onDone vào dependency
-  // array của effect bên dưới. Nếu không, chỉ cần component cha (PigPet) re-render
-  // (xảy ra mỗi frame vì vị trí heo cập nhật liên tục) và tạo ra một hàm onDone mới,
-  // effect sẽ bị huỷ + khởi động lại liên tục TRƯỚC KHI KỊP CHẠY 1 FRAME NÀO -> heo/vịt
-  // con đứng khựng, kẹt trên màn hình. Cách này an toàn dù cha có nhớ memoize hay không.
   const onDoneRef = useRef(onDone)
   useEffect(() => { onDoneRef.current = onDone }, [onDone])
 
   useEffect(() => {
     let rafId
-    let lastTime = performance.now()
+    let lastTime = null
     let finished = false
-    const speed = 70 // Tốc độ bước đi ra lề
+    const speed = 70 // Tốc độ bước đi
+
+    let currentX = piglet.x
+    let currentY = piglet.y
+    let currentVy = 0
+    let elapsedTime = 0 // BỘ ĐẾM THỜI GIAN SỐNG
+
+    const WALK_TIME = 2.0 // Thời gian đi bộ rõ nét (2 giây)
+    const FADE_TIME = 1.0 // Thời gian mờ dần (1 giây)
 
     const loop = (time) => {
+      if (finished) return
       rafId = requestAnimationFrame(loop)
-      const dt = (time - lastTime) / 1000
-      lastTime = time
 
-      setPos(prev => {
-        const nextX = prev.x + (piglet.facing * speed * dt)
-        if (!finished) {
-          if (piglet.facing === 1 && nextX > window.innerWidth + 200) {
-            finished = true
-            onDoneRef.current(piglet.departId)
-          } else if (piglet.facing === -1 && nextX < -200) {
-            finished = true
-            onDoneRef.current(piglet.departId)
-          }
+      if (lastTime === null) {
+        lastTime = time
+        return
+      }
+
+      const dt = Math.min((time - lastTime) / 1000, 0.1)
+      lastTime = time
+      elapsedTime += dt // Cộng dồn thời gian
+
+      // 1. Tính toán di chuyển ngang
+      currentX += piglet.facing * speed * dt
+
+      // 2. Tính toán rơi xuống đất (Trọng lực)
+      if (currentY < 0) {
+        currentVy += 800 * dt
+        currentY += currentVy * dt
+        if (currentY >= 0) {
+          currentY = 0
+          currentVy = 0
         }
-        return { x: nextX, y: prev.y }
-      })
+      } else {
+        currentY = 0
+      }
+
+      // 3. TÍNH TOÁN ĐỘ MỜ (OPACITY)
+      let currentOpacity = 1
+      if (elapsedTime > WALK_TIME) {
+        // Nếu đã đi quá 2 giây, bắt đầu tính tỉ lệ mờ dần
+        const fadeProgress = (elapsedTime - WALK_TIME) / FADE_TIME
+        currentOpacity = Math.max(0, 1 - fadeProgress) // Ép không cho âm
+      }
+
+      // 4. Cập nhật DOM (Di chuyển + Mờ dần)
+      if (containerRef.current) {
+        containerRef.current.style.transform = `translate(${currentX}px, ${currentY}px) scale(${piglet.scale})`
+        containerRef.current.style.opacity = currentOpacity
+      }
+
+      // 5. KIỂM TRA BIẾN MẤT HOÀN TOÀN
+      // Cách 1: Hết tổng thời gian (3 giây) -> Xóa
+      if (elapsedTime >= WALK_TIME + FADE_TIME) {
+        finished = true
+        onDoneRef.current(piglet.departId)
+      }
+      // Cách 2: Nếu lỡ đi ra quá mép màn hình trước khi hết 3 giây -> Xóa luôn
+      else if (piglet.facing === 1 && currentX > window.innerWidth + 200) {
+        finished = true
+        onDoneRef.current(piglet.departId)
+      } else if (piglet.facing === -1 && currentX < -200) {
+        finished = true
+        onDoneRef.current(piglet.departId)
+      }
     }
+
     rafId = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(rafId)
-  }, [piglet.facing, piglet.departId])
+  }, [piglet.facing, piglet.departId, piglet.x, piglet.y, piglet.scale])
 
   const colorFilter = piglet.hue !== undefined ? ` hue-rotate(${piglet.hue}deg)` : ''
 
   return (
-    <div style={{
-      position: 'absolute', bottom: 0, left: 0, pointerEvents: 'none', zIndex: 25,
-      transform: `translate(${pos.x}px, ${pos.y}px) scale(${piglet.scale})`
-    }}>
+    <div
+      ref={containerRef}
+      style={{
+        position: 'absolute', bottom: 0, left: 0, pointerEvents: 'none', zIndex: 25,
+        transform: `translate(${piglet.x}px, ${piglet.y}px) scale(${piglet.scale})`,
+        opacity: 1 // Khởi tạo rõ nét
+      }}
+    >
       {bubble && (
         <div className="speech-bubble" style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: '10px', whiteSpace: 'nowrap', zIndex: 10 }}>
           {bubble}
