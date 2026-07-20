@@ -31,6 +31,8 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
   const hoverWanderRef = useRef(0)
   const submergedTimeRef = useRef(0)
   const isSuffocatingRef = useRef(false)
+  const nextBreathDueRef = useRef(0)
+  const isBreathingRiseRef = useRef(false)
   const hasImpactedRef = useRef(true)
   const lastIsDraggingRef = useRef(false)
   const poolModeRef = useRef(poolMode)
@@ -140,6 +142,8 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
         setSwimAction('none')
         swimPhaseRef.current = 0 // Quên cách bơi khi cạn nước
         isSuffocatingRef.current = false
+        nextBreathDueRef.current = 0
+        isBreathingRiseRef.current = false
       } else if (isInWater && state.isDragging) {
         // Cập nhật trạng thái ngay khi bị người chơi kéo chìm xuống hoặc nhấc lên
         if (state.y > floatingY + 10 && ['surface', 'rising', 'hover', 'struggling'].includes(swimActionRef.current)) {
@@ -155,16 +159,18 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
 
       currentFloorRef.current = !isInWater || swimActionRef.current === 'bottom' || swimActionRef.current === 'diving' ? 0 : floatingY
 
-      // ─── Ngạt nước nếu ở dưới nước quá lâu (kể cả khi bị người chơi giữ/kéo chìm) ───
-      // Chỉ áp dụng khi ĐÃ biết bơi (swimPhaseRef === 1); giai đoạn học bơi ban đầu đã có
-      // kịch bản chết đuối riêng (struggling -> drowning_sink -> drowning_bottom) ở trên.
+      // ─── Ngạt nước nếu bị NGĂN không cho ngoi lên thở quá lâu (vd bị giữ/kéo chìm) ───
+      // Bình thường heo/vịt sẽ tự động ngoi hẳn lên mặt nước thở mỗi 10-15s (xem
+      // BREATH_INTERVAL_MS + isBreathingRiseRef ở chu trình bơi bên dưới), nên hiếm khi
+      // nào tự nhiên bị ngạt. Chỉ khi người chơi giữ/kéo heo/vịt chìm liên tục, không cho
+      // ngoi lên được, thì mới thực sự tính là ngạt.
       if (isInWater && state.y > floatingY + 20) {
         submergedTimeRef.current += intervalMs
       } else {
         submergedTimeRef.current = 0
       }
 
-      const SUFFOCATE_MS = 10000 // ~10 giây liên tục dưới nước sẽ bắt đầu ngạt
+      const SUFFOCATE_MS = 25000 // ~20 giây liên tục không ngoi lên được sẽ bắt đầu ngạt
       if (
         !isSuffocatingRef.current &&
         submergedTimeRef.current > SUFFOCATE_MS &&
@@ -274,7 +280,18 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
               } else if (swimActionRef.current === 'bottom') {
                 swimActionRef.current = 'rising'
                 setSwimAction('rising')
-                nextSwimChangeRef.current = now + 700 + Math.random() * 2200
+                const now2 = performance.now()
+                // Cứ mỗi 10-15 giây, heo/vịt sẽ CHỦ ĐỘNG ngoi hẳn lên mặt nước thật để
+                // thở (khác với kiểu nổi lửng lơ ngẫu nhiên "hover" bình thường) - bỏ
+                // qua mốc thời gian ngẫu nhiên bên dưới, chỉ dừng lại khi thực sự chạm
+                // mặt nước (xem chỗ clamp state.y <= floatingY).
+                if (now2 > nextBreathDueRef.current) {
+                  isBreathingRiseRef.current = true
+                  nextSwimChangeRef.current = now2 + 9999999
+                } else {
+                  isBreathingRiseRef.current = false
+                  nextSwimChangeRef.current = now2 + 700 + Math.random() * 2200
+                }
                 const wanderDir = Math.random() < 0.5 ? 1 : -1
                 state.facing = wanderDir
                 setFacing(wanderDir)
@@ -336,6 +353,9 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
             swimActionRef.current = 'surface'
             setSwimAction('surface')
             nextSwimChangeRef.current = performance.now() + 1000
+            // Đã ngoi lên thở xong -> hẹn lần thở tiếp theo random 10-15s sau
+            isBreathingRiseRef.current = false
+            nextBreathDueRef.current = performance.now() + 10000 + Math.random() * 5000
           } else if (swimActionRef.current === 'diving' && state.y >= 0) {
             state.y = 0
             state.vy = 0
@@ -378,7 +398,14 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
             updateDragState('landed')
             if (isInWater && state.y >= floatingY) {
               if (!hasImpactedRef.current) {
-                window.dispatchEvent(new CustomEvent('water-splash', { detail: { vy: Math.abs(state.vy) } }))
+                // Chỉ tính là "va chạm" thật sự (tóe nước) khi tốc độ rơi đủ mạnh -
+                // vd bị thả/kéo rơi từ trên cao xuống nước. Tốc độ chìm bình thường
+                // trong chu trình bơi (hover -> chìm -> đáy -> nổi) chỉ đạt tối đa
+                // ~7-8, không nên tính là va chạm (đây chính là bug "tỏm" lặp lại
+                // mỗi lần chạm đáy trong lúc bơi bình thường).
+                if (Math.abs(state.vy) > 15) {
+                  window.dispatchEvent(new CustomEvent('water-splash', { detail: { vy: Math.abs(state.vy) } }))
+                }
                 hasImpactedRef.current = true
                 if (state.vy > 10) state.vy *= 0.4
                 else state.vy *= 0.8
