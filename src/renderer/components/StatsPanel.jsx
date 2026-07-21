@@ -58,7 +58,9 @@ export default function StatsPanel({ trashInfo, cacheInfo = [], totalEaten, pigS
         </div>
         <div className="stats-row">
           <span>📏 {t('statsPanel.pigSize', { pet: petLabel })}</span>
-          <strong>{Math.round((pigScale - 1) * 100 + 100)}%</strong>
+          <strong title={`scale = ${pigScale.toFixed(3)}`}>
+            {Math.round(pigScale * 100)}% (x{pigScale.toFixed(2)})
+          </strong>
         </div>
         <div style={{ marginTop: 10, fontSize: 11, color: '#999', textAlign: 'center' }}>
           {t('statsPanel.clickToEat', { pet: petLabel, emoji: petEmoji })}

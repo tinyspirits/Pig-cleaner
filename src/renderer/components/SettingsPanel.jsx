@@ -107,7 +107,12 @@ export default function SettingsPanel({ onClose, pigScale = 1.0, onChangePigScal
   const handleSave = async () => {
     setSaving(true)
     if (isElectron) {
-      await window.pigAPI.saveSettings(settings)
+      // QUAN TRỌNG: loại bỏ pigScale khỏi payload lưu ở đây. `settings.pigScale` là bản
+      // chụp lúc MỞ panel (không được cập nhật khi kéo slider), nếu gửi nguyên sẽ ĐÈ lên
+      // giá trị đúng đã được setPigScaleAndSave() lưu riêng ngay lúc kéo -> heo bị "trở to
+      // trở lại" sau khi bấm Lưu (bug đã báo).
+      const { pigScale: _staleIgnored, ...settingsToSave } = settings
+      await window.pigAPI.saveSettings(settingsToSave)
     }
     setSaving(false)
     onClose()
@@ -204,6 +209,7 @@ export default function SettingsPanel({ onClose, pigScale = 1.0, onChangePigScal
             />
             <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px', textAlign: 'center' }}>
               {Math.round((Math.min(scaleInput, maxScale) / maxScale) * 100)}%
+              {' '}(scale x{Math.min(scaleInput, maxScale).toFixed(2)})
               {' '}({t('settingsPanel.pigSizeHint', 'chỉ có thể thu nhỏ, không thể vượt quá kích thước hiện tại')})
             </div>
           </div>

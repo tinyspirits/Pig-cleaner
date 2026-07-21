@@ -308,11 +308,20 @@ export function usePigState(trashInfo, petType = 'pig') {
   // Cập nhật pigScale VÀ lưu ngay xuống settings (không đợi auto-save mỗi 10s),
   // để tránh trường hợp người dùng kéo thanh trượt kích thước trong Settings rồi
   // đóng panel ngay -> reloadSettings() đọc lại giá trị cũ chưa kịp lưu, ghi đè mất.
+  // Heo con (followers) hiện có cũng được scale theo CÙNG TỈ LỆ với heo mẹ, để cả đàn
+  // to/nhỏ lại cùng nhau một cách hợp lý thay vì chỉ heo mẹ đổi còn heo con giữ nguyên.
   const setPigScaleAndSave = async (newScale) => {
+    const oldScale = scaleRef.current || 1
+    const ratio = oldScale > 0 ? newScale / oldScale : 1
+    const scaledFollowers = followersRef.current.map(f => ({ ...f, scale: Math.max(0.05, f.scale * ratio) }))
+
     setPigScale(newScale)
+    setFollowers(scaledFollowers)
+
     if (window.pigAPI) {
       const s = await window.pigAPI.getSettings()
       s.pigScale = newScale
+      s.followers = scaledFollowers
       await window.pigAPI.saveSettings(s)
     }
   }
