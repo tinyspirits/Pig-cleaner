@@ -77,10 +77,10 @@ Bạn hoàn toàn có thể thay đổi hình ảnh chú heo thành nhân vật 
 
 ## ☕️ Ủng hộ dự án (Donate)
 
-Nếu bạn thấy chú heo này hữu ích và giúp máy Mac của bạn sạch sẽ, mượt mà hơn, hãy ủng hộ tác giả một ly cà phê nhé! Sự ủng hộ của bạn là động lực rất lớn để tôi duy trì và phát triển thêm nhiều tính năng hay ho cho dự án. ❤️
+Nếu bạn thấy chú heo này hữu ích và giúp máy của bạn sạch sẽ, mượt mà hơn, hãy ủng hộ tác giả một ly cà phê nhé! Sự ủng hộ của bạn là động lực rất lớn để tôi duy trì và phát triển thêm nhiều tính năng hay ho cho dự án. ❤️
 
 - **Momo:** `0359233523`
 - **PayPal:** `paypal.me/pigtiny`
 
 ---
-*Developed with ❤️ by [tinyspirits](https://github.com/tinyspirits)*
+*Developed with ❤️ by [Tiny](https://github.com/pigtinylabs)*
