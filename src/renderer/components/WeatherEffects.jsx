@@ -533,9 +533,14 @@ export default function WeatherEffects({ weather, poolMode = false, effectsEnabl
                 const overlap = !(bRect.right < rect.left || bRect.left > rect.right || bRect.bottom < rect.top || bRect.top > rect.bottom)
                 if (overlap) {
                   hitPiglet = true
-                  const pigletScale = parseFloat(el.getAttribute('data-scale') || '0.4')
-                  const pigletHue = el.getAttribute('data-hue')
-                  st.pigletsEaten.push({ id: Math.random().toString(), scale: pigletScale, hue: pigletHue ? parseInt(pigletHue, 10) : 0 })
+                  try {
+                    const pigletData = JSON.parse(el.getAttribute('data-piglet'))
+                    st.pigletsEaten.push(pigletData)
+                  } catch (e) {
+                    const pigletScale = parseFloat(el.getAttribute('data-scale') || '0.4')
+                    const pigletHue = el.getAttribute('data-hue')
+                    st.pigletsEaten.push({ id: Math.random().toString(), scale: pigletScale, hue: pigletHue ? parseInt(pigletHue, 10) : 0, eatenScale: 0 })
+                  }
 
                   window.dispatchEvent(new CustomEvent('bird-caught-follower', { detail: { index: parseInt(st.targetPigletId) } }))
                   st.scale += 0.15

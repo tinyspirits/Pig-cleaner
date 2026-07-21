@@ -81,8 +81,8 @@ export function usePigState(trashInfo, petType = 'pig') {
     const shrinkInterval = setInterval(() => {
       setPigEatenScale(prev => {
         if (isNaN(prev) || prev <= 0) return 0
-        // Tốc độ giảm tỉ lệ thuận với base (nhỏ giảm chậm) và lượng ăn (ăn nhiều giảm nhanh)
-        const shrinkRate = (baseScaleRef.current * 0.001) + (prev * 0.0002)
+        // Tốc độ giảm RẤT CHẬM và chỉ giảm khi đã lớn (giảm 0.0001 mỗi giây nếu eatenScale = 1.0, tức là mất ~166 phút mới hết 1.0)
+        const shrinkRate = prev * 0.0001
         return Math.max(0, prev - shrinkRate)
       })
 
@@ -239,13 +239,21 @@ export function usePigState(trashInfo, petType = 'pig') {
       ? 0.05 + Math.min(1.5, Math.log10(1 + freedKB) * 0.06)
       : 0
 
-    const totalEntities = 1 + followersRef.current.length
-    let randomWeights = Array.from({ length: totalEntities }).map(() => Math.random() + 0.1)
-    const weightSum = randomWeights.reduce((a, b) => a + b, 0)
-    randomWeights = randomWeights.map(w => w / weightSum)
-
-    const motherGrowth = growth * randomWeights[0]
-    const pigletGrowths = randomWeights.slice(1).map(w => growth * w)
+    let motherGrowth = growth
+    let pigletGrowths = []
+    
+    const numPiglets = followersRef.current.length
+    if (numPiglets > 0) {
+      // Mẹ nhường phần lớn thức ăn cho con (mẹ chỉ ăn 15%)
+      motherGrowth = growth * 0.15
+      
+      // 85% thức ăn còn lại chia ngẫu nhiên cho các heo con
+      const remainingFood = growth * 0.85
+      const randomWeights = Array.from({ length: numPiglets }).map(() => Math.random() + 0.2)
+      const sumWeights = randomWeights.reduce((a, b) => a + b, 0)
+      
+      pigletGrowths = randomWeights.map(w => remainingFood * (w / sumWeights))
+    }
 
     let nextEatenScale = eatenScaleRef.current + (isNaN(motherGrowth) ? 0 : motherGrowth)
     let exploded = false
@@ -274,23 +282,28 @@ export function usePigState(trashInfo, petType = 'pig') {
     }
 
     setFollowers(prev => {
-      let updated = prev.map((f, idx) => ({
-        ...f,
-        eatenScale: (f.eatenScale || 0) + (pigletGrowths[idx] || 0)
-      }))
+      let updated = prev.map((f, idx) => {
+        const addedGrowth = pigletGrowths[idx] || 0;
+        return {
+          ...f,
+          scale: (f.scale !== undefined ? f.scale : (baseAtBirth * (f.relativeScale || 0.2))) + (addedGrowth * baseScaleRef.current),
+          eatenScale: (f.eatenScale || 0) + addedGrowth
+        };
+      })
 
       if (exploded) {
         const newPiglets = Array.from({ length: 8 }).map(() => ({
           id: Math.random().toString(),
-          relativeScale: 0.2, // 20% size mẹ
+          scale: baseAtBirth * 0.2,
           eatenScale: 0,
           hue: getRandomHue()
         }))
         updated = [...updated, ...newPiglets].slice(0, 24)
       }
 
-      // Tách đàn: Heo nhỏ ở lại, heo đã đạt kích thước trưởng thành (scale >= 1.0) rời đi
-      const ADULT_SCALE = 1.0
+      // Tách đàn: Heo nhỏ ở lại, heo đã đạt kích thước trưởng thành (bằng 75% scale tổng hiện tại của mẹ) rời đi
+      const motherCurrentScale = baseScaleRef.current * (1 + eatenScaleRef.current)
+      const ADULT_SCALE = motherCurrentScale * 0.75
       const remaining = []
       const departing = []
       updated.forEach(f => {

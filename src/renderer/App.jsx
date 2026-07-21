@@ -471,7 +471,7 @@ function App() {
       <PigPet
         mode={mode}
         bubble={bubble}
-        pigScale={pigBaseScale + pigEatenScale * 0.35}
+        pigScale={pigBaseScale * (1 + pigEatenScale)}
         isPanelOpen={isPanelOpen}
         isCleaning={isCleaning}
         cameraFollowsPig={cameraFollowsPig}

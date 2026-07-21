@@ -166,7 +166,7 @@ function FollowerPet({ id, index, scale, hue }) {
 
   const containerStyle = {
     transform: `translate(${state.x + currentOffsetX.current}px, ${state.y}px) scale(${scale})`,
-    transformOrigin: 'bottom center',
+    transformOrigin: '50% calc(100% - 5px)',
     position: 'absolute',
     bottom: 0,
     left: 0,
@@ -185,10 +185,11 @@ function FollowerPet({ id, index, scale, hue }) {
       data-id={id}
       data-scale={scale}
       data-hue={hue}
+      data-piglet={JSON.stringify({ id, scale, hue, eatenScale: arguments[0].eatenScale })}
     >
       <div style={{
         transform: `scaleX(${state.facing}) skewX(${state.dragSkewX}deg) scale(${state.dragScaleX}, ${state.dragScaleY})`,
-        transformOrigin: 'bottom center',
+        transformOrigin: '50% calc(100% - 5px)',
         display: 'flex',
         justifyContent: 'center',
         position: 'relative'
@@ -306,6 +307,7 @@ function DepartingPiglet({ piglet, onDone, petType }) {
       style={{
         position: 'absolute', bottom: 0, left: 0, pointerEvents: 'none', zIndex: 25,
         transform: `translate(${piglet.x}px, ${piglet.y}px) scale(${piglet.scale})`,
+        transformOrigin: '50% calc(100% - 15px)',
         opacity: 1 // Khởi tạo rõ nét
       }}
     >
@@ -314,7 +316,7 @@ function DepartingPiglet({ piglet, onDone, petType }) {
           {bubble}
         </div>
       )}
-      <div style={{ transform: `scaleX(${piglet.facing})`, transformOrigin: 'bottom center', display: 'flex', justifyContent: 'center' }}>
+      <div style={{ transform: `scaleX(${piglet.facing})`, transformOrigin: '50% calc(100% - 15px)', display: 'flex', justifyContent: 'center' }}>
         <img
           src={sprite}
           alt="departing piglet"
@@ -533,7 +535,7 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
 
   const containerStyle = {
     transform: `translate(${safeX}px, ${safeY}px) scale(${safeScale})`,
-    transformOrigin: 'bottom center',
+    transformOrigin: '50% calc(100% - 15px)',
     cursor: isDragging ? 'grabbing' : 'grab',
   }
 
@@ -576,7 +578,7 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
 
       {/* Render heo con ĐANG THEO mẹ */}
       {followers.length > 0 && followers.map((f, i) => (
-        <FollowerPet key={f.id} id={f.id} index={i} scale={f.scale} hue={f.hue} />
+        <FollowerPet key={f.id} id={f.id} index={i} scale={f.scale} hue={f.hue} eatenScale={f.eatenScale} />
       ))}
 
       {/* Render heo con ĐÃ LỚN VÀ RỜI ĐI */}
@@ -671,7 +673,7 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
         <div style={{
           transform: `scaleX(${facing}) skewX(${dragSkewX}deg) scale(${dragScaleX}, ${dragScaleY})`,
           transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-          transformOrigin: 'bottom center',
+          transformOrigin: '50% calc(100% - 15px)',
           display: 'flex',
           justifyContent: 'center',
           position: 'relative'
