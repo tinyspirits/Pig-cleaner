@@ -141,6 +141,12 @@ function buildTrayMenu() {
       },
     },
     {
+      label: i18n.t('tray.customCharacter', '🎨 Custom Character'),
+      click: () => {
+        mainWindow.webContents.send('show-custom-character-panel')
+      },
+    },
+    {
       label: i18n.t('tray.stats'),
       click: () => {
         mainWindow.webContents.send('show-stats')
@@ -366,6 +372,33 @@ ipcMain.handle('read-sound-file', async (_, filePath) => {
   try {
     const data = fs.readFileSync(filePath)
     return data.toString('base64')
+  } catch {
+    return null
+  }
+})
+
+ipcMain.handle('select-character-frames', async () => {
+  const { dialog } = require('electron')
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Chọn ảnh frame cho nhân vật (Tối đa 10 ảnh)',
+    properties: ['openFile', 'multiSelections'],
+    filters: [
+      { name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp'] },
+      { name: 'All Files', extensions: ['*'] }
+    ]
+  })
+  if (result.canceled || result.filePaths.length === 0) return []
+  return result.filePaths.slice(0, 10)
+})
+
+ipcMain.handle('read-image-file', async (_, filePath) => {
+  const fs = require('fs')
+  try {
+    const data = fs.readFileSync(filePath)
+    const ext = filePath.split('.').pop().toLowerCase()
+    const mimeMap = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp' }
+    const mime = mimeMap[ext] || 'image/png'
+    return `data:${mime};base64,${data.toString('base64')}`
   } catch {
     return null
   }

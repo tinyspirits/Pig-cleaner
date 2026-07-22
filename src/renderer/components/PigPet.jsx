@@ -128,12 +128,76 @@ const DUCK_ANIMATIONS = {
   struggling: { frames: [getDuck(19), getDuck(20), getDuck(21)], fps: 6, loop: true },
 }
 
+const isElectron = typeof window !== 'undefined' && window.pigAPI
+
+function useCustomAnimations(petType, settingsVersion) {
+  const [customAnims, setCustomAnims] = useState(null)
+
+  useEffect(() => {
+    if (petType !== 'custom' || !isElectron) {
+      setCustomAnims(null)
+      return
+    }
+
+    let active = true
+    async function loadCustom() {
+      const s = await window.pigAPI.getSettings()
+      const customConfig = s.customCharacter || {}
+      const loadedAnims = {}
+
+      for (const [stateKey, cfg] of Object.entries(customConfig)) {
+        const framePaths = cfg?.frames || []
+        const loadedFrames = []
+
+        for (const p of framePaths) {
+          if (p.startsWith('data:') || p.startsWith('http')) {
+            loadedFrames.push(p)
+          } else {
+            const b64 = await window.pigAPI.readImageFile(p)
+            if (b64) loadedFrames.push(b64)
+          }
+        }
+
+        if (loadedFrames.length > 0) {
+          loadedAnims[stateKey] = {
+            frames: loadedFrames,
+            fps: cfg.fps || 2,
+            loop: cfg.loop !== false
+          }
+        }
+      }
+
+      if (active) {
+        setCustomAnims(loadedAnims)
+      }
+    }
+
+    loadCustom()
+  }, [petType, settingsVersion])
+
+  return customAnims
+}
+
 // ─── hooks & components ───────────────────────────────────────────────────────────
-function useSprite(mode, petType = 'pig') {
-  const anims = petType === 'duck' ? DUCK_ANIMATIONS : (petType === 'dog' ? DOG_ANIMATIONS : ANIMATIONS)
+function useSprite(mode, petType = 'pig', customAnims = null) {
+  const anims = useMemo(() => {
+    if (petType === 'custom') {
+      const base = { ...ANIMATIONS }
+      if (customAnims) {
+        Object.keys(customAnims).forEach(k => {
+          base[k] = customAnims[k]
+        })
+        if (customAnims.scare && !customAnims.scared) {
+          base.scared = customAnims.scare
+        }
+      }
+      return base
+    }
+    return petType === 'duck' ? DUCK_ANIMATIONS : (petType === 'dog' ? DOG_ANIMATIONS : ANIMATIONS)
+  }, [petType, customAnims])
 
   const config = useMemo(() => {
-    let cfg = anims[mode] || anims.idle
+    let cfg = anims[mode] || anims.idle || ANIMATIONS.idle
     if (petType === 'dog' && mode === 'eating') {
       const options = [
         anims.eating, // normal food
@@ -259,8 +323,49 @@ function FollowerPet({ id, index, scale, hue, eatenScale }) {
 }
 
 // COMPONENT HEO CON TÁCH BẦY (ĐI KHỎI MÀN HÌNH VÀ MỜ DẦN)
-function DepartingPiglet({ piglet, onDone, petType }) {
-  const sprite = useSprite('walking', petType)
+function FollowerPiglet({ follower, mainPos, pigScale, petType, isSpaceFrozen, customAnims }) {
+  const sprite = useSprite('walking', petType, customAnims)
+  const [bubble, setBubble] = useState(petType === 'duck' ? "Quắc! Con đi đây! 👋" : (petType === 'dog' ? "Gâu! Con tự lập rồi! 👋" : "Oink! Con tự lập rồi! 👋"))
+
+  const containerRef = useRef(null)
+
+  useEffect(() => {
+    const tId = setTimeout(() => setBubble(null), 3000)
+    return () => clearTimeout(tId)
+  }, [])
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        position: 'absolute', bottom: 0, left: 0, pointerEvents: 'none', zIndex: 25,
+        transform: `translate(${follower.x}px, ${follower.y}px) scale(${pigScale})`,
+        transformOrigin: '50% calc(100% - 15px)',
+        opacity: 1
+      }}
+    >
+      {bubble && (
+        <div className="speech-bubble" style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: '10px', whiteSpace: 'nowrap', zIndex: 10 }}>
+          {bubble}
+        </div>
+      )}
+      <div style={{ transform: `scaleX(${follower.facing})`, transformOrigin: '50% calc(100% - 15px)', display: 'flex', justifyContent: 'center' }}>
+        <img
+          src={sprite}
+          alt="piglet"
+          className="pig-sprite"
+          style={{
+            opacity: 0.9,
+            filter: `drop-shadow(0 4px 10px rgba(0, 0, 0, 0.25))`
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function DepartingPiglet({ piglet, onDone, petType, customAnims }) {
+  const sprite = useSprite('walking', petType, customAnims)
   const [bubble, setBubble] = useState(petType === 'duck' ? "Quắc! Con đi đây! 👋" : (petType === 'dog' ? "Gâu! Con tự lập rồi! 👋" : "Oink! Con tự lập rồi! 👋"))
 
   const containerRef = useRef(null)
@@ -386,9 +491,28 @@ function DepartingPiglet({ piglet, onDone, petType }) {
 export const PIG_WIDTH = 150
 export const PIG_HEIGHT = 150
 
-export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = false, isCleaning = false, cameraFollowsPig, onDoubleClick, onWakeUp, weatherData = null, poolMode = false, petType = 'pig', explosionEvent = null, onExplosionDone, followers = [], onPlaySound }) {
+export default function PigPet({ 
+  mode, 
+  bubble, 
+  pigScale = 1, 
+  isPanelOpen = false, 
+  isCleaning = false, 
+  cameraFollowsPig = false,
+  onDoubleClick,
+  onWakeUp,
+  weatherData,
+  poolMode,
+  petType = 'pig',
+  settingsVersion = 0,
+  explosionEvent,
+  onExplosionDone,
+  followers = [],
+  onPlaySound
+}) {
   const { t } = useTranslation()
   const windRef = useRef(null)
+
+  const customAnims = useCustomAnimations(petType, settingsVersion)
 
   const {
     position, facing, isDragging, dragState, handleMouseEnter, handleMouseLeave, handleDragStart, handleDrag, handleDragEnd, wasDragged, isWallHit, dragVelocity, swimAction, isAboveWater, paleLevel, isSpaceFrozen
@@ -513,7 +637,7 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
   } else if (mode === 'eating' || mode === 'sniffing' || mode === 'full' || mode === 'scared') {
     displayMode = mode
   }
-  const currentSprite = useSprite(displayMode, petType)
+  const currentSprite = useSprite(displayMode, petType, customAnims)
 
   const screenHeight = window.innerHeight
   const visualY = cameraFollowsPig ? Math.max(-screenHeight * 0.7, position.y) : position.y
@@ -659,14 +783,20 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
       <SkyClouds altitude={altitude} />
       <GrassTrail x={position.x} y={position.y} isWalking={mode === 'walking'} trailType={trailType} />
 
-      {/* Render heo con ĐANG THEO mẹ */}
-      {followers.length > 0 && followers.map((f, i) => (
-        <FollowerPet key={f.id} id={f.id} index={i} scale={f.scale} hue={f.hue} eatenScale={f.eatenScale} />
+      {/* ĐÀN HEO CON / BẦY CON THEO SAU */}
+      {followers.map(f => (
+        <FollowerPet key={f.id} id={f.id} index={followers.indexOf(f)} scale={f.scale} hue={f.hue} eatenScale={f.eatenScale} />
       ))}
 
-      {/* Render heo con ĐÃ LỚN VÀ RỜI ĐI */}
+      {/* CÁC CON CON TÁCH BẦY KHI NỔ */}
       {departingList.map(p => (
-        <DepartingPiglet key={p.departId} piglet={p} petType={petType} onDone={handleDepartDone} />
+        <DepartingPiglet
+          key={p.departId}
+          piglet={p}
+          petType={petType}
+          customAnims={customAnims}
+          onDone={handleDepartDone}
+        />
       ))}
 
       {explosionEvent && (

@@ -247,5 +247,38 @@
   },
   "fish": {
     "caught": "🐟 Ngon quá, cảm ơn nha!"
+  },
+  "customCharacter": {
+    "title": "Tùy Chỉnh Nhân Vật",
+    "state": "Trạng thái",
+    "addFrames": "Thêm ảnh Frame (Tối đa 10)",
+    "clearAllFrames": "Xoá tất cả frame",
+    "frameList": "Danh sách Frame",
+    "noFramesYet": "Chưa có frame ảnh nào cho trạng thái này.<br/>Bấm \"Thêm ảnh Frame\" để chọn tối đa 10 ảnh.",
+    "deleteFrame": "Xoá frame này",
+    "livePreview": "Xem trước (Live Preview)",
+    "cancel": "Hủy",
+    "saving": "Đang lưu...",
+    "saveAndDone": "Lưu & Hoàn Tất",
+    "states": {
+      "idle": "Bình thường / Đứng yên",
+      "walking": "Đang đi bộ",
+      "sniffing": "Đang ngửi rác",
+      "eating": "Đang ăn rác",
+      "full": "Ăn no",
+      "sleeping": "Đang ngủ",
+      "scared": "Sợ hãi / Sét đánh",
+      "drag_held": "Đang bị giữ",
+      "drag_falling": "Rơi khi thả",
+      "drag_landed": "Tiếp đất",
+      "diving_float": "Bơi nổi mặt nước",
+      "diving_down": "Lặn xuống",
+      "diving_up": "Ngoi lên",
+      "diving_bottom": "Bơi dưới đáy",
+      "drowning": "Ngạt nước",
+      "drowning_sink": "Chìm đáy ngạt",
+      "drowning_bottom": "Nằm đáy ngạt",
+      "struggling": "Giãy giụa"
+    }
   }
 }

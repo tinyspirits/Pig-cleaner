@@ -46,6 +46,28 @@ const DEFAULTS = {
     pig: { eating: null, birdCatch: null, random: null, swimming: null, scared: null },
     duck: { eating: null, birdCatch: null, random: null, swimming: null, scared: null },
     dog: { eating: null, birdCatch: null, random: null, swimming: null, scared: null },
+    custom: { eating: null, birdCatch: null, random: null, swimming: null, scared: null },
+  },
+  // Custom character animation frames & settings
+  customCharacter: {
+    idle: { frames: [], fps: 2, loop: true },
+    walking: { frames: [], fps: 6, loop: true },
+    sniffing: { frames: [], fps: 2, loop: true },
+    eating: { frames: [], fps: 6, loop: true },
+    full: { frames: [], fps: 2, loop: true },
+    sleeping: { frames: [], fps: 1.5, loop: true },
+    scared: { frames: [], fps: 1, loop: true },
+    drag_held: { frames: [], fps: 1, loop: false },
+    drag_falling: { frames: [], fps: 1, loop: false },
+    drag_landed: { frames: [], fps: 1, loop: false },
+    diving_float: { frames: [], fps: 1, loop: true },
+    diving_down: { frames: [], fps: 6, loop: true },
+    diving_up: { frames: [], fps: 1, loop: true },
+    diving_bottom: { frames: [], fps: 6, loop: true },
+    drowning: { frames: [], fps: 6, loop: true },
+    drowning_sink: { frames: [], fps: 1, loop: false },
+    drowning_bottom: { frames: [], fps: 1, loop: false },
+    struggling: { frames: [], fps: 6, loop: true },
   },
 }
 
@@ -53,7 +75,15 @@ function load() {
   try {
     if (fs.existsSync(SETTINGS_PATH)) {
       const raw = fs.readFileSync(SETTINGS_PATH, 'utf8')
-      return { ...DEFAULTS, ...JSON.parse(raw) }
+      const parsed = JSON.parse(raw)
+      return { 
+        ...DEFAULTS, 
+        ...parsed,
+        petSounds: {
+          ...DEFAULTS.petSounds,
+          ...(parsed.petSounds || {})
+        }
+      }
     }
   } catch { /* ignore */ }
   return { ...DEFAULTS }

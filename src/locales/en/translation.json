@@ -249,5 +249,38 @@
   },
   "fish": {
     "caught": "🐟 Yum, thanks!"
+  },
+  "customCharacter": {
+    "title": "Custom Character",
+    "state": "State",
+    "addFrames": "Add Frames (Max 10)",
+    "clearAllFrames": "Clear all frames",
+    "frameList": "Frame List",
+    "noFramesYet": "No frames yet for this state.<br/>Click \"Add Frames\" to select up to 10 images.",
+    "deleteFrame": "Delete this frame",
+    "livePreview": "Live Preview",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "saveAndDone": "Save & Done",
+    "states": {
+      "idle": "Idle / Standing still",
+      "walking": "Walking",
+      "sniffing": "Sniffing trash",
+      "eating": "Eating trash",
+      "full": "Full",
+      "sleeping": "Sleeping",
+      "scared": "Scared / Lightning",
+      "drag_held": "Being held",
+      "drag_falling": "Falling",
+      "drag_landed": "Landed",
+      "diving_float": "Floating on water",
+      "diving_down": "Diving down",
+      "diving_up": "Surfacing",
+      "diving_bottom": "Swimming at bottom",
+      "drowning": "Drowning",
+      "drowning_sink": "Sinking (drowning)",
+      "drowning_bottom": "Bottom (drowning)",
+      "struggling": "Struggling"
+    }
   }
 }

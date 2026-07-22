@@ -5,6 +5,7 @@ import quackSound from './assets/quack.mp3'
 import StatsPanel from './components/StatsPanel'
 import CachePanel from './components/CachePanel'
 import SettingsPanel from './components/SettingsPanel'
+import CustomCharacterPanel from './components/CustomCharacterPanel'
 import WeatherEffects from './components/WeatherEffects'
 import { usePigState } from './hooks/usePigState'
 import { useWeather } from './hooks/useWeather'
@@ -50,13 +51,15 @@ function App() {
   const [showStats, setShowStats] = useState(false)
   const [showCache, setShowCache] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showCustomCharacter, setShowCustomCharacter] = useState(false)
   const [permissionWarning, setPermissionWarning] = useState(false)
   const [isCleaning, setIsCleaning] = useState(false)
   const [isSuspended, setIsSuspended] = useState(false)
+  const [settingsVersion, setSettingsVersion] = useState(0)
   const [weatherSettings, setWeatherSettings] = useState({ weatherEffects: true, weatherAlerts: true, poolMode: false, petType: 'pig', soundEnabled: false, petSounds: null })
 
   const { mode, bubble, pigScale, pigBaseScale, pigEatenScale, setPigScale, resetPigScale, totalEaten, cameraFollowsPig, reloadSettings, triggerEat, setMode, forceBubble, explosionEvent, clearExplosionEvent, followers, spawnPiglet, clearPiglets } = usePigState(trashInfo, weatherSettings.petType)
-  const isPanelOpen = showStats || showCache || showSettings || permissionWarning
+  const isPanelOpen = showStats || showCache || showSettings || showCustomCharacter || permissionWarning
   const weather = useWeather()
   const { t, i18n } = useTranslation()
   const petLabel = t(weatherSettings.petType === 'duck' ? 'settingsPanel.duck' : (weatherSettings.petType === 'dog' ? 'settingsPanel.dog' : 'settingsPanel.pig'))
@@ -94,6 +97,7 @@ function App() {
   // Reload settings khi đóng Settings panel
   const handleReloadSettings = () => {
     reloadSettings()
+    setSettingsVersion(v => v + 1)
     if (isElectron) {
       window.pigAPI.getSettings().then(s => {
         setWeatherSettings({
@@ -250,7 +254,7 @@ function App() {
 
     // Lắng nghe show stats
     const unsubStats = window.pigAPI.onShowStats(async () => {
-      setShowStats(prev => !prev)
+      setShowStats(true)
       if (isElectron) {
         const newTrash = await window.pigAPI.getTrashInfo()
         setTrashInfo(newTrash)
@@ -269,12 +273,18 @@ function App() {
 
     // Lắng nghe show cache panel
     const unsubCache = window.pigAPI.onShowCachePanel(() => {
-      setShowCache(prev => !prev)
+      setShowCache(true)
     })
 
     // Lắng nghe show settings panel
     const unsubSettings = window.pigAPI.onShowSettings(() => {
-      setShowSettings(prev => !prev)
+      setShowSettings(true)
+    })
+
+    // Lắng nghe show custom character panel (từ tray)
+    const unsubCustomChar = window.pigAPI.onShowCustomCharacterPanel?.(() => {
+      console.log('Received show-custom-character-panel from tray!')
+      setShowCustomCharacter(true)
     })
 
     // Lắng nghe bắt đầu dọn dẹp (từ tray)
@@ -491,6 +501,16 @@ function App() {
         />
       )}
 
+      {showCustomCharacter && (
+        <CustomCharacterPanel
+          onClose={() => setShowCustomCharacter(false)}
+          onSaved={() => {
+            setShowCustomCharacter(false)
+            handleReloadSettings()
+          }}
+        />
+      )}
+
       {/* Con Heo Chính */}
       <PigPet
         mode={mode}
@@ -504,6 +524,7 @@ function App() {
         weatherData={weatherSettings.weatherAlerts ? weather : null}
         poolMode={weatherSettings.poolMode}
         petType={weatherSettings.petType}
+        settingsVersion={settingsVersion}
         explosionEvent={explosionEvent}
         onExplosionDone={clearExplosionEvent}
         followers={followers.map(f => ({

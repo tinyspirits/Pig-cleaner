@@ -35,6 +35,8 @@ contextBridge.exposeInMainWorld('pigAPI', {
   searchLocation: (query) => ipcRenderer.invoke('search-location', query),
   selectSoundFile: () => ipcRenderer.invoke('select-sound-file'),
   readSoundFile: (filePath) => ipcRenderer.invoke('read-sound-file', filePath),
+  selectCharacterFrames: () => ipcRenderer.invoke('select-character-frames'),
+  readImageFile: (filePath) => ipcRenderer.invoke('read-image-file', filePath),
 
   // Event listeners (Main → Renderer)
   onSpawnPiglet: (callback) => {
@@ -76,6 +78,10 @@ contextBridge.exposeInMainWorld('pigAPI', {
   onShowSettings: (callback) => {
     ipcRenderer.on('show-settings', () => callback())
     return () => ipcRenderer.removeAllListeners('show-settings')
+  },
+  onShowCustomCharacterPanel: (callback) => {
+    ipcRenderer.on('show-custom-character-panel', () => callback())
+    return () => ipcRenderer.removeAllListeners('show-custom-character-panel')
   },
   onCleanStarted: (callback) => {
     ipcRenderer.on('clean-started', () => callback())

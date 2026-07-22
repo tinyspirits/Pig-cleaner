@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { playLocalAudio } from '../utils/playLocalAudio'
+import CustomCharacterPanel from './CustomCharacterPanel'
 
 const isElectron = typeof window !== 'undefined' && window.pigAPI
 
@@ -31,6 +32,7 @@ export default function SettingsPanel({ onClose, pigScale = 1.0, pigEatenScale =
       pig: { eating: null, birdCatch: null, random: null, swimming: null, scared: null },
       duck: { eating: null, birdCatch: null, random: null, swimming: null, scared: null },
       dog: { eating: null, birdCatch: null, random: null, swimming: null, scared: null },
+      custom: { eating: null, birdCatch: null, random: null, swimming: null, scared: null },
     },
   })
   const [categories, setCategories] = useState([])
@@ -38,6 +40,7 @@ export default function SettingsPanel({ onClose, pigScale = 1.0, pigEatenScale =
   const [locationQuery, setLocationQuery] = useState('')
   const [locationResults, setLocationResults] = useState([])
   const [searchingLocation, setSearchingLocation] = useState(false)
+  const [showCustomConfig, setShowCustomConfig] = useState(false)
   const [autoCity, setAutoCity] = useState(null)
   const [initialLanguage] = useState(i18n.language)
   const petLabel = t(settings.petType === 'duck' ? 'settingsPanel.duck' : (settings.petType === 'dog' ? 'settingsPanel.dog' : 'settingsPanel.pig'))
@@ -312,7 +315,30 @@ export default function SettingsPanel({ onClose, pigScale = 1.0, pigEatenScale =
                 <option value="pig">{t('settingsPanel.pig', 'Heo (Pig)')}</option>
                 <option value="duck">{t('settingsPanel.duck', 'Vịt (Duck)')}</option>
                 <option value="dog">{t('settingsPanel.dog', 'Chó (Dog)')}</option>
+                <option value="custom">🎨 Custom Character</option>
               </select>
+
+              <button
+                type="button"
+                onClick={() => setShowCustomConfig(true)}
+                style={{
+                  marginTop: '8px',
+                  width: '100%',
+                  padding: '6px 10px',
+                  background: 'rgba(120, 80, 220, 0.3)',
+                  border: '1px solid rgba(160, 120, 255, 0.4)',
+                  color: '#fff',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px'
+                }}
+              >
+                ⚙️ {t('settingsPanel.configCustomCharacter', 'Cấu hình Custom Character')}
+              </button>
             </div>
 
             <div className="settings-section">
@@ -500,6 +526,17 @@ export default function SettingsPanel({ onClose, pigScale = 1.0, pigEatenScale =
           {saving ? '...' : t('cachePanel.saveAndClose', 'Save & Close')} 
         </button>
       </div>
+      {showCustomConfig && (
+        <CustomCharacterPanel
+          onClose={() => setShowCustomConfig(false)}
+          onSaved={async () => {
+            if (isElectron) {
+              const s = await window.pigAPI.getSettings()
+              setSettings(s)
+            }
+          }}
+        />
+      )}
     </div>
   )
 }
