@@ -300,9 +300,7 @@ function App() {
       try {
         const sourceUrl = img.processedUrl || img.originalUrl;
         const config = {
-          debug: true,
           progress: (key, current, total) => {
-            console.log(`[AI BG] ${key} ${current}/${total}`);
             if (key === 'compute:inference' || key === 'fetch:model') {
               setGlobalProgress(`[AI] ${key}: ${i + 1}/${updatedImages.length}... ${Math.round((current / total) * 100)}%`);
             }
@@ -314,7 +312,6 @@ function App() {
           const blob = await removeBackground(sourceUrl, config);
           newUrl = URL.createObjectURL(blob);
         } catch (aiError) {
-          console.warn('[AI BG] Failed to load model, silently falling back to Solid BG:', aiError.message);
           const fallbackUrl = img.processedUrl || img.originalUrl;
           newUrl = await processSolidBgForUrl(fallbackUrl);
         }
