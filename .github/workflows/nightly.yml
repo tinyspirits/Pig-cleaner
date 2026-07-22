@@ -148,6 +148,19 @@ jobs:
             - **Cách 2 (Xoá vĩnh viễn cảnh báo):** Trước khi mở, nhấn chuột phải vào file `.exe` -> Chọn **Properties** (Thuộc tính) -> Ở thẻ General, tick vào ô **Unblock** (Mở khoá) ở dưới cùng -> Nhấn OK.
             </details>
             
+            <details>
+            <summary>🎨 <b>Hướng dẫn tự làm nhân vật (Character Maker Tool)</b></summary>
+            
+            Công cụ **Character Maker Tool** đi kèm giúp bạn dễ dàng biến bất kỳ hình ảnh nào thành thú cưng dọn rác của riêng mình:
+            1. Mở ứng dụng **Character Maker Tool** (cài đặt từ các file tải ở dưới).
+            2. Bấm nút tải ảnh lên hoặc chọn từ thư viện ảnh có sẵn.
+            3. Kéo thả vùng ảnh (Crop) để chọn chính xác hình ảnh nhân vật mà bạn muốn.
+            4. Hệ thống AI sẽ tự động tách nền (xóa phông) và tạo sprite sheet (bản vẽ chuyển động) cho các trạng thái: đi lại, ngửi rác, ngủ...
+            5. Nhấn nút **"Lưu bộ nhân vật (Export ZIP)"** để tải file `.zip` về máy.
+            6. Mở ứng dụng **Pig Cleaner** chính, chuột phải vào thú cưng -> **Cài đặt** -> cuộn xuống mục **Chọn nhân vật**.
+            7. Bấm nút **"Thêm nhân vật (.zip)"** và chọn file `.zip` vừa tạo. Chọn nhân vật mới từ danh sách để bắt đầu nuôi!
+            </details>
+            
             📝 **Dành cho Lập trình viên:**
             Nếu bạn muốn tự custom, chỉnh sửa code và tự đóng gói (build) ứng dụng cho riêng mình, hãy xem hướng dẫn chi tiết tại [Trang chủ dự án (README)](https://github.com/tinyspirits/Pig-cleaner).
           prerelease: true
