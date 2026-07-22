@@ -91,7 +91,7 @@ function buildTrayMenu() {
     },
     { type: 'separator' },
     {
-      label: isDuck ? i18n.t('tray.callDuck', '🦆 Gọi vịt về góc phải') : i18n.t('tray.callPig'),
+      label: i18n.t('tray.callPet', '🐾 Gọi Pet về góc phải'),
       click: () => {
         mainWindow.webContents.send('pig-called-home')
       },
@@ -167,9 +167,17 @@ function buildTrayMenu() {
 
 function createTray() {
   const settings = settingsStore.load()
-  const isDuck = settings.petType === 'duck'
+  const petType = settings.petType || 'pig'
 
-  const iconName = isDuck ? 'duck-tray-icon.png' : 'tray-icon.png'
+  let iconName = 'tray-icon.png' // Default pig
+  if (petType === 'duck') {
+    iconName = 'duck-tray-icon.png'
+  } else if (petType === 'dog') {
+    iconName = 'dog-tray-icon.png'
+  } else if (petType === 'custom') {
+    iconName = 'custom-tray-icon.png'
+  }
+
   const iconPath = isDev
     ? path.join(__dirname, `../../src/renderer/assets/${iconName}`)
     : path.join(process.resourcesPath, `assets/${iconName}`)
@@ -303,8 +311,16 @@ ipcMain.handle('save-settings', (_, newSettings) => {
   // Update tray if language or petType changed
   if ((newSettings.language !== prev.language) || (newSettings.petType !== prev.petType)) {
     if (tray && !tray.isDestroyed()) {
-      const isDuck = newSettings.petType === 'duck'
-      const iconName = isDuck ? 'duck-tray-icon.png' : 'tray-icon.png'
+      const petType = newSettings.petType || 'pig'
+      let iconName = 'tray-icon.png'
+      if (petType === 'duck') {
+        iconName = 'duck-tray-icon.png'
+      } else if (petType === 'dog') {
+        iconName = 'dog-tray-icon.png'
+      } else if (petType === 'custom') {
+        iconName = 'custom-tray-icon.png'
+      }
+      
       const iconPath = isDev
         ? path.join(__dirname, `../../src/renderer/assets/${iconName}`)
         : path.join(process.resourcesPath, `assets/${iconName}`)

@@ -54,16 +54,16 @@
     "instruction": "システム設定 → プライバシーとセキュリティ → フルディスクアクセス"
   },
   "tray": {
-    "callPig": "🐷 豚を家に呼ぶ",
+    "callPet": "🐾 ペットを家に呼ぶ",
     "checkTrash": "🗑️ 今すぐゴミ箱を確認",
     "cleanTrash": "🧹 ゴミ箱を空にする",
     "cleanCache": "🗂️ キャッシュを消去",
     "cleanAll": "🧹 すべてを掃除",
     "settings": "⚙️ 設定",
+    "customCharacter": "🎨 カスタムキャラクター",
     "stats": "📊 統計を見る",
     "quit": "❌ 終了",
     "tooltip": "ゴミ食い豚 🐷",
-    "callDuck": "🦆 アヒルを家に呼ぶ",
     "tooltipDuck": "ゴミ掃除アヒル 🦆"
   },
   "cachePanel": {

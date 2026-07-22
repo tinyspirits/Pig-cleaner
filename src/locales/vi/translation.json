@@ -54,13 +54,13 @@
     "instruction": "System Settings → Privacy & Security → Full Disk Access"
   },
   "tray": {
-    "callPig": "🐷 Gọi heo về góc phải",
-    "callDuck": "🦆 Gọi vịt về góc phải",
+    "callPet": "🐾 Gọi Pet về góc phải",
     "checkTrash": "🗑️ Kiểm tra rác ngay",
     "cleanTrash": "🧹 Dọn thùng rác",
     "cleanCache": "🗂️ Dọn Cache",
     "cleanAll": "🧹 Dọn tất cả",
     "settings": "⚙️ Cài đặt",
+    "customCharacter": "🎨 Nhân vật tùy chỉnh",
     "stats": "📊 Xem thống kê",
     "quit": "❌ Thoát",
     "tooltip": "Heo Ăn Rác 🐷",

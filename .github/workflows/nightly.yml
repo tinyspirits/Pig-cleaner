@@ -57,8 +57,14 @@ jobs:
           NEW_VERSION="1.0.${PATCH}-${BUILD}"
           npm version $NEW_VERSION --no-git-tag-version
 
-      - name: Build Application
+      - name: Build Application (Pig-cleaner)
         run: npm run build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Application (Character Maker Tool)
+        working-directory: ./character-tool
+        run: npm install && npm run build:electron
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -108,18 +114,22 @@ jobs:
             <details>
             <summary>🍏 <b>Dành cho macOS (Chip M1/M2/M3 và Intel)</b></summary>
             
+            1. Ứng dụng dọn rác chính: `Pig.Cleaner-1.0.x-mac.dmg` (hoặc tương tự)
+            2. Ứng dụng hỗ trợ cắt nhân vật: `Character.Maker.Tool-0.0.0-mac.dmg` (hoặc tương tự)
+
             ⚠️ **Hướng dẫn cài đặt trên macOS (Quan trọng):**
-            Sau khi tải file `.dmg` và kéo thả `pig-cleaner.app` vào thư mục **Applications** (Ứng dụng), bạn có thể gặp cảnh báo bảo mật. Vui lòng xử lý theo 1 trong 2 trường hợp sau:
+            Sau khi tải file `.dmg` và kéo thả `.app` vào thư mục **Applications** (Ứng dụng), bạn có thể gặp cảnh báo bảo mật. Vui lòng xử lý theo 1 trong 2 trường hợp sau:
             
             **👉 Trường hợp 1: Báo lỗi "Unidentified Developer" (Nhà phát triển không xác định)**
             - Mở **System Settings** (Cài đặt hệ thống) -> **Privacy & Security** (Quyền riêng tư & Bảo mật).
-            - Cuộn xuống dưới cùng, tìm dòng chữ báo Pig Cleaner bị chặn và bấm nút **Open Anyway** (Vẫn mở).
+            - Cuộn xuống dưới cùng, tìm dòng chữ báo ứng dụng bị chặn và bấm nút **Open Anyway** (Vẫn mở).
             
             **👉 Trường hợp 2 (Trên macOS đời mới): Báo lỗi "App is damaged..." (App bị hỏng)**
             - Mở ứng dụng **Terminal** trên máy Mac.
-            - Chạy dòng lệnh sau và ấn Enter (lệnh này giúp xoá nhãn cách ly an toàn của file tải từ internet):
+            - Chạy dòng lệnh sau và ấn Enter (lệnh này giúp xoá nhãn cách ly an toàn của file tải từ internet, thay tên app tương ứng):
                ```bash
                xattr -cr /Applications/pig-cleaner.app
+               xattr -cr "/Applications/Character Maker Tool.app"
                ```
             - Mở lại ứng dụng bình thường!
             </details>
@@ -127,6 +137,9 @@ jobs:
             <details>
             <summary>🪟 <b>Dành cho Windows</b></summary>
             
+            1. Ứng dụng dọn rác chính: `Pig.Cleaner... Setup.exe`
+            2. Ứng dụng hỗ trợ cắt nhân vật: `Character.Maker.Tool... Setup.exe`
+
             - Tải file `.exe` ở dưới và cài đặt bình thường.
             
             ⚠️ **Hướng dẫn bỏ qua màn hình xanh SmartScreen:**

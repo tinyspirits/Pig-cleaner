@@ -54,13 +54,13 @@
     "instruction": "System Settings → Privacy & Security → Full Disk Access"
   },
   "tray": {
-    "callPig": "🐷 Call Piggy Home",
-    "callDuck": "🦆 Call Duck Home",
+    "callPet": "🐾 Call Pet Home",
     "checkTrash": "🗑️ Check Trash Now",
     "cleanTrash": "🧹 Empty Trash",
     "cleanCache": "🗂️ Clean Cache",
     "cleanAll": "🧹 Clean Everything",
     "settings": "⚙️ Settings",
+    "customCharacter": "🎨 Custom Character",
     "stats": "📊 View Stats",
     "quit": "❌ Quit",
     "tooltip": "Trash Eating Pig 🐷",
