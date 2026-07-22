@@ -100,6 +100,9 @@
     "currentLocation": "Current",
     "pool": "Pool Mode (Water level)",
     "unlimitedPigSize": "{{pet}} grows unlimitedly when eating trash",
+    "neverGrow": "{{pet}} and babies never grow",
+    "spawnPiglet": "Spawn Baby",
+    "clearPiglets": "Clear Babies",
     "language": "Language:",
     "english": "English",
     "vietnamese": "Vietnamese",
@@ -117,10 +120,19 @@
     "petType": "Pet Type",
     "pig": "Pig",
     "duck": "Duck",
+    "dog": "Dog",
     "startup": "Startup",
     "openAtLogin": "Start automatically when you log in (Windows/macOS)",
     "pigSize": "Size",
-    "pigSizeHint": "can only shrink, cannot exceed current size"
+    "pigSizeHint": "can only shrink, cannot exceed current size",
+    "baseSize": "Base Size",
+    "smallerThanDefault": "smaller than default",
+    "isDefault": "default",
+    "smallest": "smallest",
+    "default": "default",
+    "bonusText": "bonus from trash — decreases over time",
+    "total": "total",
+    "resetSize": "Reset to default (x1.0)"
   },
   "statsPanel": {
     "title": "{{pet}} Stats",
@@ -186,6 +198,31 @@
     "cleaning": "Eating trash... 🦆",
     "explode": "BOOM! The duck burst into a brood of ducklings! 🦆💥",
     "revenge": "🐦 You dared take my duckling? Revenge!"
+  },
+  "dog": {
+    "sniffQuotes": [
+      "Woof! Smells like trash! 🐶",
+      "Sniff sniff... any food?",
+      "Let me smell..."
+    ],
+    "idleQuotes": [
+      "Woof woof! 🐕",
+      "I'm so hungry 🦴",
+      "So sleepy~",
+      "*wags tail*",
+      "Any trash here?"
+    ],
+    "fullQuotes": [
+      "My belly is so full! 🐕",
+      "Burp~ 😮‍💨",
+      "So delicious!",
+      "I wanna sleep...",
+      "Round belly!"
+    ],
+    "yummy": "Woof, yummy!",
+    "cleaning": "Chewing trash... 🐶",
+    "explode": "BOOM! The dog burst into a pack of puppies! 🐶💥",
+    "revenge": "🐦 You dared take my puppy? Revenge!"
   },
   "cacheCategories": {
     "trash": "🗑️ Trash",

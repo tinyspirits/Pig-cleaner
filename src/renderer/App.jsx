@@ -54,7 +54,7 @@ function App() {
   const [isSuspended, setIsSuspended] = useState(false)
   const [weatherSettings, setWeatherSettings] = useState({ weatherEffects: true, weatherAlerts: true, poolMode: false, petType: 'pig', soundEnabled: false })
 
-  const { mode, bubble, pigScale, pigBaseScale, pigEatenScale, setPigScale, resetPigScale, totalEaten, cameraFollowsPig, reloadSettings, triggerEat, setMode, forceBubble, explosionEvent, clearExplosionEvent, followers } = usePigState(trashInfo, weatherSettings.petType)
+  const { mode, bubble, pigScale, pigBaseScale, pigEatenScale, setPigScale, resetPigScale, totalEaten, cameraFollowsPig, reloadSettings, triggerEat, setMode, forceBubble, explosionEvent, clearExplosionEvent, followers, spawnPiglet, clearPiglets } = usePigState(trashInfo, weatherSettings.petType)
   const isPanelOpen = showStats || showCache || showSettings || permissionWarning
   const weather = useWeather()
   const { t, i18n } = useTranslation()
@@ -64,10 +64,10 @@ function App() {
   // Khi đạt 500%, hiện bong bóng ăn mừng lúc "nổ" tách nhỏ
   useEffect(() => {
     if (!explosionEvent) return
-    const key = weatherSettings.petType === 'duck' ? 'duck.explode' : 'pig.explode'
+    const key = weatherSettings.petType === 'duck' ? 'duck.explode' : (weatherSettings.petType === 'dog' ? 'dog.explode' : 'pig.explode')
     const def = weatherSettings.petType === 'duck'
       ? 'BÙM! Vịt tách thành cả đàn vịt con! 🦆💥'
-      : 'BÙM! Heo tách thành cả đàn heo con! 🐷💥'
+      : (weatherSettings.petType === 'dog' ? 'BÙM! Chó tách thành cả đàn chó con! 🐶💥' : 'BÙM! Heo tách thành cả đàn heo con! 🐷💥')
     forceBubble(t(key, def))
   }, [explosionEvent])
 
@@ -177,10 +177,10 @@ function App() {
       const type = e.detail?.type
       triggerEat(freedKB)
       if (type === 'bird') {
-        const key = weatherSettings.petType === 'duck' ? 'duck.revenge' : 'pig.revenge'
+        const key = weatherSettings.petType === 'duck' ? 'duck.revenge' : (weatherSettings.petType === 'dog' ? 'dog.revenge' : 'pig.revenge')
         const def = weatherSettings.petType === 'duck'
           ? '🐦 Dám bắt vịt con của tao à? Trả thù cho con!'
-          : '🐦 Dám bắt heo con của tao à? Trả thù cho con!'
+          : (weatherSettings.petType === 'dog' ? '🐦 Dám bắt chó con của tao à? Trả thù cho con!' : '🐦 Dám bắt heo con của tao à? Trả thù cho con!')
         forceBubble(t(key, def))
       } else {
         forceBubble(t('fish.caught') || '🐟')
@@ -238,6 +238,14 @@ function App() {
         const newCache = await window.pigAPI.getCacheTypes()
         setCacheInfo(newCache)
       }
+    })
+
+    const unsubSpawn = window.pigAPI?.onSpawnPiglet?.(() => {
+      window.dispatchEvent(new CustomEvent('spawn-piglet'))
+    })
+
+    const unsubClear = window.pigAPI?.onClearPiglets?.(() => {
+      window.dispatchEvent(new CustomEvent('clear-piglets'))
     })
 
     // Lắng nghe show cache panel
@@ -302,6 +310,8 @@ function App() {
       unsubCleanComplete?.()
       unsubSuspend?.()
       unsubResume?.()
+      unsubSpawn?.()
+      unsubClear?.()
     }
   }, [])
 
@@ -460,6 +470,8 @@ function App() {
           pigEatenScale={pigEatenScale}
           onChangePigScale={setPigScale}
           onResetPigScale={resetPigScale}
+          onSpawnPiglet={spawnPiglet}
+          onClearPiglets={clearPiglets}
           onClose={() => {
             setShowSettings(false)
             handleReloadSettings()

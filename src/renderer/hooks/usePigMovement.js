@@ -162,6 +162,14 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
         submergedTimeRef.current += intervalMs
       } else {
         submergedTimeRef.current = 0
+        if (isSuffocatingRef.current && swimPhaseRef.current === 1) {
+          isSuffocatingRef.current = false
+          if (['struggling', 'drowning_sink', 'drowning_bottom'].includes(swimActionRef.current)) {
+            swimActionRef.current = 'surface'
+            setSwimAction('surface')
+            nextSwimChangeRef.current = performance.now() + 2000
+          }
+        }
       }
 
       const SUFFOCATE_MS = 16000 // ~16 giây liên tục dưới nước sẽ bắt đầu ngạt
@@ -275,7 +283,11 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
               } else if (swimActionRef.current === 'bottom') {
                 swimActionRef.current = 'rising'
                 setSwimAction('rising')
-                nextSwimChangeRef.current = now + 700 + Math.random() * 2200
+                if (submergedTimeRef.current > 8000) {
+                  nextSwimChangeRef.current = now + 9999999 // Force reach surface
+                } else {
+                  nextSwimChangeRef.current = now + 700 + Math.random() * 2200
+                }
                 const wanderDir = Math.random() < 0.5 ? 1 : -1
                 state.facing = wanderDir
                 setFacing(wanderDir)

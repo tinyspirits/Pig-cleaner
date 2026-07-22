@@ -100,6 +100,9 @@
     "currentLocation": "Hiện tại",
     "pool": "Bật chế độ hồ bơi (Có nước)",
     "unlimitedPigSize": "{{pet}} ăn rác tăng kích thước không giới hạn",
+    "neverGrow": "{{pet}} và con không bao giờ lớn",
+    "spawnPiglet": "Sinh con",
+    "clearPiglets": "Xóa đàn con",
     "language": "Ngôn ngữ / Language:",
     "english": "English (Tiếng Anh)",
     "vietnamese": "Tiếng Việt (Vietnamese)",
@@ -120,7 +123,15 @@
     "startup": "Khởi động",
     "openAtLogin": "Tự khởi động khi đăng nhập máy (Windows/macOS)",
     "pigSize": "Kích thước",
-    "pigSizeHint": "chỉ có thể thu nhỏ, không thể vượt quá kích thước hiện tại"
+    "pigSizeHint": "chỉ có thể thu nhỏ, không thể vượt quá kích thước hiện tại",
+    "baseSize": "Kích thước nền",
+    "smallerThanDefault": "nhỏ hơn mặc định",
+    "isDefault": "mặc định",
+    "smallest": "nhỏ nhất",
+    "default": "mặc định",
+    "bonusText": "bonus từ ăn rác — tự giảm dần",
+    "total": "tổng",
+    "resetSize": "Reset về mặc định (x1.0)"
   },
   "statsPanel": {
     "title": "{{pet}} Thống Kê",
@@ -185,6 +196,31 @@
     "cleaning": "Đang ăn rác... 🦆",
     "explode": "BÙM! Vịt tách thành cả đàn vịt con! 🦆💥",
     "revenge": "🐦 Dám bắt vịt con của tao à? Trả thù cho con!"
+  },
+  "dog": {
+    "sniffQuotes": [
+      "Gâu! Có mùi rác! 🐶",
+      "Khịt khịt... có gì ăn không?",
+      "Để ngửi xem nào..."
+    ],
+    "idleQuotes": [
+      "Gâu gâu! 🐕",
+      "Đói bụng quá 🦴",
+      "Buồn ngủ ghê~",
+      "*vẫy đuôi*",
+      "Có rác nào không?"
+    ],
+    "fullQuotes": [
+      "No cành hông! 🐕",
+      "Ợ~ 😮‍💨",
+      "Ngon tuyệt!",
+      "Muốn ngủ quá...",
+      "Bụng tròn vo!"
+    ],
+    "yummy": "Gâu, ngon quá!",
+    "cleaning": "Đang gặm rác... 🐶",
+    "explode": "BÙM! Chó tách thành cả đàn chó con! 🐶💥",
+    "revenge": "🐦 Dám bắt chó con của tao à? Trả thù cho con!"
   },
   "cacheCategories": {
     "trash": "🗑️ Thùng rác",

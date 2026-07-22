@@ -97,7 +97,7 @@ const DOG_ANIMATIONS = {
   drag_held: { frames: [getDog(17)], fps: 1, loop: false },
   drag_falling: { frames: [getDog(18)], fps: 1, loop: false },
   drag_landed: { frames: [getDog(19)], fps: 1, loop: false },
-  diving_float: { frames: [getDog(25)], fps: 1, loop: true },
+  diving_float: { frames: [getDog(31)], fps: 1, loop: true },
   diving_down: { frames: [getDog(26), getDog(27), getDog(28)], fps: 6, loop: true },
   diving_up: { frames: [getDog(29)], fps: 1, loop: true },
   diving_bottom: { frames: [getDog(30), getDog(31), getDog(32)], fps: 6, loop: true },
@@ -459,13 +459,9 @@ export default function PigPet({ mode, bubble, pigScale = 1.0, isPanelOpen = fal
     } else if (swimAction === 'diving') {
       displayMode = 'diving_down'
     } else if (swimAction === 'rising') {
-      if (position.y > -30) {
-        displayMode = 'diving_up'
-      } else {
-        displayMode = 'diving_float'
-      }
+      displayMode = 'diving_up'
     } else if (swimAction === 'hover') {
-      displayMode = 'diving_float'
+      displayMode = 'diving_bottom'
     } else if (swimAction === 'bottom') {
       if (Math.abs(dragVelocity.x) > 0.5 || Math.abs(dragVelocity.y) > 0.5) {
         displayMode = 'diving_bottom'

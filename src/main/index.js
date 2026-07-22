@@ -205,6 +205,18 @@ function setupAutoClean() {
 }
 
 // IPC Handlers
+ipcMain.handle('trigger-spawn-piglet', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('spawn-piglet')
+  }
+})
+
+ipcMain.handle('trigger-clear-piglets', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('clear-piglets')
+  }
+})
+
 ipcMain.handle('set-ignore-mouse', (_, ignore) => {
   isMouseIgnored = ignore
   if (mainWindow) {

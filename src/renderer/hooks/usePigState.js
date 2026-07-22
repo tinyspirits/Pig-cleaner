@@ -22,11 +22,13 @@ export function usePigState(trashInfo, petType = 'pig') {
   const [unlimitedPigSize, setUnlimitedPigSize] = useState(false)
   const [explosionEvent, setExplosionEvent] = useState(null)
   const [followers, setFollowers] = useState([])
+  const [neverGrow, setNeverGrow] = useState(false)
 
   const baseScaleRef = useRef(1.0)
   const eatenScaleRef = useRef(0.0)
   const eatenRef = useRef(0)
   const unlimitedRef = useRef(false)
+  const neverGrowRef = useRef(false)
   const followersRef = useRef([])
 
   // Keep refs in sync
@@ -34,6 +36,7 @@ export function usePigState(trashInfo, petType = 'pig') {
   useEffect(() => { eatenScaleRef.current = pigEatenScale }, [pigEatenScale])
   useEffect(() => { eatenRef.current = totalEaten }, [totalEaten])
   useEffect(() => { unlimitedRef.current = unlimitedPigSize }, [unlimitedPigSize])
+  useEffect(() => { neverGrowRef.current = neverGrow }, [neverGrow])
   useEffect(() => { followersRef.current = followers }, [followers])
 
   // pigScale hiện tại = base + eaten
@@ -56,6 +59,7 @@ export function usePigState(trashInfo, petType = 'pig') {
       if (s.totalEaten) setTotalEaten(s.totalEaten)
       if (s.cameraFollowsPig !== undefined) setCameraFollowsPig(s.cameraFollowsPig)
       if (s.unlimitedPigSize !== undefined) setUnlimitedPigSize(s.unlimitedPigSize)
+      if (s.neverGrow !== undefined) setNeverGrow(s.neverGrow)
       if (s.followers) {
         // Cấp màu ngẫu nhiên cho heo cũ nếu chưa có thuộc tính hue
         setFollowers(s.followers.map(f => ({ ...f, hue: f.hue ?? getRandomHue() })))
@@ -146,6 +150,37 @@ export function usePigState(trashInfo, petType = 'pig') {
     window.addEventListener('rescue-piglets', handleRescue)
     return () => window.removeEventListener('rescue-piglets', handleRescue)
   }, [petType])
+
+  const clearPiglets = async () => {
+    setFollowers([])
+    if (window.pigAPI) {
+      const s = await window.pigAPI.getSettings()
+      s.followers = []
+      await window.pigAPI.saveSettings(s)
+    }
+  }
+
+  const spawnPiglet = async () => {
+    let newFollowers = []
+    setFollowers(prev => {
+      newFollowers = [
+        ...prev,
+        {
+          id: Math.random().toString(),
+          scale: baseScaleRef.current * 0.2,
+          eatenScale: 0,
+          hue: getRandomHue()
+        }
+      ].slice(0, 24)
+      return newFollowers
+    })
+    
+    if (window.pigAPI) {
+      const s = await window.pigAPI.getSettings()
+      s.followers = newFollowers
+      await window.pigAPI.saveSettings(s)
+    }
+  }
 
   // Hiện speech bubble với timeout
   function showBubble(quotes, duration = 3000) {
@@ -255,6 +290,11 @@ export function usePigState(trashInfo, petType = 'pig') {
       pigletGrowths = randomWeights.map(w => remainingFood * (w / sumWeights))
     }
 
+    if (neverGrowRef.current) {
+      motherGrowth = 0
+      pigletGrowths = []
+    }
+
     let nextEatenScale = eatenScaleRef.current + (isNaN(motherGrowth) ? 0 : motherGrowth)
     let exploded = false
     // totalScaleAtBirth dùng để tính size heo con (dựa vào base, không phải tổng)
@@ -307,7 +347,7 @@ export function usePigState(trashInfo, petType = 'pig') {
       const remaining = []
       const departing = []
       updated.forEach(f => {
-        if (f.scale >= ADULT_SCALE) {
+        if (f.scale >= ADULT_SCALE && !neverGrowRef.current) {
           departing.push(f)
         } else {
           remaining.push(f)
@@ -354,7 +394,7 @@ export function usePigState(trashInfo, petType = 'pig') {
     const clampedBase = Math.min(Math.max(newBase, 0.05), 1.0)
     const oldBase = baseScaleRef.current || 1
     const ratio = oldBase > 0 ? clampedBase / oldBase : 1
-    const scaledFollowers = followersRef.current.map(f => ({ ...f, scale: Math.max(0.05, f.scale * ratio) }))
+    const scaledFollowers = followersRef.current.map(f => ({ ...f, scale: f.scale * ratio }))
 
     setPigBaseScale(clampedBase)
     setFollowers(scaledFollowers)
@@ -382,6 +422,8 @@ export function usePigState(trashInfo, petType = 'pig') {
     resetPigScale,
     totalEaten, cameraFollowsPig, reloadSettings, triggerEat, setMode, forceBubble,
     explosionEvent, clearExplosionEvent: () => setExplosionEvent(null),
-    followers
+    followers,
+    spawnPiglet,
+    clearPiglets
   }
 }

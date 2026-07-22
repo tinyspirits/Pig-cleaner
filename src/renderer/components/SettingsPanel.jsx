@@ -11,7 +11,7 @@ const INTERVAL_OPTIONS = [
   { value: 360, label: '6 tiếng' },
 ]
 
-export default function SettingsPanel({ onClose, pigScale = 1.0, pigEatenScale = 0, onChangePigScale, onResetPigScale }) {
+export default function SettingsPanel({ onClose, pigScale = 1.0, pigEatenScale = 0, onChangePigScale, onResetPigScale, onSpawnPiglet, onClearPiglets }) {
   const { t, i18n } = useTranslation()
   const [scaleInput, setScaleInput] = useState(pigScale)
   const [settings, setSettings] = useState({
@@ -107,7 +107,8 @@ export default function SettingsPanel({ onClose, pigScale = 1.0, pigEatenScale =
       // QUAN TRỌNG: loại bỏ pigScale, pigBaseScale, pigEatenScale khỏi payload lưu ở đây.
       // Đây là bản chụp lúc MỞ panel (không được cập nhật khi kéo slider), nếu gửi nguyên
       // sẽ ĐÈ lên giá trị đúng đã được setPigScaleAndSave() lưu riêng ngay lúc kéo.
-      const { pigScale: _s1, pigBaseScale: _s2, pigEatenScale: _s3, ...settingsToSave } = settings
+      // Tương tự, loại bỏ followers, followersCount, totalEaten vì chúng có thể đã thay đổi ở ngoài (spawn baby)
+      const { pigScale: _s1, pigBaseScale: _s2, pigEatenScale: _s3, followers: _s4, followersCount: _s5, totalEaten: _s6, ...settingsToSave } = settings
       await window.pigAPI.saveSettings(settingsToSave)
     }
     setSaving(false)
@@ -139,8 +140,8 @@ export default function SettingsPanel({ onClose, pigScale = 1.0, pigEatenScale =
               <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px', color: '#fff' }}>
                 {t('settingsPanel.baseSize', 'Kích thước nền')}:
                 {' '}<span style={{ color: '#f0c' }}>{Math.round(scaleInput * 100)}%</span>
-                {scaleInput < 1.0 && <span style={{ color: '#ccc', fontSize: '12px' }}> — nhỏ hơn mặc định</span>}
-                {scaleInput >= 1.0 && <span style={{ color: '#8f8', fontSize: '12px' }}> — mặc định</span>}
+                {scaleInput < 1.0 && <span style={{ color: '#ccc', fontSize: '12px' }}> — {t('settingsPanel.smallerThanDefault', 'nhỏ hơn mặc định')}</span>}
+                {scaleInput >= 1.0 && <span style={{ color: '#8f8', fontSize: '12px' }}> — {t('settingsPanel.isDefault', 'mặc định')}</span>}
               </div>
               <input
                 type="range"
@@ -157,13 +158,13 @@ export default function SettingsPanel({ onClose, pigScale = 1.0, pigEatenScale =
                 style={{ width: '100%' }}
               />
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', opacity: 0.5, marginTop: '2px' }}>
-                <span>5% (nhỏ nhất)</span>
-                <span style={{ fontWeight: 'bold', opacity: 1 }}>100% (mặc định)</span>
+                <span>5% ({t('settingsPanel.smallest', 'nhỏ nhất')})</span>
+                <span style={{ fontWeight: 'bold', opacity: 1 }}>100% ({t('settingsPanel.default', 'mặc định')})</span>
               </div>
               {pigEatenScale > 0.001 && (
                 <div style={{ fontSize: '12px', marginTop: '6px', padding: '5px 10px', background: 'rgba(255,180,0,0.12)', borderRadius: '6px', color: '#f9c' }}>
-                  🍔 +{Math.round(pigEatenScale * 100)}% bonus từ ăn rác — tự giảm dần
-                  {' '}→ tổng {Math.round((scaleInput + pigEatenScale) * 100)}%
+                  🍔 +{Math.round(pigEatenScale * 100)}% {t('settingsPanel.bonusText', 'bonus từ ăn rác — tự giảm dần')}
+                  {' '}→ {t('settingsPanel.total', 'tổng')} {Math.round((scaleInput + pigEatenScale) * 100)}%
                 </div>
               )}
               <button
@@ -220,6 +221,30 @@ export default function SettingsPanel({ onClose, pigScale = 1.0, pigEatenScale =
                 />
                 <span className="cache-item-label">{t('settingsPanel.unlimitedPigSize', { pet: petLabel, defaultValue: 'Pig grows unlimitedly when eating trash' })}</span>
               </label>
+              <label className="cache-item">
+                <input
+                  type="checkbox"
+                  checked={settings.neverGrow === true}
+                  onChange={e => setSettings(prev => ({ ...prev, neverGrow: e.target.checked }))}
+                />
+                <span className="cache-item-label">{t('settingsPanel.neverGrow', { pet: petLabel, defaultValue: 'Pig and babies never grow' })}</span>
+              </label>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '10px', padding: '0 4px' }}>
+                <button
+                  className="cache-clean-btn"
+                  style={{ flex: 1, padding: '6px', fontSize: '12px', width: 'auto' }}
+                  onClick={() => onSpawnPiglet?.()}
+                >
+                  👶 {t('settingsPanel.spawnPiglet', 'Spawn Baby')}
+                </button>
+                <button
+                  className="cache-clean-btn"
+                  style={{ flex: 1, padding: '6px', fontSize: '12px', width: 'auto', background: '#994444' }}
+                  onClick={() => onClearPiglets?.()}
+                >
+                  ❌ {t('settingsPanel.clearPiglets', 'Clear Babies')}
+                </button>
+              </div>
             </div>
 
           </div>

@@ -24,6 +24,9 @@ contextBridge.exposeInMainWorld('pigAPI', {
   getSettings: () => ipcRenderer.invoke('get-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
 
+  triggerSpawnPiglet: () => ipcRenderer.invoke('trigger-spawn-piglet'),
+  triggerClearPiglets: () => ipcRenderer.invoke('trigger-clear-piglets'),
+
   // Permissions
   checkPermissions: () => ipcRenderer.invoke('check-permissions'),
 
@@ -32,6 +35,14 @@ contextBridge.exposeInMainWorld('pigAPI', {
   searchLocation: (query) => ipcRenderer.invoke('search-location', query),
 
   // Event listeners (Main → Renderer)
+  onSpawnPiglet: (callback) => {
+    ipcRenderer.on('spawn-piglet', () => callback())
+    return () => ipcRenderer.removeAllListeners('spawn-piglet')
+  },
+  onClearPiglets: (callback) => {
+    ipcRenderer.on('clear-piglets', () => callback())
+    return () => ipcRenderer.removeAllListeners('clear-piglets')
+  },
   onTrashChanged: (callback) => {
     ipcRenderer.on('trash-changed', (_, data) => callback(data))
     return () => ipcRenderer.removeAllListeners('trash-changed')
