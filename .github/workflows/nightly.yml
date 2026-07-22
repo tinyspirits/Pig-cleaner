@@ -38,8 +38,8 @@ jobs:
           MAC_CERTS_PASSWORD: ${{ secrets.MAC_CERTS_PASSWORD }}
         run: |
           if [ -n "$MAC_CERTS" ]; then
-            echo "$MAC_CERTS" | base64 --decode > cert.p12
-            echo "CSC_LINK=cert.p12" >> $GITHUB_ENV
+            echo "$MAC_CERTS" | base64 --decode > "$GITHUB_WORKSPACE/cert.p12"
+            echo "CSC_LINK=$GITHUB_WORKSPACE/cert.p12" >> $GITHUB_ENV
             echo "CSC_KEY_PASSWORD=$MAC_CERTS_PASSWORD" >> $GITHUB_ENV
           else
             echo "No MAC_CERTS found, skipping code signing."
