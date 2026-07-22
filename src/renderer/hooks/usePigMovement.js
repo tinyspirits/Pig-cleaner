@@ -187,7 +187,7 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
         nextSwimChangeRef.current = performance.now() + 2000
         submergedTimeRef.current = 0
 
-        // Cún giãy giụa trượt khỏi tay người chơi nếu đang bị giữ
+        // Cún giãy giụa trượt khỏi tay người chơi nếu đang bị giữ dưới nước
         if (state.isDragging) {
           state.isDragging = false
           state.isMouseDown = false // Bắt buộc người chơi phải click lại mới bắt được
@@ -208,7 +208,10 @@ export function usePigMovement(mode, isPanelOpen = false, windRef = null, pigSca
         // [1] NẾU ĐANG KÉO: Vô hiệu hóa vật lý game
         updateDragState('held')
         state.vy = 0
-        nextSwimChangeRef.current = performance.now() + 5000
+        // KHÔNG reset nextSwimChangeRef khi đang kéo dưới nước để cơ chế ngạt vẫn hoạt động
+        if (!isInWater || state.y <= floatingY + 20) {
+          nextSwimChangeRef.current = performance.now() + 5000
+        }
 
         // Tính toán vận tốc kéo hiện tại để làm hiệu ứng quán tính (squash/stretch)
         const history = dragHistoryRef.current
